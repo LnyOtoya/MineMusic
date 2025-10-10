@@ -202,7 +202,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('音乐播放器'),
+        title: const Text('MineMusic'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
