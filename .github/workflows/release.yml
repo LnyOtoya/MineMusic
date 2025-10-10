@@ -6,6 +6,9 @@ on:
       - 'v*'  # 推送 v 开头的标签时触发
   workflow_dispatch:  # 允许手动触发
 
+permissions:
+  contents: write
+
 env:
   FLUTTER_VERSION: '3.35.2'
 
@@ -17,6 +20,8 @@ jobs:
     # 1. 检出代码
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
       
     # 2. 设置 Java 环境
     - name: Set up JDK 17
@@ -76,7 +81,6 @@ jobs:
           
           ### 📦 下载文件
           - **APK**: 直接安装到 Android 设备
-          - **AAB**: 用于 Google Play 商店发布
           
           ### 🎶 功能特性
           - 支持 Subsonic API (Navidrome)
