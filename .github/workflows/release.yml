@@ -1,0 +1,105 @@
+name: Build and Release MineMusic
+
+on:
+  push:
+    tags:
+      - 'v*'  # 推送 v 开头的标签时触发
+  workflow_dispatch:  # 允许手动触发
+
+env:
+  FLUTTER_VERSION: '3.13.0'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 1. 检出代码
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    # 2. 设置 Java 环境
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    # 3. 设置 Flutter 环境
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+        
+    # 4. 安装依赖
+    - name: Install dependencies
+      run: flutter pub get
+      
+    # 5. 代码分析
+    - name: Analyze code
+      run: flutter analyze
+      
+    # 6. 解码 keystore 文件
+    - name: Decode keystore
+      run: |
+        echo '${{ secrets.KEY_STORE_BASE64 }}' | base64 --decode > android/app/keystore.jks
+        
+    # 7. 创建签名配置文件
+    - name: Create signing properties
+      run: |
+        cat << EOF > android/key.properties
+        storePassword=${{ secrets.KEY_STORE_PASSWORD }}
+        keyPassword=${{ secrets.KEY_PASSWORD }}
+        keyAlias=${{ secrets.KEY_ALIAS }}
+        storeFile=keystore.jks
+        EOF
+        
+    # 8. 构建签名的 APK
+    - name: Build signed APK
+      run: flutter build apk --release
+      
+    # 9. 构建签名的 App Bundle
+    - name: Build signed App Bundle
+      run: flutter build appbundle --release
+      
+    # 10. 创建 GitHub Release
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: MineMusic ${{ github.ref_name }}
+        body: |
+          🎵 **MineMusic 音乐播放器** ${{ github.ref_name }}
+          
+          ### 📱 应用信息
+          - **包名**: com.example.minemusic
+          - **版本**: ${{ github.ref_name }}
+          - **Flutter**: ${{ env.FLUTTER_VERSION }}
+          
+          ### 📦 下载文件
+          - **APK**: 直接安装到 Android 设备
+          - **AAB**: 用于 Google Play 商店发布
+          
+          ### 🎶 功能特性
+          - 支持 Subsonic API (Navidrome)
+          - Material You 动态配色
+          - 完整的音乐播放功能
+          - 本地音乐库管理
+          - 搜索和浏览功能
+          
+          ### 📲 安装说明
+          1. 下载 `app-release.apk` 文件
+          2. 在 Android 设置中允许"安装未知来源应用"
+          3. 点击 APK 文件安装
+          4. 打开应用并连接到你的 Navidrome 服务器
+          
+          > 🔒 此版本已使用数字签名认证
+        draft: false
+        prerelease: false
+        files: |
+          build/app/outputs/flutter-apk/app-release.apk
+          build/app/outputs/bundle/release/app-release.aab
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
