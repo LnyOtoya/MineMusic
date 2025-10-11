@@ -1,22 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'subsonic_api.dart'; // 导入SubsonicApi用于生成播放链接
-// import 'package:permission_handler/permission_handler.dart';
 
 
+//ChangeNotifier允许ui组件监听其状态变化，如播放 暂停 切换歌曲等，实现状态同步
 class PlayerService extends ChangeNotifier {
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  final SubsonicApi? _api; // 用于生成播放链接
 
+  //just_audio实例，处理底层播放
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  //用于生成播放链接
+  final SubsonicApi? _api;
+
+
+  //播放状态相关变量
+  //当前播放的歌曲信息，如id 标题 艺术家等
   Map<String, dynamic>? _currentSong;
+  //是否正在播放
   bool _isPlaying = false;
+  //歌曲来源，用于ui显示来源信息
   String _sourceType = '';
+  //当前播放列表
   List<Map<String, dynamic>> _currentPlaylist = [];
+  //当前歌曲在播放列表中的索引
   int _currentIndex = -1;
+  //当前播放进度
   Duration _currentPosition = Duration.zero;
+  //歌曲总时长
   Duration _totalDuration = Duration.zero;
 
-  //  getter方法
+  //  getter方法：提供只读访问，避免外部直接修改状态
   Map<String, dynamic>? get currentSong => _currentSong;
   bool get isPlaying => _isPlaying;
   String get sourceType => _sourceType;
@@ -25,29 +37,30 @@ class PlayerService extends ChangeNotifier {
   Duration get currentPosition => _currentPosition;
   Duration get totalDuration => _totalDuration;
 
-  // 构造函数初始化监听
+  // 构造函数初始化监听:初始化时传入api实例，并设置播放状态监听
   PlayerService({SubsonicApi? api}) : _api = api {
     _initAudioListeners();
   }
 
   // 初始化音频监听
   void _initAudioListeners() {
-    // 监听播放状态变化
+    // 监听播放状态变化(播放/暂停)
     _audioPlayer.playerStateStream.listen((state) {
       final wasPlaying = _isPlaying;
       _isPlaying = state.playing;
       if (wasPlaying != _isPlaying) {
+        //状态变化时通知ui更新
         notifyListeners();
       }
     });
 
-    // 监听播放进度
+    // 监听播放进度(用于更新进度条)
     _audioPlayer.positionStream.listen((position) {
       _currentPosition = position;
       notifyListeners();
     });
 
-    // 监听总时长变化
+    // 监听总时长变化(歌曲加载完后获取总时长)
     _audioPlayer.durationStream.listen((duration) {
       if (duration != null) {
         _totalDuration = duration;
@@ -65,24 +78,6 @@ class PlayerService extends ChangeNotifier {
 
 
 
-  // Future<void> requestAndroid13Permissions() async {
-  //   // 1. 申请通知权限（媒体通知、后台播放必需）
-  //   if (await Permission.notification.isDenied) {
-  //     await Permission.notification.request();
-  //   }
-
-  //   // 2. 若需要缓存音乐到本地，申请媒体文件访问权限
-  //   if (await Permission.audio.isDenied) {
-  //     await Permission.audio.request();
-  //   }
-
-  //   // 3. 检查网络权限（虽然 INTERNET 是普通权限，但可提示用户检查网络）
-  //   if (await Permission.internet.isDenied) {
-  //     await Permission.internet.request();
-  //   }
-  // }
-
-
   // 播放指定歌曲，可附带播放列表
   Future<void> playSong(
     Map<String, dynamic> song, {
@@ -95,10 +90,12 @@ class PlayerService extends ChangeNotifier {
     _currentSong = song;
     _sourceType = sourceType;
 
-    // 更新播放列表
+    // 更新播放列表,如果传入了新列表，则替换当前列表，否则保留原列表
     if (playlist != null) {
       _currentPlaylist = playlist;
       _currentIndex = _currentPlaylist.indexWhere((s) => s['id'] == song['id']);
+
+      //如果当前歌曲不在新列表中，则添加到列表末尾
       if (_currentIndex == -1) {
         _currentPlaylist.add(song);
         _currentIndex = _currentPlaylist.length - 1;
@@ -201,7 +198,7 @@ class PlayerService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 调整播放进度
+  // 调整播放进度，例如拖动进度条时调用
   Future<void> seekTo(Duration position) async {
     await _audioPlayer.seek(position);
   }
@@ -224,7 +221,7 @@ class PlayerService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 释放资源
+  // 释放资源(页面销毁时调用)
   @override
   void dispose() {
     _audioPlayer.dispose();

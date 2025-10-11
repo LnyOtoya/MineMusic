@@ -3,8 +3,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 
+
+//有状态组件statefulWidget,接受api实例和播放器服务
 class HomePage extends StatefulWidget {
+
+  //网络请求
   final SubsonicApi api;
+
+  //播放控制
   final PlayerService playerService;
   
   const HomePage({super.key, required this.api, required this.playerService});
@@ -14,14 +20,19 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+
+  //储存随机歌曲的future对象
   late Future<List<Map<String, dynamic>>> _randomSongsFuture;
   
   @override
   void initState() {
     super.initState();
-    _randomSongsFuture = widget.api.getRandomSongs(count: 5);
+
+    //初始化时加载歌曲的数量(在initState中调用getRandomSongs加载歌曲)
+    _randomSongsFuture = widget.api.getRandomSongs(count: 9);
   }
 
+  //构建ui (核心方法)
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,6 +42,7 @@ class _HomePageState extends State<HomePage> {
           children: [
 
             // _buildMaterialYouTest(context),
+
             // 欢迎区域
             Container(
               padding: const EdgeInsets.all(20),
@@ -38,6 +50,8 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
+
+                    //根据时间显示不同的欢迎语句
                     _getGreeting(),
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
@@ -59,12 +73,16 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             
-            // 横向滚动的功能卡片列表
+            // 快速访问区域--横向滚动的功能卡片列表
+            //功能卡片通过 _buildFeatureCard方法统一构建，包含图标文字和点击事件
+            //使用colorScheme.primary确保主题色符合MaterialYou规范
             Container(
               height: 130, // 固定高度以限制卡片区域
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: ListView(
-                scrollDirection: Axis.horizontal, // 横向滚动
+
+                 // 横向滚动
+                scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   // 1. 按时间推荐
@@ -75,6 +93,8 @@ class _HomePageState extends State<HomePage> {
                     Theme.of(context).colorScheme.primary,
                     // Colors.blue,
                     width: 190,
+
+                    //点击事件
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('查看按时间推荐')),
@@ -126,7 +146,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             
-            // 推荐歌曲区域
+            // 推荐歌曲区域(实际是随机歌曲，因为subsonic api没有真正的推荐歌曲接口)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
               child: Row(
@@ -136,8 +156,12 @@ class _HomePageState extends State<HomePage> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const Spacer(),
+
+                  //刷新按钮
                   IconButton(
                     icon: const Icon(Icons.refresh),
+
+                    //按下按钮调用 _refreshRandomSongs
                     onPressed: _refreshRandomSongs,
                     tooltip: '刷新推荐',
                   ),
@@ -154,8 +178,7 @@ class _HomePageState extends State<HomePage> {
   }
 
 
-
-
+  //随机歌曲列表
   Widget _buildRandomSongsList() {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _randomSongsFuture,
@@ -228,8 +251,8 @@ class _HomePageState extends State<HomePage> {
           );
         }
         
+        //空数据：显示无歌曲的提示
         final songs = snapshot.data ?? [];
-        
         // 空状态（保持不变）
         if (songs.isEmpty) {
           return Container(
@@ -268,7 +291,7 @@ class _HomePageState extends State<HomePage> {
           );
         }
         
-        // 网格布局主体（核心修改处）
+        //成功状态：战士歌曲网格(核心布局)
         return Container(
           // 增加底部margin，为悬浮播放器预留空间（通常播放器高度在60-80之间）
           margin: const EdgeInsets.fromLTRB(16, 8, 16, 80), 
@@ -289,6 +312,8 @@ class _HomePageState extends State<HomePage> {
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+
+              //网格布局，歌曲卡片的行列数量和间隙调整
               crossAxisCount: 3,
               crossAxisSpacing: 18,
               mainAxisSpacing: 20,
@@ -297,6 +322,8 @@ class _HomePageState extends State<HomePage> {
             itemCount: songs.length,
             itemBuilder: (context, index) {
               final song = songs[index];
+
+              //构建单个歌曲的卡片
               return InkWell(
                 onTap: () => _playSong(song),
                 borderRadius: BorderRadius.circular(12),
@@ -304,6 +331,8 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+
+                    //歌曲封面
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
@@ -322,6 +351,9 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     const SizedBox(height: 10),
+
+                    //歌曲信息
+                    //标题
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
@@ -338,6 +370,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     const SizedBox(height: 4),
+
+                    //艺术家
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
@@ -362,6 +396,7 @@ class _HomePageState extends State<HomePage> {
   }
 
 
+  //歌曲封面定义
   Widget _buildSongCover(Map<String, dynamic> song) {
     // 统一圆角值（与推荐区域容器圆角保持一致）
     final borderRadius = BorderRadius.circular(8);
@@ -444,7 +479,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 修改_buildFeatureCard方法，添加width参数
+  //快速访问卡片定义
   Widget _buildFeatureCard(
     BuildContext context, 
     String title, 

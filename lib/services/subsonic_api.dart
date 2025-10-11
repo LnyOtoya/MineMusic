@@ -2,6 +2,8 @@ import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import 'dart:convert';
 
+
+//核心类：封装与 subsonic 服务器的交互
 class SubsonicApi {
   final String baseUrl;
   final String username;
@@ -13,10 +15,19 @@ class SubsonicApi {
     required this.password,
   });
 
+
+  //核心方法：与服务器交互的各种接口[ping 获取音乐文件夹 获取艺术家等]
+
+
+  //ping接口
   Future<bool> ping() async {
     try {
+
+      //构建请求url(subsonic 的 ping 接口)
       final url = Uri.parse('$baseUrl/rest/ping');
 
+
+      //配置请求参数(subsonic 接口要求的认证参数)
       final params = {
         'u': username,
         'p': password,
@@ -24,10 +35,15 @@ class SubsonicApi {
         'c': 'otimeum',
         'f': 'xml',
       };
+
+      //拼接参数到url
       final urlWithParams = url.replace(queryParameters: params);
 
+      //发送get请求
       final response = await http.get(urlWithParams);
 
+
+      //处理响应：检查状态码和响应内容
       if (response.statusCode == 200) {
         return response.body.contains('status="ok"');
       } else {
@@ -39,10 +55,13 @@ class SubsonicApi {
     }
   }
 
+  //音乐文件夹目录接口
   Future<List<Map<String, dynamic>>> getMusicFolders() async {
     try {
+
+      //构建请求url
       final url = Uri.parse('$baseUrl/rest/getMusicFolders');
-      
+      //配置请求参数
       final params = {
         'u': username,
         'p': password,
@@ -50,20 +69,29 @@ class SubsonicApi {
         'c': 'MyMusicPlayer',
         'f': 'xml',
       };
-      
+      //拼接参数到url
       final urlWithParams = url.replace(queryParameters: params);
       print('🌐 请求URL: $urlWithParams');
       
+      //发送请求
       final response = await http.get(urlWithParams);
       print('📡 响应状态: ${response.statusCode}');
       
       if (response.statusCode == 200) {
+
+        //解析xml响应
+
+        //处理编码
         final responseBody = utf8.decode(response.bodyBytes);
         print('📄 响应内容: ${response.body}');
         
+        //解析为xml文档
         final document = XmlDocument.parse(responseBody);
+
+        //解析数据：查找所有 musicFolder 元素
         final musicFolderElements = document.findAllElements('musicFolder');
         
+        //转换为 map 列表
         List<Map<String, dynamic>> folders = [];
         
         for (var element in musicFolderElements) {
@@ -89,6 +117,7 @@ class SubsonicApi {
     }
   }
 
+  //获取艺术家列表
   Future<List<Map<String, dynamic>>> getArtists() async {
     try {
       final url = Uri.parse('$baseUrl/rest/getArtists');
@@ -135,6 +164,7 @@ class SubsonicApi {
     }
   }
 
+  //获取随机歌曲
   Future<List<Map<String, dynamic>>> getRandomSongs({int count = 20}) async {
     try {
       final url = Uri.parse('$baseUrl/rest/getRandomSongs');
@@ -186,6 +216,7 @@ class SubsonicApi {
     }
   }
 
+  //获取专辑列表
   Future<List<Map<String, dynamic>>> getAlbums({int size = 50, int offset = 0}) async {
     try {
       final url = Uri.parse('$baseUrl/rest/getAlbumList2');
@@ -231,6 +262,7 @@ class SubsonicApi {
     }
   }
 
+  //获取所有歌曲
   Future<List<Map<String, dynamic>>> getAllSongs() async {
     try {
       print('🎵 开始获取所有歌曲（通过专辑列表）...');
@@ -257,6 +289,7 @@ class SubsonicApi {
     }
   }
 
+  //获取专辑内歌曲
   Future<List<Map<String, dynamic>>> getSongsByAlbum(String albumId) async {
     try {
       final url = Uri.parse('$baseUrl/rest/getAlbum');
@@ -305,6 +338,7 @@ class SubsonicApi {
     }
   }
 
+  //创建播放列表
   Future<bool> createPlaylist(String name, List<String> songIds) async {
     try {
       final url = Uri.parse('$baseUrl/rest/createPlaylist');
@@ -335,7 +369,7 @@ class SubsonicApi {
     }
   }
 
-
+  //获取歌曲搜索
   Future<List<Map<String, dynamic>>> getAllSongsViaSearch() async {
     try {
       final url = Uri.parse('$baseUrl/rest/search3');
@@ -391,6 +425,7 @@ class SubsonicApi {
     }
   }
 
+  //获取流派列表
   Future<List<Map<String, dynamic>>> getGenres() async {
     try {
       final url = Uri.parse('$baseUrl/rest/getGenres');
@@ -656,8 +691,6 @@ class SubsonicApi {
   }
 
 
-
-
   // 获取封面图片URL
   String getCoverArtUrl(String coverArtId) {
     return Uri.parse('$baseUrl/rest/getCoverArt').replace(
@@ -688,11 +721,7 @@ class SubsonicApi {
     return uri.toString();
   }
 
-
-
-
-
-
+  //获取流派名图标
   String _getGenreIconName(String genreName) {
     final name = genreName.toLowerCase();
     
