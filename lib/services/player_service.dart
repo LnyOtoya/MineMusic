@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'subsonic_api.dart'; // 导入SubsonicApi用于生成播放链接
+import 'package:just_audio_background/just_audio_background.dart';
 
 
 //ChangeNotifier允许ui组件监听其状态变化，如播放 暂停 切换歌曲等，实现状态同步
@@ -115,7 +116,26 @@ class PlayerService extends ChangeNotifier {
 
       // 获取播放链接（使用Subsonic的stream接口）
       final playUrl = _api.getSongPlayUrl(song['id']!);
-      await _audioPlayer.setUrl(playUrl);
+
+      final mediaItem = MediaItem(
+              id: song['id']!,  // 唯一标识
+              title: song['title'] ?? '未知歌曲',
+              artist: song['artist'] ?? '未知艺术家',
+              album: song['album'] ?? '未知专辑',
+              artUri: Uri.parse(_api!.getCoverArtUrl(song['coverArt'] ?? '')),  // 封面图
+              duration: Duration(seconds: int.tryParse(song['duration'] ?? '0') ?? 0),  // 时长
+      );
+
+      // await _audioPlayer.setUrl(playUrl);
+  
+      // 3. 使用带标签的 AudioSource
+      await _audioPlayer.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(playUrl),
+          tag: mediaItem,  // 绑定 MediaItem 到音频源
+        ),
+      );
+
       await _audioPlayer.play();
       _isPlaying = true;
     } catch (e) {
@@ -166,7 +186,22 @@ class PlayerService extends ChangeNotifier {
     
     try {
       final playUrl = _api!.getSongPlayUrl(_currentSong!['id']!);
-      await _audioPlayer.setUrl(playUrl);
+
+
+      final mediaItem = MediaItem(
+        id: _currentSong!['id']!,
+        title: _currentSong!['title'] ?? '未知歌曲',
+        artist: _currentSong!['artist'] ?? '未知艺术家',
+        album: _currentSong!['album'] ?? '未知专辑',
+        artUri: Uri.parse(_api!.getCoverArtUrl(_currentSong!['coverArt'] ?? '')),
+        duration: Duration(seconds: int.tryParse(_currentSong!['duration'] ?? '0') ?? 0),
+      );
+      await _audioPlayer.setAudioSource(
+        AudioSource.uri(Uri.parse(playUrl), tag: mediaItem),
+      );
+
+
+      // await _audioPlayer.setUrl(playUrl);
       await _audioPlayer.play();
       _isPlaying = true;
     } catch (e) {
@@ -187,7 +222,20 @@ class PlayerService extends ChangeNotifier {
     
     try {
       final playUrl = _api!.getSongPlayUrl(_currentSong!['id']!);
-      await _audioPlayer.setUrl(playUrl);
+
+      final mediaItem = MediaItem(
+        id: _currentSong!['id']!,
+        title: _currentSong!['title'] ?? '未知歌曲',
+        artist: _currentSong!['artist'] ?? '未知艺术家',
+        album: _currentSong!['album'] ?? '未知专辑',
+        artUri: Uri.parse(_api!.getCoverArtUrl(_currentSong!['coverArt'] ?? '')),
+        duration: Duration(seconds: int.tryParse(_currentSong!['duration'] ?? '0') ?? 0),
+      );
+      await _audioPlayer.setAudioSource(
+        AudioSource.uri(Uri.parse(playUrl), tag: mediaItem),
+      );
+
+      // await _audioPlayer.setUrl(playUrl);
       await _audioPlayer.play();
       _isPlaying = true;
     } catch (e) {

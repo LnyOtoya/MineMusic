@@ -8,13 +8,31 @@ import 'pages/search_page.dart';
 import 'pages/library_page.dart';
 import 'pages/login_page.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:just_audio_background/just_audio_background.dart';
+import 'package:audio_session/audio_session.dart';  // 新增
 
 
 //应用入口
-void main() {
+// void main() {
+//   runApp(const MyApp());
+// }
+
+Future<void> main() async {
+  // 初始化后台播放服务
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.example.minemusic.channel.audio',
+    androidNotificationChannelName: '音乐播放',
+    androidNotificationOngoing: true,  // 播放时通知常驻
+    // 可选：设置通知图标（需在mipmap中添加）
+    androidNotificationIcon: 'mipmap/ic_launcher',
+  );
+
+  // 配置音频会话（确保后台播放时音频焦点）
+  final session = await AudioSession.instance;
+  await session.configure(const AudioSessionConfiguration.music());
+
   runApp(const MyApp());
 }
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
