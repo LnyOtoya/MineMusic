@@ -231,14 +231,35 @@ class _MusicHomePageState extends State<MusicHomePage> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: '主页'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: '搜索'),
-          BottomNavigationBarItem(icon: Icon(Icons.library_music), label: '音乐库'),
+
+      bottomNavigationBar: NavigationBar(
+        height: 64,
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onItemTapped,
+        // 选中项背景色（使用主题色，更贴合 Material 3）
+        indicatorColor: Theme.of(context).colorScheme.primaryContainer,
+        // 控制选中项的椭圆形状（通过 RoundedRectangleBorder 的 borderRadius 和 side 间接控制内边距效果）
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          // 可以通过透明边框模拟内边距效果（可选）
+          side: const BorderSide(color: Colors.transparent, width: 4),
+        ),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_rounded), // 未选中用轮廓图标
+            selectedIcon: Icon(Icons.home_outlined), // 选中用填充图标
+            label: '主页',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.search_rounded),
+            selectedIcon: Icon(Icons.search_outlined),
+            label: '搜索',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.library_music_rounded),
+            selectedIcon: Icon(Icons.library_music_outlined),
+            label: '音乐库',
+          ),
         ],
       ),
     );
