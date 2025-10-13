@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 enum DetailType { album, artist, playlist }
 
@@ -145,11 +146,26 @@ class _DetailPageState extends State<DetailPage> {
                         color: Theme.of(context).colorScheme.surfaceVariant,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: widget.type == DetailType.album
-                          ? const Icon(Icons.album, size: 100)
+
+                      child: widget.type == DetailType.album 
+                          ? widget.item['coverArt'] != null
+                              ? CachedNetworkImage(
+                                  imageUrl: widget.api.getCoverArtUrl(widget.item['coverArt']),
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => const Icon(Icons.album, size: 100),
+                                  errorWidget: (context, url, error) => const Icon(Icons.album, size: 100),
+                                )
+                              : const Icon(Icons.album, size: 100)
                           : widget.type == DetailType.artist
                               ? const Icon(Icons.person, size: 100)
                               : const Icon(Icons.playlist_play, size: 100),
+
+
+                      // child: widget.type == DetailType.album
+                      //     ? const Icon(Icons.album, size: 100)
+                      //     : widget.type == DetailType.artist
+                      //         ? const Icon(Icons.person, size: 100)
+                      //         : const Icon(Icons.playlist_play, size: 100),
                     ),
                     const SizedBox(height: 16),
                     // 标题和信息
