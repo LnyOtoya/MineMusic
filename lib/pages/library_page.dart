@@ -116,11 +116,21 @@ class SongsTab extends StatefulWidget {
 
 class _SongsTabState extends State<SongsTab> {
   late Future<List<Map<String, dynamic>>> _songsFuture;
+  List<Map<String, dynamic>>? _sortedSongs;
   
   @override
   void initState() {
     super.initState();
-    _songsFuture = widget.api.getAllSongsViaSearch();
+    _songsFuture = widget.api.getAllSongsViaSearch().then((songs) {
+      // 排序后缓存到变量
+      songs.sort((a, b) {
+        final titleA = (a['title'] ?? '').toLowerCase();
+        final titleB = (b['title'] ?? '').toLowerCase();
+        return titleA.compareTo(titleB);
+      });
+      _sortedSongs = songs;  // 缓存排序结果
+      return songs;
+    });
   }
 
   @override
@@ -204,13 +214,13 @@ class _SongsTabState extends State<SongsTab> {
     print('播放歌曲: ${song['title']}');
     print('🎵 歌曲数据: $song');
     // 获取所有歌曲作为播放列表
-    widget.api.getAllSongsViaSearch().then((allSongs) {
+    if (_sortedSongs != null) {  // 确保列表已排序并缓存
       widget.playerService.playSong(
         song, 
         sourceType: 'song',
-        playlist: allSongs
+        playlist: _sortedSongs  // 传入排序后的列表
       );
-    });
+    }
   }
 }
 
