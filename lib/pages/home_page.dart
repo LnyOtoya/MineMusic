@@ -12,8 +12,18 @@ class HomePage extends StatefulWidget {
 
   //播放控制
   final PlayerService playerService;
+
+  final Future<List<Map<String, dynamic>>> randomSongsFuture;
+
+  final Future<List<Map<String, dynamic>>> Function() onRefreshRandomSongs;
   
-  const HomePage({super.key, required this.api, required this.playerService});
+  const HomePage({
+    super.key, 
+    required this.api, 
+    required this.playerService,
+    required this.randomSongsFuture,
+    required this.onRefreshRandomSongs,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -22,14 +32,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
 
   //储存随机歌曲的future对象
-  late Future<List<Map<String, dynamic>>> _randomSongsFuture;
+  // late Future<List<Map<String, dynamic>>> _randomSongsFuture;
   
   @override
   void initState() {
     super.initState();
 
     //初始化时加载歌曲的数量(在initState中调用getRandomSongs加载歌曲)
-    _randomSongsFuture = widget.api.getRandomSongs(count: 9);
+    // _randomSongsFuture = widget.api.getRandomSongs(count: 9);
   }
 
   //构建ui (核心方法)
@@ -181,7 +191,8 @@ class _HomePageState extends State<HomePage> {
   //随机歌曲列表
   Widget _buildRandomSongsList() {
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _randomSongsFuture,
+      // future: _randomSongsFuture,
+      future: widget.randomSongsFuture,
       builder: (context, snapshot) {
         // 加载中状态（保持不变）
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -567,15 +578,22 @@ class _HomePageState extends State<HomePage> {
 
   // 刷新推荐歌曲
   void _refreshRandomSongs() {
-    setState(() {
-      _randomSongsFuture = widget.api.getRandomSongs(count: 9);
+    // 调用父组件的刷新回调并等待结果，然后触发UI更新
+    widget.onRefreshRandomSongs().then((_) {
+      if (mounted) {
+        setState(() {}); // 强制重建UI以显示新数据
+      }
     });
   }
 
   // 刷新所有数据
   Future<void> _refreshData() async {
-    setState(() {
-      _randomSongsFuture = widget.api.getRandomSongs(count: 9);
-    });
+    await widget.onRefreshRandomSongs();
+    if (mounted) {
+      setState(() {});
+    }
+    // setState(() {
+    //   _randomSongsFuture = widget.api.getRandomSongs(count: 9);
+    // });
   }
 }
