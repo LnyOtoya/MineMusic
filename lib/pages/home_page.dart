@@ -562,12 +562,16 @@ class _HomePageState extends State<HomePage> {
 
   // 播放单首歌曲
   void _playSong(Map<String, dynamic> song) {
-    widget.playerService.playSong(
-      song,
-      sourceType: 'recommendation',
-      playlist: [], // 可以根据需要传入完整播放列表
-    );
+    // 获取当前推荐歌曲列表
+    widget.randomSongsFuture.then((songs) {
+      widget.playerService.playSong(
+        song,
+        sourceType: 'recommendation',
+        playlist: songs, // 传入完整推荐列表作为播放列表
+      );
+    });
   }
+
 
   // 查看最近播放
   void _viewRecentPlays() {
