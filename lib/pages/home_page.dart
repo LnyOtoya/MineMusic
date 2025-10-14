@@ -31,15 +31,15 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
 
-  //储存随机歌曲的future对象
-  // late Future<List<Map<String, dynamic>>> _randomSongsFuture;
+  // 储存随机歌曲的future对象
+  late Future<List<Map<String, dynamic>>> _randomSongsFuture;
   
   @override
   void initState() {
     super.initState();
 
-    //初始化时加载歌曲的数量(在initState中调用getRandomSongs加载歌曲)
-    // _randomSongsFuture = widget.api.getRandomSongs(count: 9);
+    // 初始化时加载歌曲的数量(在initState中调用getRandomSongs加载歌曲)
+    _randomSongsFuture = widget.api.getRandomSongs(count: 9);
   }
 
   //构建ui (核心方法)
