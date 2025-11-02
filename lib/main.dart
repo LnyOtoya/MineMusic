@@ -193,6 +193,10 @@ class _MusicHomePageState extends State<MusicHomePage> {
   late final PlayerService playerService;
   late Future<List<Map<String, dynamic>>> _randomSongsFuture;
 
+  final ScrollController _scrollController = ScrollController();
+  bool _isAppBarVisible = true;
+  double _lastScrollPosition = 0;
+
   // 关键修改：将_pages从固定列表改为动态生成的getter
   List<Widget> get _pages => [
         HomePage(
@@ -206,6 +210,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
             });
             return _randomSongsFuture;
           },
+          scrollController: _scrollController,
         ),
         SearchPage(api: widget.api, playerService: playerService),
         LibraryPage(api: widget.api, playerService: playerService),
@@ -217,7 +222,36 @@ class _MusicHomePageState extends State<MusicHomePage> {
     playerService = PlayerService(api: widget.api);
     _randomSongsFuture = widget.api.getRandomSongs(count: 9);
     // 移除initState中的_pages初始化，改为通过getter动态生成
+
+    _scrollController.addListener(_handleScroll);
   }
+
+  @override
+  void dispose() {
+    _scrollController.dispose(); // 释放资源
+    super.dispose();
+  }
+
+  // 处理滚动逻辑
+  void _handleScroll() {
+    final currentPosition = _scrollController.position.pixels;
+    
+    // 向上滚动且超过一定距离时隐藏AppBar
+    if (currentPosition > _lastScrollPosition && currentPosition > 100) {
+      if (_isAppBarVisible) {
+        setState(() => _isAppBarVisible = false);
+      }
+    } 
+    // 向下滚动时显示AppBar
+    else if (currentPosition < _lastScrollPosition - 20) {
+      if (!_isAppBarVisible) {
+        setState(() => _isAppBarVisible = true);
+      }
+    }
+    
+    _lastScrollPosition = currentPosition;
+  }
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -239,10 +273,14 @@ class _MusicHomePageState extends State<MusicHomePage> {
     }
   }
 
+
+
+
   @override
-  Widget build(BuildContext context) {
+  Widget build (BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: _isAppBarVisible ? 
+      AppBar(
         title: const Text('MineMusic'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
@@ -252,10 +290,22 @@ class _MusicHomePageState extends State<MusicHomePage> {
             tooltip: '退出登录',
           ),
         ],
-      ),
+      )
+      : null,
+
+      // 关键修改：用SingleChildScrollView包裹页面内容并绑定控制器
       body: Stack(
         children: [
-          _pages[_selectedIndex], // 使用动态生成的页面列表
+          _pages[_selectedIndex],
+          // SingleChildScrollView(
+          //   controller: _scrollController,
+          //   child: SizedBox(
+          //     // 确保滚动区域高度足够
+          //     height: MediaQuery.of(context).size.height,
+          //     child: _pages[_selectedIndex],
+          //   ),
+          // ),
+
           Positioned(
             left: 0,
             right: 0,
@@ -269,18 +319,15 @@ class _MusicHomePageState extends State<MusicHomePage> {
         height: 64,
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
-        // 选中项背景色（使用主题色，更贴合 Material 3）
         indicatorColor: Theme.of(context).colorScheme.primaryContainer,
-        // 控制选中项的椭圆形状（通过 RoundedRectangleBorder 的 borderRadius 和 side 间接控制内边距效果）
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          // 可以通过透明边框模拟内边距效果（可选）
           side: const BorderSide(color: Colors.transparent, width: 4),
         ),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_rounded), // 未选中用轮廓图标
-            selectedIcon: Icon(Icons.home_outlined), // 选中用填充图标
+            icon: Icon(Icons.home_rounded),
+            selectedIcon: Icon(Icons.home_outlined),
             label: '主页',
           ),
           NavigationDestination(
@@ -298,3 +345,74 @@ class _MusicHomePageState extends State<MusicHomePage> {
     );
   }
 }
+
+
+
+
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: _isAppBarVisible ? 
+//       AppBar(
+//         title: const Text('MineMusic'),
+//         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+//         actions: [
+//           IconButton(
+//             icon: const Icon(Icons.logout),
+//             onPressed: _logout,
+//             tooltip: '退出登录',
+//           ),
+//         ],
+//       )
+//       : null,
+
+
+      
+//       body: Stack(
+//         children: [
+//           _pages[_selectedIndex], // 使用动态生成的页面列表
+//           Positioned(
+//             left: 0,
+//             right: 0,
+//             bottom: kBottomNavigationBarHeight - 60,
+//             child: MiniPlayer(playerService: playerService, api: widget.api),
+//           ),
+//         ],
+//       ),
+
+
+
+//       bottomNavigationBar: NavigationBar(
+//         height: 64,
+//         selectedIndex: _selectedIndex,
+//         onDestinationSelected: _onItemTapped,
+//         // 选中项背景色（使用主题色，更贴合 Material 3）
+//         indicatorColor: Theme.of(context).colorScheme.primaryContainer,
+//         // 控制选中项的椭圆形状（通过 RoundedRectangleBorder 的 borderRadius 和 side 间接控制内边距效果）
+//         indicatorShape: RoundedRectangleBorder(
+//           borderRadius: BorderRadius.circular(20),
+//           // 可以通过透明边框模拟内边距效果（可选）
+//           side: const BorderSide(color: Colors.transparent, width: 4),
+//         ),
+//         destinations: const [
+//           NavigationDestination(
+//             icon: Icon(Icons.home_rounded), // 未选中用轮廓图标
+//             selectedIcon: Icon(Icons.home_outlined), // 选中用填充图标
+//             label: '主页',
+//           ),
+//           NavigationDestination(
+//             icon: Icon(Icons.search_rounded),
+//             selectedIcon: Icon(Icons.search_outlined),
+//             label: '搜索',
+//           ),
+//           NavigationDestination(
+//             icon: Icon(Icons.library_music_rounded),
+//             selectedIcon: Icon(Icons.library_music_outlined),
+//             label: '音乐库',
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }

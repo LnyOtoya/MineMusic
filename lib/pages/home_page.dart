@@ -16,6 +16,8 @@ class HomePage extends StatefulWidget {
   final Future<List<Map<String, dynamic>>> randomSongsFuture;
 
   final Future<List<Map<String, dynamic>>> Function() onRefreshRandomSongs;
+
+  final ScrollController? scrollController;
   
   const HomePage({
     super.key, 
@@ -23,6 +25,7 @@ class HomePage extends StatefulWidget {
     required this.playerService,
     required this.randomSongsFuture,
     required this.onRefreshRandomSongs,
+    this.scrollController,
   });
 
   @override
@@ -45,10 +48,10 @@ class _HomePageState extends State<HomePage> {
   //构建ui (核心方法)
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: RefreshIndicator(
+    return RefreshIndicator(
         onRefresh: _refreshData,
         child: ListView(
+          controller: widget.scrollController,
           children: [
 
             // _buildMaterialYouTest(context),
@@ -183,7 +186,6 @@ class _HomePageState extends State<HomePage> {
             _buildRandomSongsList(),
           ],
         ),
-      ),
     );
   }
 
