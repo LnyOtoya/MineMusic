@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../pages/player_page.dart';
 
 class MiniPlayer extends StatefulWidget {
   final PlayerService playerService;
@@ -338,13 +339,27 @@ class _MiniPlayerState extends State<MiniPlayer> with SingleTickerProviderStateM
     );
   }
 
+
   void _onPlayerTap() {
-    // 点击播放栏跳转到完整播放页面
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('跳转到播放页面'),
-        duration: Duration(seconds: 1),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlayerPage(
+          playerService: widget.playerService,
+          api: widget.api,
+        ),
       ),
     );
   }
+
+
+  // void _onPlayerTap() {
+  //   // 点击播放栏跳转到完整播放页面
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     const SnackBar(
+  //       content: Text('跳转到播放页面'),
+  //       duration: Duration(seconds: 1),
+  //     ),
+  //   );
+  // }
 }

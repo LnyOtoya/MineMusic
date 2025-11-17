@@ -42,6 +42,7 @@ dependencies:
   dynamic_color: ^1.5.0
   flutter_infinite_marquee: ^1.0.0
   rxdart: ^0.27.7
+  marquee: ^2.3.0
   # flutter_local_notifications: ^15.1.1
   # audio_session: ^0.1.25
 
