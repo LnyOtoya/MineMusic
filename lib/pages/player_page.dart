@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
-import 'package:marquee/marquee.dart';
+import '../models/lyrics.dart';
+
 
 class PlayerPage extends StatefulWidget {
   final PlayerService playerService;
@@ -25,6 +26,12 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
+  List<Lyric> _lyrics = [];
+  bool _isLoadingLyrics = false;
+  int _currentLyricIndex = 0;
+  final PageController _pageController = PageController(initialPage: 0);
+  int _currentPage = 0;
+
   @override
   void initState() {
     super.initState();
@@ -41,14 +48,79 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
     // 监听播放状态变化
     widget.playerService.addListener(_updatePlayerState);
     _updatePlayerState(); // 初始状态更新
+
+    // 监听播放位置更新歌词高亮
+    widget.playerService.addListener(_updateLyricPosition);
+    // 加载当前歌曲歌词
+    _loadLyrics();
   }
 
   @override
   void dispose() {
     // _animationController.dispose();
+
+    _pageController.dispose();
+    widget.playerService.removeListener(_updateLyricPosition);
+
     widget.playerService.removeListener(_updatePlayerState);
     super.dispose();
   }
+
+  // 加载歌词
+  Future<void> _loadLyrics() async {
+    final song = widget.playerService.currentSong;
+    if (song == null) return;
+
+    setState(() => _isLoadingLyrics = true);
+    
+    try {
+      final lyricData = await widget.api.getLyrics(
+        artist: song['artist'] ?? '',
+        title: song['title'] ?? '',
+      );
+      
+      if (lyricData != null && lyricData['text'].isNotEmpty) {
+        setState(() {
+          _lyrics = parseLyrics(lyricData['text']);
+        });
+      }
+    } catch (e) {
+      print('加载歌词失败: $e');
+    } finally {
+      setState(() => _isLoadingLyrics = false);
+    }
+  }
+
+  // 更新歌词位置
+  void _updateLyricPosition() {
+    if (_lyrics.isEmpty) return;
+    
+    final position = widget.playerService.currentPosition;
+    for (int i = 0; i < _lyrics.length; i++) {
+      if (position >= _lyrics[i].time && 
+          (i == _lyrics.length - 1 || position < _lyrics[i + 1].time)) {
+        if (_currentLyricIndex != i) {
+          setState(() => _currentLyricIndex = i);
+        }
+        break;
+      }
+    }
+  }
+
+  // 切换到歌词页
+  void _switchToLyrics() {
+    _pageController.animateToPage(
+      1,
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+
+
+
+
+
 
   // 更新播放器状态
   void _updatePlayerState() {
@@ -93,6 +165,37 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
     }
   }
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   final song = widget.playerService.currentSong;
+  //   if (song == null) {
+  //     return const Scaffold(
+  //       body: Center(child: Text('没有正在播放的歌曲')),
+  //     );
+  //   }
+
+  //   return Scaffold(
+  //     // 使用主题背景色
+  //     backgroundColor: Theme.of(context).colorScheme.surface,
+  //     body: SafeArea(
+  //       child: Column(
+  //         children: [
+  //           // 顶部区域
+  //           _buildTopBar(song),
+            
+  //           // 中间封面区域
+  //           Expanded(
+  //             child: _buildAlbumCover(song),
+  //           ),
+            
+  //           // 底部控制区域
+  //           _buildControlPanel(song),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
     final song = widget.playerService.currentSong;
@@ -103,26 +206,80 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
     }
 
     return Scaffold(
-      // 使用主题背景色
+      // 保留主题背景色设置
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 顶部区域
-            _buildTopBar(song),
-            
-            // 中间封面区域
-            Expanded(
-              child: _buildAlbumCover(song),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) => setState(() => _currentPage = index),
+        children: [
+          // 原始播放页面 - 整合原有布局
+          SafeArea(
+            child: Column(
+              children: [
+                // 顶部区域
+                _buildTopBar(song),
+                
+                // 中间封面区域
+                Expanded(
+                  child: _buildAlbumCover(song),
+                ),
+                
+                // 底部控制区域
+                _buildControlPanel(song),
+              ],
             ),
-            
-            // 底部控制区域
-            _buildControlPanel(song),
-          ],
-        ),
+          ),
+          // 歌词页面
+          _buildLyricsPage(),
+        ],
       ),
     );
   }
+
+  // 构建歌词页面
+  Widget _buildLyricsPage() {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('歌词'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => _pageController.animateToPage(0, 
+            duration: Duration(milliseconds: 300), 
+            curve: Curves.easeInOut
+          ),
+        ),
+      ),
+      body: _isLoadingLyrics
+          ? Center(child: CircularProgressIndicator())
+          : _lyrics.isEmpty
+              ? Center(child: Text('未找到歌词'))
+              : ListView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  itemCount: _lyrics.length,
+                  itemBuilder: (context, index) {
+                    final lyric = _lyrics[index];
+                    return Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Center(
+                        child: Text(
+                          lyric.text,
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: index == _currentLyricIndex 
+                                ? Theme.of(context).colorScheme.primary 
+                                : Theme.of(context).textTheme.bodyLarge?.color,
+                            fontWeight: index == _currentLyricIndex ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+    );
+  }
+
+
 
   // 顶部区域
   Widget _buildTopBar(Map<String, dynamic> song) {
@@ -381,9 +538,7 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
                     color: Theme.of(context).colorScheme.onSurface,
                     size: 28,
                   ),
-                  onPressed: () {
-                    // 暂不实现功能
-                  },
+                  onPressed: _switchToLyrics,
                 ),
               ],
             ),
