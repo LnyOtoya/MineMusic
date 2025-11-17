@@ -690,6 +690,56 @@ class SubsonicApi {
     }
   }
 
+  // 获取歌曲歌词
+  Future<Map<String, dynamic>?> getLyrics({
+    required String artist,
+    required String title,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/getLyrics');
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MyMusicPlayer',
+        'f': 'xml',
+        'artist': artist,  // 歌曲艺术家
+        'title': title,    // 歌曲标题
+      };
+      final urlWithParams = url.replace(queryParameters: params);
+      print('📜 请求歌词 URL: $urlWithParams');
+
+      final response = await http.get(urlWithParams);
+      print('📡 歌词响应状态: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(responseBody);
+        
+        // 解析歌词节点
+        final lyricsElement = document.findElements('subsonic-response')
+            .firstOrNull?.findElements('lyrics')
+            .firstOrNull;
+
+        if (lyricsElement != null) {
+          return {
+            'artist': lyricsElement.getAttribute('artist') ?? artist,
+            'title': lyricsElement.getAttribute('title') ?? title,
+            'text': lyricsElement.text.trim(),  // 歌词内容
+          };
+        }
+        return null;  // 未找到歌词
+      } else {
+        throw Exception('获取歌词失败: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('获取歌词出错: $e');
+      return null;
+    }
+  }
+
+
+
 
   // 获取封面图片URL
   String getCoverArtUrl(String coverArtId) {
