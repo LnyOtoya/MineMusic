@@ -212,8 +212,15 @@ class _MusicHomePageState extends State<MusicHomePage> {
           },
           scrollController: _scrollController,
         ),
-        SearchPage(api: widget.api, playerService: playerService),
-        LibraryPage(api: widget.api, playerService: playerService),
+        SearchPage(
+          api: widget.api, 
+          playerService: playerService, 
+        ),
+        LibraryPage(
+          api: widget.api, 
+          playerService: playerService, 
+          scrollController: _scrollController
+        ),
       ];
 
   @override
@@ -278,6 +285,9 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
   @override
   Widget build (BuildContext context) {
+    
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+
     return Scaffold(
       appBar: _isAppBarVisible ? 
       AppBar(
@@ -296,7 +306,11 @@ class _MusicHomePageState extends State<MusicHomePage> {
       // 关键修改：用SingleChildScrollView包裹页面内容并绑定控制器
       body: Stack(
         children: [
-          _pages[_selectedIndex],
+        Padding(
+          padding: EdgeInsets.only(top: _isAppBarVisible ? 0 : statusBarHeight),
+          child: _pages[_selectedIndex],
+        ),
+          // _pages[_selectedIndex],
           // SingleChildScrollView(
           //   controller: _scrollController,
           //   child: SizedBox(
