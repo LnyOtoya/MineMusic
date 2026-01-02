@@ -38,12 +38,46 @@ class _HomePageState extends State<HomePage> {
   // 储存随机专辑的future对象
   late Future<List<Map<String, dynamic>>> _randomAlbumsFuture;
 
+  // 储存最近播放的歌曲的future对象
+  late Future<List<Map<String, dynamic>>> _recentPlayedFuture;
+
+  // 记录当前歌曲ID，用于判断是否需要刷新
+  String? _currentSongId;
+
   @override
   void initState() {
     super.initState();
 
     // 初始化时加载专辑的数量(在initState中调用getRandomAlbums加载专辑)
     _randomAlbumsFuture = widget.api.getRandomAlbums(size: 9);
+
+    // 初始化时加载最近播放的歌曲
+    _recentPlayedFuture = widget.playerService.getRecentSongs(count: 5);
+
+    // 记录初始歌曲ID
+    _currentSongId = widget.playerService.currentSong?['id'];
+
+    // 监听播放器状态变化
+    widget.playerService.addListener(_onPlayerStateChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.playerService.removeListener(_onPlayerStateChanged);
+    super.dispose();
+  }
+
+  void _onPlayerStateChanged() {
+    // 只在歌曲真正改变时才刷新最近播放列表
+    final newSongId = widget.playerService.currentSong?['id'];
+    if (newSongId != _currentSongId) {
+      _currentSongId = newSongId;
+      if (mounted) {
+        setState(() {
+          _recentPlayedFuture = widget.playerService.getRecentSongs(count: 5);
+        });
+      }
+    }
   }
 
   //构建ui (核心方法)
@@ -242,61 +276,157 @@ class _HomePageState extends State<HomePage> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-          child: Row(
-            children: [
-              Text(
-                '最近常听',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('查看播放历史')));
-                },
-                child: Text(
-                  '查看全部',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-            ],
+          child: Text(
+            '最近常听',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
-        Container(
-          margin: const EdgeInsets.fromLTRB(20, 8, 20, 80),
-          height: 200,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.history_rounded,
-                  size: 48,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withOpacity(0.4),
+        FutureBuilder<List<Map<String, dynamic>>>(
+          future: _recentPlayedFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                margin: const EdgeInsets.fromLTRB(20, 8, 20, 80),
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  '暂无播放记录',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                child: const Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return Container(
+                margin: const EdgeInsets.fromLTRB(20, 8, 20, 80),
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '加载失败',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
+              );
+            }
+
+            final songs = snapshot.data ?? [];
+
+            if (songs.isEmpty) {
+              return Container(
+                margin: const EdgeInsets.fromLTRB(20, 8, 20, 80),
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.history_rounded,
+                        size: 48,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '暂无播放记录',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return Container(
+              margin: const EdgeInsets.fromLTRB(20, 8, 20, 80),
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: songs.length,
+                itemBuilder: (context, index) {
+                  final song = songs[index];
+                  return _buildRecentSongItem(song, songs);
+                },
+              ),
+            );
+          },
         ),
       ],
+    );
+  }
+
+  Widget _buildRecentSongItem(
+    Map<String, dynamic> song,
+    List<Map<String, dynamic>> playlist,
+  ) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: song['coverArt'] != null
+            ? CachedNetworkImage(
+                imageUrl: widget.api.getCoverArtUrl(song['coverArt']),
+                width: 56,
+                height: 56,
+                fit: BoxFit.cover,
+              )
+            : Container(
+                width: 56,
+                height: 56,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: Icon(
+                  Icons.music_note,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+      ),
+      title: Text(
+        song['title'] ?? '未知标题',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        song['artist'] ?? '未知艺术家',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      onTap: () => _playSong(song, playlist),
+    );
+  }
+
+  void _playSong(
+    Map<String, dynamic> song,
+    List<Map<String, dynamic>> playlist,
+  ) {
+    widget.playerService.playSong(
+      song,
+      sourceType: 'history',
+      playlist: playlist,
     );
   }
 

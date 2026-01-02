@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
 import 'subsonic_api.dart';
 import 'audio_handler.dart';
+import 'play_history_service.dart';
 
 class PlayerService extends ChangeNotifier {
   late MyAudioHandler _audioHandler;
   final SubsonicApi? _api;
+  final PlayHistoryService _historyService = PlayHistoryService();
 
   // 播放状态相关变量
   Map<String, dynamic>? _currentSong;
@@ -25,6 +27,7 @@ class PlayerService extends ChangeNotifier {
   int get currentIndex => _currentIndex;
   Duration get currentPosition => _currentPosition;
   Duration get totalDuration => _totalDuration;
+  PlayHistoryService get historyService => _historyService;
 
   PlayerService({SubsonicApi? api}) : _api = api {
     _initAudioService();
@@ -80,6 +83,7 @@ class PlayerService extends ChangeNotifier {
     List<Map<String, dynamic>>? playlist,
   }) async {
     _sourceType = sourceType;
+    await _historyService.addToHistory(song);
     await _audioHandler.playSong(song, playlist: playlist);
   }
 
@@ -128,6 +132,14 @@ class PlayerService extends ChangeNotifier {
     _currentPosition = Duration.zero;
     _totalDuration = Duration.zero;
     notifyListeners();
+  }
+
+  Future<List<Map<String, dynamic>>> getRecentSongs({int count = 10}) async {
+    return await _historyService.getRecentSongs(count: count);
+  }
+
+  Future<void> clearHistory() async {
+    await _historyService.clearHistory();
   }
 
   @override

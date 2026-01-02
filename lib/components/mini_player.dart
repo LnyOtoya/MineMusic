@@ -289,6 +289,8 @@ class _MiniPlayerState extends State<MiniPlayer>
         return '歌曲';
       case 'newest':
         return '最新专辑';
+      case 'history':
+        return '最近常听';
       default:
         return '播放中';
     }
