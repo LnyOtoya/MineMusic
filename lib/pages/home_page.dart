@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
+import 'random_songs_page.dart';
 
 //有状态组件statefulWidget,接受api实例和播放器服务
 class HomePage extends StatefulWidget {
@@ -53,161 +54,266 @@ class _HomePageState extends State<HomePage> {
         controller: widget.scrollController,
         padding: EdgeInsets.zero,
         children: [
-          // _buildMaterialYouTest(context),
+          const SizedBox(height: 16),
 
-          // 欢迎区域
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _getGreeting(),
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+          _buildWelcomeSection(),
+
+          const SizedBox(height: 16),
+
+          _buildQuickAccess(),
+
+          const SizedBox(height: 24),
+
+          _buildRandomSongs(),
+
+          const SizedBox(height: 24),
+
+          _buildRecentlyPlayed(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWelcomeSection() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _getGreeting(),
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '发现好音乐',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAccess() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildQuickAccessCard(
+            '推荐歌单',
+            Icons.playlist_play_rounded,
+            Theme.of(context).colorScheme.primaryContainer,
+            Theme.of(context).colorScheme.onPrimaryContainer,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('查看推荐歌单')),
+              );
+            },
+          ),
+          const SizedBox(width: 16),
+          _buildQuickAccessCard(
+            '随机歌曲',
+            Icons.shuffle_rounded,
+            Theme.of(context).colorScheme.secondaryContainer,
+            Theme.of(context).colorScheme.onSecondaryContainer,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RandomSongsPage(
+                    api: widget.api,
+                    playerService: widget.playerService,
                   ),
                 ),
-                const SizedBox(height: 8),
+              );
+            },
+          ),
+          const SizedBox(width: 16),
+          _buildQuickAccessCard(
+            '最近常听',
+            Icons.history_rounded,
+            Theme.of(context).colorScheme.tertiaryContainer,
+            Theme.of(context).colorScheme.onTertiaryContainer,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('查看最近常听')),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAccessCard(
+    String title,
+    IconData icon,
+    Color containerColor,
+    Color iconColor, {
+    VoidCallback? onTap,
+  }) {
+    return SizedBox(
+      width: 110,
+      height: 110,
+      child: Card(
+        elevation: 0,
+        color: containerColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 36,
+                color: iconColor,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: iconColor,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRandomSongs() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          child: Row(
+            children: [
+              Text(
+                '随机歌曲',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              IconButton.filled(
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: _refreshRandomSongs,
+                tooltip: '刷新推荐',
+                style: IconButton.styleFrom(
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _buildRandomSongsList(),
+      ],
+    );
+  }
+
+  Widget _buildRecentlyPlayed() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          child: Row(
+            children: [
+              Text(
+                '最近常听',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('查看播放历史')),
+                  );
+                },
+                child: Text(
+                  '查看全部',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.fromLTRB(20, 8, 20, 80),
+          height: 200,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.history_rounded,
+                  size: 48,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                ),
+                const SizedBox(height: 12),
                 Text(
-                  '发现新音乐',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  '暂无播放记录',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
-
-          // 快速访问区域
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
-            child: Text(
-              '快速访问',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
-
-          // 快速访问区域--横向滚动的功能卡片列表
-          //使用MD3的FilledCard实现更好的视觉效果
-          SizedBox(
-            height: 140,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              children: [
-                _buildFeatureCard(
-                  context,
-                  '按时间推荐',
-                  Icons.access_time_rounded,
-                  Theme.of(context).colorScheme.primaryContainer,
-                  width: 160,
-                  onTap: () {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('查看按时间推荐')));
-                  },
-                ),
-                const SizedBox(width: 12),
-                _buildFeatureCard(
-                  context,
-                  '每日推荐',
-                  Icons.calendar_today_rounded,
-                  Theme.of(context).colorScheme.secondaryContainer,
-                  width: 160,
-                  onTap: () {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('查看每日推荐')));
-                  },
-                ),
-                const SizedBox(width: 12),
-                _buildFeatureCard(
-                  context,
-                  '最近播放',
-                  Icons.history_rounded,
-                  Theme.of(context).colorScheme.tertiaryContainer,
-                  width: 160,
-                  onTap: _viewRecentPlays,
-                ),
-                const SizedBox(width: 12),
-                _buildFeatureCard(
-                  context,
-                  '最近添加',
-                  Icons.add_circle_rounded,
-                  Theme.of(context).colorScheme.primaryContainer,
-                  width: 160,
-                  onTap: () {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('查看最近添加')));
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // 推荐歌曲区域
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-            child: Row(
-              children: [
-                Text(
-                  '推荐歌曲',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                IconButton.filled(
-                  icon: const Icon(Icons.refresh_rounded),
-                  onPressed: _refreshRandomSongs,
-                  tooltip: '刷新推荐',
-                  style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // 随机歌曲列表
-          _buildRandomSongsList(),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  //随机歌曲列表
   Widget _buildRandomSongsList() {
     return FutureBuilder<List<Map<String, dynamic>>>(
-      // future: _randomSongsFuture,
       future: widget.randomSongsFuture,
       builder: (context, snapshot) {
-        // 加载中状态
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
-            constraints: const BoxConstraints(minHeight: 380),
-            margin: const EdgeInsets.fromLTRB(24, 8, 24, 80),
+            height: 200,
+            margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: const Center(child: CircularProgressIndicator()),
           );
         }
 
-        // 错误状态
         if (snapshot.hasError) {
           return Container(
-            constraints: const BoxConstraints(minHeight: 380),
-            margin: const EdgeInsets.fromLTRB(24, 8, 24, 80),
+            height: 200,
+            margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Center(
               child: Column(
@@ -220,12 +326,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 12),
                   Text('加载失败', style: Theme.of(context).textTheme.bodyLarge),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: _refreshRandomSongs,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('重试'),
-                  ),
                 ],
               ),
             ),
@@ -233,14 +333,13 @@ class _HomePageState extends State<HomePage> {
         }
 
         final songs = snapshot.data ?? [];
-        // 空状态
         if (songs.isEmpty) {
           return Container(
-            constraints: const BoxConstraints(minHeight: 380),
-            margin: const EdgeInsets.fromLTRB(24, 8, 24, 80),
+            height: 200,
+            margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Center(
               child: Column(
@@ -266,84 +365,83 @@ class _HomePageState extends State<HomePage> {
           );
         }
 
-        //成功状态：歌曲网格
         return Container(
-          margin: const EdgeInsets.fromLTRB(24, 8, 24, 80),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 20,
-              childAspectRatio: 0.78,
-            ),
+          height: 200,
+          margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
             itemCount: songs.length,
             itemBuilder: (context, index) {
               final song = songs[index];
-
-              return InkWell(
-                onTap: () => _playSong(song),
-                borderRadius: BorderRadius.circular(16),
-                splashColor: Theme.of(context).colorScheme.primaryContainer,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: 85,
-                        height: 85,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                        ),
-                        child: _buildSongCover(song),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        song['title'] ?? '未知标题',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        song['artist'] ?? '未知艺术家',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 10,
-                          height: 1.1,
-                        ),
-                      ),
-                    ),
-                  ],
+              return Padding(
+                padding: EdgeInsets.only(
+                  right: index == songs.length - 1 ? 0 : 12,
                 ),
+                child: _buildSongCard(song),
               );
             },
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSongCard(Map<String, dynamic> song) {
+    return InkWell(
+      onTap: () => _playSong(song),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 140,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+                child: _buildSongCover(song),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    song['title'] ?? '未知标题',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    song['artist'] ?? '未知艺术家',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -413,63 +511,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  //快速访问卡片定义
-  Widget _buildFeatureCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color, {
-    VoidCallback? onTap,
-    double? width,
-  }) {
-    final cardWidth = width ?? 120;
-
-    return SizedBox(
-      width: cardWidth,
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          splashColor: color.withOpacity(0.2),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 32,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-                const SizedBox(height: 8),
-                Flexible(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      fontSize: 13,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   // 获取问候语
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -522,13 +563,6 @@ class _HomePageState extends State<HomePage> {
         playlist: songs, // 传入完整推荐列表作为播放列表
       );
     });
-  }
-
-  // 查看最近播放
-  void _viewRecentPlays() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('查看最近播放')));
   }
 
   // 刷新推荐歌曲
