@@ -10,6 +10,7 @@ class DetailPage extends StatefulWidget {
   final PlayerService playerService;
   final Map<String, dynamic> item;
   final DetailType type;
+  final String? sourceType;
 
   const DetailPage({
     super.key,
@@ -17,6 +18,7 @@ class DetailPage extends StatefulWidget {
     required this.playerService,
     required this.item,
     required this.type,
+    this.sourceType,
   });
 
   @override
@@ -71,7 +73,7 @@ class _DetailPageState extends State<DetailPage> {
   ) {
     widget.playerService.playSong(
       song,
-      sourceType: widget.type.toString().split('.').last,
+      sourceType: widget.sourceType ?? widget.type.toString().split('.').last,
       playlist: playlist,
     );
   }

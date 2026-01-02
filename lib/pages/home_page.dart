@@ -3,6 +3,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import 'random_songs_page.dart';
+import 'newest_albums_page.dart';
+import 'similar_songs_page.dart';
+import 'detail_page.dart';
 
 //有状态组件statefulWidget,接受api实例和播放器服务
 class HomePage extends StatefulWidget {
@@ -32,15 +35,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // 储存随机歌曲的future对象
-  late Future<List<Map<String, dynamic>>> _randomSongsFuture;
+  // 储存随机专辑的future对象
+  late Future<List<Map<String, dynamic>>> _randomAlbumsFuture;
 
   @override
   void initState() {
     super.initState();
 
-    // 初始化时加载歌曲的数量(在initState中调用getRandomSongs加载歌曲)
-    _randomSongsFuture = widget.api.getRandomSongs(count: 9);
+    // 初始化时加载专辑的数量(在initState中调用getRandomAlbums加载专辑)
+    _randomAlbumsFuture = widget.api.getRandomAlbums(size: 9);
   }
 
   //构建ui (核心方法)
@@ -82,9 +85,9 @@ class _HomePageState extends State<HomePage> {
         children: [
           Text(
             _getGreeting(),
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
@@ -105,13 +108,19 @@ class _HomePageState extends State<HomePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildQuickAccessCard(
-            '推荐歌单',
-            Icons.playlist_play_rounded,
+            '最新专辑',
+            Icons.new_releases_rounded,
             Theme.of(context).colorScheme.primaryContainer,
             Theme.of(context).colorScheme.onPrimaryContainer,
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('查看推荐歌单')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NewestAlbumsPage(
+                    api: widget.api,
+                    playerService: widget.playerService,
+                  ),
+                ),
               );
             },
           ),
@@ -135,13 +144,19 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(width: 16),
           _buildQuickAccessCard(
-            '最近常听',
-            Icons.history_rounded,
+            '推荐歌曲',
+            Icons.recommend_rounded,
             Theme.of(context).colorScheme.tertiaryContainer,
             Theme.of(context).colorScheme.onTertiaryContainer,
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('查看最近常听')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SimilarSongsPage(
+                    api: widget.api,
+                    playerService: widget.playerService,
+                  ),
+                ),
               );
             },
           ),
@@ -163,20 +178,14 @@ class _HomePageState extends State<HomePage> {
       child: Card(
         elevation: 0,
         color: containerColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 36,
-                color: iconColor,
-              ),
+              Icon(icon, size: 36, color: iconColor),
               const SizedBox(height: 10),
               Text(
                 title,
@@ -203,15 +212,15 @@ class _HomePageState extends State<HomePage> {
           child: Row(
             children: [
               Text(
-                '随机歌曲',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                '随机专辑',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               IconButton.filled(
                 icon: const Icon(Icons.refresh_rounded),
-                onPressed: _refreshRandomSongs,
+                onPressed: _refreshRandomAlbums,
                 tooltip: '刷新推荐',
                 style: IconButton.styleFrom(
                   backgroundColor: Theme.of(
@@ -222,7 +231,7 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        _buildRandomSongsList(),
+        _buildRandomAlbumsList(),
       ],
     );
   }
@@ -237,16 +246,16 @@ class _HomePageState extends State<HomePage> {
             children: [
               Text(
                 '最近常听',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               TextButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('查看播放历史')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('查看播放历史')));
                 },
                 child: Text(
                   '查看全部',
@@ -291,9 +300,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildRandomSongsList() {
+  Widget _buildRandomAlbumsList() {
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: widget.randomSongsFuture,
+      future: _randomAlbumsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
@@ -332,8 +341,8 @@ class _HomePageState extends State<HomePage> {
           );
         }
 
-        final songs = snapshot.data ?? [];
-        if (songs.isEmpty) {
+        final albums = snapshot.data ?? [];
+        if (albums.isEmpty) {
           return Container(
             height: 200,
             margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -346,7 +355,7 @@ class _HomePageState extends State<HomePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.music_note_rounded,
+                    Icons.album_rounded,
                     size: 64,
                     color: Theme.of(
                       context,
@@ -354,7 +363,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '暂无推荐歌曲',
+                    '暂无推荐专辑',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -370,14 +379,14 @@ class _HomePageState extends State<HomePage> {
           margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: songs.length,
+            itemCount: albums.length,
             itemBuilder: (context, index) {
-              final song = songs[index];
+              final album = albums[index];
               return Padding(
                 padding: EdgeInsets.only(
-                  right: index == songs.length - 1 ? 0 : 12,
+                  right: index == albums.length - 1 ? 0 : 12,
                 ),
-                child: _buildSongCard(song),
+                child: _buildAlbumCard(album),
               );
             },
           ),
@@ -386,9 +395,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildSongCard(Map<String, dynamic> song) {
+  Widget _buildAlbumCard(Map<String, dynamic> album) {
     return InkWell(
-      onTap: () => _playSong(song),
+      onTap: () => _openAlbum(album),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: 140,
@@ -409,7 +418,7 @@ class _HomePageState extends State<HomePage> {
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 ),
-                child: _buildSongCover(song),
+                child: _buildAlbumCover(album),
               ),
             ),
             Padding(
@@ -418,7 +427,7 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    song['title'] ?? '未知标题',
+                    album['name'] ?? '未知专辑',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -428,7 +437,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    song['artist'] ?? '未知艺术家',
+                    album['artist'] ?? '未知艺术家',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -445,20 +454,20 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  //歌曲封面定义
-  Widget _buildSongCover(Map<String, dynamic> song) {
+  //专辑封面定义
+  Widget _buildAlbumCover(Map<String, dynamic> album) {
     final borderRadius = BorderRadius.circular(16);
 
-    if (song['coverArt'] != null) {
+    if (album['coverArt'] != null) {
       return ClipRRect(
         borderRadius: borderRadius,
         child: CachedNetworkImage(
-          imageUrl: widget.api.getCoverArtUrl(song['coverArt']),
+          imageUrl: widget.api.getCoverArtUrl(album['coverArt']),
           fit: BoxFit.cover,
           placeholder: (context, url) => Container(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Icon(
-              Icons.music_note_rounded,
+              Icons.album_rounded,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               size: 32,
             ),
@@ -466,33 +475,7 @@ class _HomePageState extends State<HomePage> {
           errorWidget: (context, url, error) => Container(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Icon(
-              Icons.music_note_rounded,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              size: 32,
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (song['albumId'] != null) {
-      return ClipRRect(
-        borderRadius: borderRadius,
-        child: CachedNetworkImage(
-          imageUrl: widget.api.getCoverArtUrl(song['albumId']),
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Icon(
-              Icons.music_note_rounded,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              size: 32,
-            ),
-          ),
-          errorWidget: (context, url, error) => Container(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Icon(
-              Icons.music_note_rounded,
+              Icons.album_rounded,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               size: 32,
             ),
@@ -504,7 +487,7 @@ class _HomePageState extends State<HomePage> {
     return Container(
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Icon(
-        Icons.music_note_rounded,
+        Icons.album_rounded,
         color: Theme.of(context).colorScheme.onSurfaceVariant,
         size: 32,
       ),
@@ -553,25 +536,28 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // 播放单首歌曲
-  void _playSong(Map<String, dynamic> song) {
-    // 获取当前推荐歌曲列表
-    widget.randomSongsFuture.then((songs) {
-      widget.playerService.playSong(
-        song,
-        sourceType: 'recommendation',
-        playlist: songs, // 传入完整推荐列表作为播放列表
+  // 打开专辑详情
+  void _openAlbum(Map<String, dynamic> album) {
+    if (album['id'] != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DetailPage(
+            api: widget.api,
+            playerService: widget.playerService,
+            item: album,
+            type: DetailType.album,
+            sourceType: 'random_album',
+          ),
+        ),
       );
-    });
+    }
   }
 
-  // 刷新推荐歌曲
-  void _refreshRandomSongs() {
-    // 调用父组件的刷新回调并等待结果，然后触发UI更新
-    widget.onRefreshRandomSongs().then((_) {
-      if (mounted) {
-        setState(() {}); // 强制重建UI以显示新数据
-      }
+  // 刷新随机专辑
+  void _refreshRandomAlbums() {
+    setState(() {
+      _randomAlbumsFuture = widget.api.getRandomAlbums(size: 9);
     });
   }
 
@@ -581,8 +567,5 @@ class _HomePageState extends State<HomePage> {
     if (mounted) {
       setState(() {});
     }
-    // setState(() {
-    //   _randomSongsFuture = widget.api.getRandomSongs(count: 9);
-    // });
   }
 }

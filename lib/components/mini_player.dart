@@ -268,31 +268,29 @@ class _MiniPlayerState extends State<MiniPlayer>
   }
 
   String _getSourceInfo(Map<String, dynamic> song) {
-    const artistMaxLength = 12;
-
-    String truncateArtist(String? artist) {
-      if (artist == null || artist.length <= artistMaxLength) {
-        return artist ?? '未知艺术家';
-      }
-      return '${artist.substring(0, artistMaxLength)}...';
-    }
-
     switch (widget.playerService.sourceType) {
       case 'album':
-        return '专辑 • ${song['album'] ?? '未知专辑'}';
+        return '专辑';
       case 'playlist':
-        return '歌单 • ${song['album'] ?? '未知歌单'}';
+        return '歌单';
       case 'artist':
-        return '艺人 • ${truncateArtist(song['artist'])}';
+        return '艺人';
       case 'random':
-        return '随机播放';
+        return '随机歌曲';
+      case 'random_album':
+        return '随机专辑';
       case 'search':
         return '搜索结果';
-      case 'recommendation':
-        return '推荐';
+      case 'similar':
+        return '相似歌曲';
+      case 'recommended':
+        return '推荐歌曲';
       case 'song':
+        return '歌曲';
+      case 'newest':
+        return '最新专辑';
       default:
-        return truncateArtist(song['artist']);
+        return '播放中';
     }
   }
 

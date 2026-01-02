@@ -684,6 +684,51 @@ class SubsonicApi {
     }
   }
 
+  // 获取随机专辑
+  Future<List<Map<String, dynamic>>> getRandomAlbums({int size = 20}) async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/getAlbumList2');
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MyMusicPlayer',
+        'f': 'xml',
+        'type': 'random', // 随机排序
+        'size': size.toString(),
+      };
+      final urlWithParams = url.replace(queryParameters: params);
+      print('🎲 请求随机专辑 URL: $urlWithParams');
+      final response = await http.get(urlWithParams);
+      print('📡 随机专辑响应状态: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(responseBody);
+        final albumElements = document.findAllElements('album');
+
+        List<Map<String, dynamic>> albums = [];
+        for (var element in albumElements) {
+          albums.add({
+            'id': element.getAttribute('id'),
+            'name': element.getAttribute('name'),
+            'artist': element.getAttribute('artist'),
+            'songCount': element.getAttribute('songCount'),
+            'coverArt': element.getAttribute('coverArt'),
+            'year': element.getAttribute('year'),
+          });
+        }
+        print('✅ 获取到 ${albums.length} 个随机专辑');
+        return albums;
+      } else {
+        throw Exception('HTTP 错误: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('获取随机专辑失败: $e');
+      return [];
+    }
+  }
+
   // 获取歌曲歌词
   Future<Map<String, dynamic>?> getLyrics({
     required String artist,
@@ -790,5 +835,190 @@ class SubsonicApi {
     if (name.contains('disco')) return 'graphic_eq';
 
     return 'music_note';
+  }
+
+  //获取相似歌曲
+  Future<List<Map<String, dynamic>>> getSimilarSongs({
+    required String id,
+    int count = 20,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/getSimilarSongs');
+
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MyMusicPlayer',
+        'f': 'xml',
+        'id': id,
+        'count': count.toString(),
+      };
+
+      final urlWithParams = url.replace(queryParameters: params);
+      print('🎵 请求相似歌曲 URL: $urlWithParams');
+
+      final response = await http.get(urlWithParams);
+      print('📡 相似歌曲响应状态: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(responseBody);
+        final songElements = document.findAllElements('song');
+
+        List<Map<String, dynamic>> songs = [];
+
+        for (var element in songElements) {
+          final title = element.getAttribute('title') ?? '未知标题';
+          final artist = element.getAttribute('artist') ?? '未知艺术家';
+          final album = element.getAttribute('album') ?? '未知专辑';
+
+          songs.add({
+            'id': element.getAttribute('id'),
+            'title': title,
+            'artist': artist,
+            'album': album,
+            'duration': element.getAttribute('duration'),
+            'coverArt': element.getAttribute('coverArt'),
+          });
+        }
+
+        print('✅ 获取到 ${songs.length} 首相似歌曲');
+        return songs;
+      } else {
+        throw Exception('HTTP 错误: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('获取相似歌曲失败: $e');
+      return [];
+    }
+  }
+
+  //通过艺术家名称获取歌曲
+  Future<List<Map<String, dynamic>>> getSongsByArtistName(
+    String artistName,
+  ) async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/search3');
+
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MyMusicPlayer',
+        'f': 'xml',
+        'query': artistName,
+        'songCount': '100',
+      };
+
+      final urlWithParams = url.replace(queryParameters: params);
+      print('🎵 搜索艺术家歌曲 URL: $urlWithParams');
+
+      final response = await http.get(urlWithParams);
+      print('📡 搜索响应状态: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(responseBody);
+        final songElements = document.findAllElements('song');
+
+        List<Map<String, dynamic>> songs = [];
+
+        for (var element in songElements) {
+          final artist = element.getAttribute('artist') ?? '未知艺术家';
+
+          if (artist == artistName) {
+            songs.add({
+              'id': element.getAttribute('id'),
+              'title': element.getAttribute('title') ?? '未知标题',
+              'artist': artist,
+              'album': element.getAttribute('album') ?? '未知专辑',
+              'duration': element.getAttribute('duration'),
+              'coverArt': element.getAttribute('coverArt'),
+              'year': element.getAttribute('year'),
+            });
+          }
+        }
+
+        print('✅ 获取到 ${songs.length} 首艺术家歌曲');
+        return songs;
+      } else {
+        throw Exception('HTTP 错误: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('获取艺术家歌曲失败: $e');
+      return [];
+    }
+  }
+
+  //获取指定年份范围内的歌曲
+  Future<List<Map<String, dynamic>>> getSongsByYearRange(
+    int startYear,
+    int endYear, {
+    int count = 20,
+    String? excludeArtist,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/search3');
+
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MyMusicPlayer',
+        'f': 'xml',
+        'query': '',
+        'songCount': (count * 2).toString(),
+      };
+
+      final urlWithParams = url.replace(queryParameters: params);
+      print('🎵 搜索年份范围歌曲 URL: $urlWithParams');
+      print('📅 年份范围: $startYear - $endYear');
+
+      final response = await http.get(urlWithParams);
+      print('📡 搜索响应状态: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(responseBody);
+        final songElements = document.findAllElements('song');
+
+        List<Map<String, dynamic>> songs = [];
+
+        for (var element in songElements) {
+          final yearStr = element.getAttribute('year');
+          final artist = element.getAttribute('artist') ?? '未知艺术家';
+
+          if (yearStr != null) {
+            try {
+              final year = int.parse(yearStr);
+              if (year >= startYear && year <= endYear) {
+                if (excludeArtist == null || artist != excludeArtist) {
+                  songs.add({
+                    'id': element.getAttribute('id'),
+                    'title': element.getAttribute('title') ?? '未知标题',
+                    'artist': artist,
+                    'album': element.getAttribute('album') ?? '未知专辑',
+                    'duration': element.getAttribute('duration'),
+                    'coverArt': element.getAttribute('coverArt'),
+                    'year': yearStr,
+                  });
+                }
+              }
+            } catch (e) {
+              continue;
+            }
+          }
+        }
+
+        print('✅ 获取到 ${songs.length} 首年份范围内歌曲');
+        return songs;
+      } else {
+        throw Exception('HTTP 错误: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('获取年份范围歌曲失败: $e');
+      return [];
+    }
   }
 }
