@@ -6,7 +6,7 @@ import 'subsonic_api.dart';
 class MyAudioHandler extends BaseAudioHandler {
   final AudioPlayer _player = AudioPlayer();
   final SubsonicApi _api;
-  
+
   // 播放状态相关
   List<MediaItem> _mediaItems = [];
   int _currentIndex = -1;
@@ -36,49 +36,51 @@ class MyAudioHandler extends BaseAudioHandler {
 
   // 更新播放状态 - 修复版本
   void _updatePlaybackState(PlayerState state) {
-    playbackState.add(PlaybackState(
-      controls: [
-        MediaControl.skipToPrevious,
-        if (state.playing) MediaControl.pause else MediaControl.play,
-        MediaControl.skipToNext,
-        // MediaControl.stop,
-      ],
-      systemActions: const {
-        MediaAction.seek,
-        MediaAction.seekForward,
-        MediaAction.seekBackward,
-      },
-      androidCompactActionIndices: const [0, 1, 2],
-      processingState: const {
-        ProcessingState.idle: AudioProcessingState.idle,
-        ProcessingState.loading: AudioProcessingState.loading,
-        ProcessingState.buffering: AudioProcessingState.buffering,
-        ProcessingState.ready: AudioProcessingState.ready,
-        ProcessingState.completed: AudioProcessingState.completed,
-      }[state.processingState]!,
-      playing: state.playing,
-      updatePosition: _player.position,
-      bufferedPosition: _player.bufferedPosition,
-      speed: _player.speed,
-      queueIndex: _player.currentIndex,
-    ));
+    playbackState.add(
+      PlaybackState(
+        controls: [
+          MediaControl.skipToPrevious,
+          if (state.playing) MediaControl.pause else MediaControl.play,
+          MediaControl.skipToNext,
+          // MediaControl.stop,
+        ],
+        systemActions: const {
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+        },
+        androidCompactActionIndices: const [0, 1, 2],
+        processingState: const {
+          ProcessingState.idle: AudioProcessingState.idle,
+          ProcessingState.loading: AudioProcessingState.loading,
+          ProcessingState.buffering: AudioProcessingState.buffering,
+          ProcessingState.ready: AudioProcessingState.ready,
+          ProcessingState.completed: AudioProcessingState.completed,
+        }[state.processingState]!,
+        playing: state.playing,
+        updatePosition: _player.position,
+        bufferedPosition: _player.bufferedPosition,
+        speed: _player.speed,
+        queueIndex: _player.currentIndex,
+      ),
+    );
   }
 
   // 更新播放位置
   void _updatePosition(Duration position) {
-    playbackState.add(playbackState.value.copyWith(
-      updatePosition: position,
-    ));
+    playbackState.add(playbackState.value.copyWith(updatePosition: position));
   }
 
   // 更新总时长
   void _updateDuration(Duration? duration) {
-    playbackState.add(playbackState.value.copyWith(
-      updatePosition: _player.position,
-      bufferedPosition: _player.bufferedPosition,
-      speed: _player.speed,
-      queueIndex: _player.currentIndex,
-    ));
+    playbackState.add(
+      playbackState.value.copyWith(
+        updatePosition: _player.position,
+        bufferedPosition: _player.bufferedPosition,
+        speed: _player.speed,
+        queueIndex: _player.currentIndex,
+      ),
+    );
   }
 
   // 更新当前索引
@@ -92,7 +94,7 @@ class MyAudioHandler extends BaseAudioHandler {
   // 更新播放序列状态
   void _updateSequenceState(SequenceState? sequenceState) {
     if (sequenceState == null || sequenceState.currentIndex == null) return;
-    
+
     _currentIndex = sequenceState.currentIndex!;
     final source = sequenceState.currentSource;
     if (source != null && source.tag != null) {
@@ -121,7 +123,6 @@ class MyAudioHandler extends BaseAudioHandler {
   @override
   Future<void> skipToNext() async {
     await _player.seekToNext();
-    // 关键修改：切换后自动播放
     if (!_player.playing) {
       await _player.play();
     }
@@ -130,12 +131,17 @@ class MyAudioHandler extends BaseAudioHandler {
   @override
   Future<void> skipToPrevious() async {
     await _player.seekToPrevious();
-    // 关键修改：切换后自动播放
     if (!_player.playing) {
       await _player.play();
     }
   }
 
+  Future<void> skipToIndex(int index) async {
+    await _player.seek(Duration.zero, index: index);
+    if (!_player.playing) {
+      await _player.play();
+    }
+  }
 
   // 播放指定歌曲
   Future<void> playSong(
@@ -144,7 +150,7 @@ class MyAudioHandler extends BaseAudioHandler {
   }) async {
     try {
       List<Map<String, dynamic>> songsToPlay;
-      
+
       if (playlist != null) {
         songsToPlay = playlist;
       } else {
@@ -153,13 +159,10 @@ class MyAudioHandler extends BaseAudioHandler {
 
       // 转换为 MediaItem 和 AudioSource
       _mediaItems = songsToPlay.map(_songToMediaItem).toList();
-      
+
       final audioSources = songsToPlay.map((song) {
         final playUrl = _api.getSongPlayUrl(song['id']!);
-        return AudioSource.uri(
-          Uri.parse(playUrl),
-          tag: _songToMediaItem(song),
-        );
+        return AudioSource.uri(Uri.parse(playUrl), tag: _songToMediaItem(song));
       }).toList();
 
       // 设置播放列表
@@ -183,10 +186,7 @@ class MyAudioHandler extends BaseAudioHandler {
     final mediaItems = songs.map(_songToMediaItem).toList();
     final audioSources = songs.map((song) {
       final playUrl = _api.getSongPlayUrl(song['id']!);
-      return AudioSource.uri(
-        Uri.parse(playUrl),
-        tag: _songToMediaItem(song),
-      );
+      return AudioSource.uri(Uri.parse(playUrl), tag: _songToMediaItem(song));
     }).toList();
 
     await _playlist.addAll(audioSources);

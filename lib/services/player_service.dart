@@ -21,6 +21,7 @@ class PlayerService extends ChangeNotifier {
   bool get isPlaying => _isPlaying;
   String get sourceType => _sourceType;
   List<Map<String, dynamic>> get currentPlaylist => _currentPlaylist;
+  List<Map<String, dynamic>> get playlist => _currentPlaylist;
   int get currentIndex => _currentIndex;
   Duration get currentPosition => _currentPosition;
   Duration get totalDuration => _totalDuration;
@@ -104,6 +105,10 @@ class PlayerService extends ChangeNotifier {
 
   Future<void> previousSong() async {
     await _audioHandler.skipToPrevious();
+  }
+
+  Future<void> playSongAt(int index) async {
+    await _audioHandler.skipToIndex(index);
   }
 
   Future<void> seekTo(Duration position) async {
