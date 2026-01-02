@@ -251,7 +251,7 @@ class _MiniPlayerState extends State<MiniPlayer>
 
   // 构建歌名显示
   Widget _buildSongTitle(String title) {
-    const maxLength = 8;
+    const maxLength = 7;
 
     String displayTitle = title.length > maxLength
         ? '${title.substring(0, maxLength)}...'
@@ -268,13 +268,22 @@ class _MiniPlayerState extends State<MiniPlayer>
   }
 
   String _getSourceInfo(Map<String, dynamic> song) {
+    const artistMaxLength = 12;
+
+    String truncateArtist(String? artist) {
+      if (artist == null || artist.length <= artistMaxLength) {
+        return artist ?? '未知艺术家';
+      }
+      return '${artist.substring(0, artistMaxLength)}...';
+    }
+
     switch (widget.playerService.sourceType) {
       case 'album':
         return '专辑 • ${song['album'] ?? '未知专辑'}';
       case 'playlist':
         return '歌单 • ${song['album'] ?? '未知歌单'}';
       case 'artist':
-        return '艺人 • ${song['artist'] ?? '未知艺人'}';
+        return '艺人 • ${truncateArtist(song['artist'])}';
       case 'random':
         return '随机播放';
       case 'search':
@@ -283,7 +292,7 @@ class _MiniPlayerState extends State<MiniPlayer>
         return '推荐';
       case 'song':
       default:
-        return song['artist'] ?? '未知艺术家';
+        return truncateArtist(song['artist']);
     }
   }
 
