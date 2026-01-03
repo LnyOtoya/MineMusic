@@ -60,11 +60,22 @@ jobs:
         storeFile=keystore.jks
         EOF
         
-    # 8. 构建签名的 APK
-    - name: Build signed APK
+    # 8. 构建签名的 APK - 完整包（包含所有架构）
+    - name: Build signed APK - Universal
       run: flutter build apk --release
-      
-    # 10. 创建 GitHub Release
+
+    # 9. 构建签名的 APK - 分架构包
+    - name: Build signed APK - Split per ABI
+      run: flutter build apk --release --split-per-abi
+
+    # 10. 重命名 APK 文件
+    - name: Rename APK files
+      run: |
+        mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/MineMusic-universal.apk
+        mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk build/app/outputs/flutter-apk/MineMusic-armeabi-v7a.apk
+        mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/MineMusic-arm64-v8a.apk
+
+    # 11. 创建 GitHub Release
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
@@ -80,7 +91,14 @@ jobs:
           - **Flutter**: ${{ env.FLUTTER_VERSION }}
           
           ### 📦 下载文件
-          - **APK**: 直接安装到 Android 设备
+          - **MineMusic-universal.apk**: 完整包（包含所有架构，体积较大）
+          - **MineMusic-arm64-v8a.apk**: ARM64 架构（推荐，适用于大多数现代设备）
+          - **MineMusic-armeabi-v7a.apk**: ARMv7 架构（适用于旧设备）
+          
+          ### 📱 架构说明
+          - **Universal**: 包含所有架构，兼容性最好，但体积最大
+          - **arm64-v8a**: 64位 ARM 架构，适用于 2016 年后的大多数 Android 设备
+          - **armeabi-v7a**: 32位 ARM 架构，适用于较旧的 Android 设备
           
           ### 🎶 功能特性
           - 支持 Subsonic API (Navidrome)
@@ -90,7 +108,7 @@ jobs:
           - 搜索和浏览功能
           
           ### 📲 安装说明
-          1. 下载 `app-release.apk` 文件
+          1. 下载 `MineMusic-universal.apk` 文件
           2. 在 Android 设置中允许"安装未知来源应用"
           3. 点击 APK 文件安装
           4. 打开应用并连接到你的 Navidrome 服务器
@@ -99,6 +117,8 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          build/app/outputs/flutter-apk/app-release.apk
+          build/app/outputs/flutter-apk/MineMusic-universal.apk
+          build/app/outputs/flutter-apk/MineMusic-arm64-v8a.apk
+          build/app/outputs/flutter-apk/MineMusic-armeabi-v7a.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
