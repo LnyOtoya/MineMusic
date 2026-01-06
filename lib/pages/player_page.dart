@@ -2,24 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
+import '../services/lyrics_api.dart';
 import '../models/lyrics.dart';
-
 
 class PlayerPage extends StatefulWidget {
   final PlayerService playerService;
   final SubsonicApi api;
 
-  const PlayerPage({
-    super.key,
-    required this.playerService,
-    required this.api,
-  });
+  const PlayerPage({super.key, required this.playerService, required this.api});
 
   @override
   State<PlayerPage> createState() => _PlayerPageState();
 }
 
-class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateMixin {
+class _PlayerPageState extends State<PlayerPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _albumRotation;
   bool _isPlaying = false;
@@ -31,6 +28,8 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
   int _currentLyricIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
   int _currentPage = 0;
+
+  final LyricsApi _lyricsApi = LyricsApi();
 
   @override
   void initState() {
@@ -72,20 +71,47 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
     if (song == null) return;
 
     setState(() => _isLoadingLyrics = true);
-    
+
     try {
+      final title = song['title'] ?? '';
+      final artist = song['artist'] ?? '';
+
+      print('🎵 开始加载歌词: $title - $artist');
+
+      // 优先使用第三方API获取带时间轴的歌词
+      final lrcLyrics = await _lyricsApi.getLyricsByKeyword(title, artist);
+
+      if (lrcLyrics.isNotEmpty) {
+        print('✅ 从第三方API获取到歌词');
+        setState(() {
+          _lyrics = parseLyrics(lrcLyrics);
+        });
+        return;
+      }
+
+      // 如果第三方API没有找到，尝试从Navidrome获取
+      print('⚠️ 第三方API未找到歌词，尝试从Navidrome获取');
       final lyricData = await widget.api.getLyrics(
-        artist: song['artist'] ?? '',
-        title: song['title'] ?? '',
+        artist: artist,
+        title: title,
       );
-      
+
       if (lyricData != null && lyricData['text'].isNotEmpty) {
+        print('✅ 从Navidrome获取到歌词');
         setState(() {
           _lyrics = parseLyrics(lyricData['text']);
         });
+      } else {
+        print('⚠️ 未找到歌词');
+        setState(() {
+          _lyrics = [];
+        });
       }
     } catch (e) {
-      print('加载歌词失败: $e');
+      print('❌ 加载歌词失败: $e');
+      setState(() {
+        _lyrics = [];
+      });
     } finally {
       setState(() => _isLoadingLyrics = false);
     }
@@ -94,10 +120,10 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
   // 更新歌词位置
   void _updateLyricPosition() {
     if (_lyrics.isEmpty) return;
-    
+
     final position = widget.playerService.currentPosition;
     for (int i = 0; i < _lyrics.length; i++) {
-      if (position >= _lyrics[i].time && 
+      if (position >= _lyrics[i].time &&
           (i == _lyrics.length - 1 || position < _lyrics[i + 1].time)) {
         if (_currentLyricIndex != i) {
           setState(() => _currentLyricIndex = i);
@@ -115,12 +141,6 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
       curve: Curves.easeInOut,
     );
   }
-
-
-
-
-
-
 
   // 更新播放器状态
   void _updatePlayerState() {
@@ -182,12 +202,12 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
   //         children: [
   //           // 顶部区域
   //           _buildTopBar(song),
-            
+
   //           // 中间封面区域
   //           Expanded(
   //             child: _buildAlbumCover(song),
   //           ),
-            
+
   //           // 底部控制区域
   //           _buildControlPanel(song),
   //         ],
@@ -200,9 +220,7 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final song = widget.playerService.currentSong;
     if (song == null) {
-      return const Scaffold(
-        body: Center(child: Text('没有正在播放的歌曲')),
-      );
+      return const Scaffold(body: Center(child: Text('没有正在播放的歌曲')));
     }
 
     return Scaffold(
@@ -218,12 +236,10 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
               children: [
                 // 顶部区域
                 _buildTopBar(song),
-                
+
                 // 中间封面区域
-                Expanded(
-                  child: _buildAlbumCover(song),
-                ),
-                
+                Expanded(child: _buildAlbumCover(song)),
+
                 // 底部控制区域
                 _buildControlPanel(song),
               ],
@@ -243,43 +259,44 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
         title: Text('歌词'),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
-          onPressed: () => _pageController.animateToPage(0, 
-            duration: Duration(milliseconds: 300), 
-            curve: Curves.easeInOut
+          onPressed: () => _pageController.animateToPage(
+            0,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
           ),
         ),
       ),
       body: _isLoadingLyrics
           ? Center(child: CircularProgressIndicator())
           : _lyrics.isEmpty
-              ? Center(child: Text('未找到歌词'))
-              : ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                  itemCount: _lyrics.length,
-                  itemBuilder: (context, index) {
-                    final lyric = _lyrics[index];
-                    return Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Center(
-                        child: Text(
-                          lyric.text,
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: index == _currentLyricIndex 
-                                ? Theme.of(context).colorScheme.primary 
-                                : Theme.of(context).textTheme.bodyLarge?.color,
-                            fontWeight: index == _currentLyricIndex ? FontWeight.bold : FontWeight.normal,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+          ? Center(child: Text('未找到歌词'))
+          : ListView.builder(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              itemCount: _lyrics.length,
+              itemBuilder: (context, index) {
+                final lyric = _lyrics[index];
+                return Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Center(
+                    child: Text(
+                      lyric.text,
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: index == _currentLyricIndex
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).textTheme.bodyLarge?.color,
+                        fontWeight: index == _currentLyricIndex
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
-                    );
-                  },
-                ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
-
-
 
   // 顶部区域
   Widget _buildTopBar(Map<String, dynamic> song) {
@@ -297,7 +314,7 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
             ),
             onPressed: () => Navigator.pop(context),
           ),
-          
+
           // 来源和歌名
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -319,7 +336,7 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
               // ),
             ],
           ),
-          
+
           // 更多操作
           IconButton(
             icon: Icon(
@@ -427,7 +444,7 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
                   ),
                 ),
               ),
-              
+
               // 进度条
               Column(
                 children: [
@@ -437,9 +454,13 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
                     max: _totalDuration.inMilliseconds.toDouble(),
                     min: 0,
                     activeColor: Theme.of(context).colorScheme.primary,
-                    inactiveColor: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                    inactiveColor: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withOpacity(0.3),
                     onChanged: (value) {
-                      widget.playerService.seekTo(Duration(milliseconds: value.toInt()));
+                      widget.playerService.seekTo(
+                        Duration(milliseconds: value.toInt()),
+                      );
                     },
                   ),
                   Padding(
@@ -449,15 +470,21 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
                       children: [
                         Text(
                           _formatDuration(_currentPosition),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                         Text(
                           _formatDuration(_totalDuration),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ),
@@ -466,7 +493,7 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
               ),
             ],
           ),
-          
+
           // 控制按钮
           Padding(
             padding: const EdgeInsets.only(top: 32),
@@ -480,12 +507,8 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
                     color: Theme.of(context).colorScheme.onSurface,
                     size: 36,
                   ),
-                  onPressed: () {
-
-                  },
+                  onPressed: () {},
                 ),
-
-
 
                 // 上一曲
                 IconButton(
@@ -496,7 +519,7 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
                   ),
                   onPressed: () => widget.playerService.previousSong(),
                 ),
-                
+
                 // 播放/暂停
                 Container(
                   width: 64,
@@ -506,7 +529,9 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.2),
                         blurRadius: 10,
                       ),
                     ],
@@ -520,7 +545,7 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
                     onPressed: () => widget.playerService.togglePlayPause(),
                   ),
                 ),
-                
+
                 // 下一曲
                 IconButton(
                   icon: Icon(
@@ -530,7 +555,7 @@ class _PlayerPageState extends State<PlayerPage> with SingleTickerProviderStateM
                   ),
                   onPressed: () => widget.playerService.nextSong(),
                 ),
-                
+
                 // 歌词按钮
                 IconButton(
                   icon: Icon(
