@@ -179,14 +179,9 @@ class _MusicHomePageState extends State<MusicHomePage> {
   late final PlayerService playerService;
   late Future<List<Map<String, dynamic>>> _randomSongsFuture;
 
-  final ScrollController _scrollController = ScrollController();
-  bool _isAppBarVisible = true;
-  double _lastScrollPosition = 0;
-
-  // 关键修改：将_pages从固定列表改为动态生成的getter
   List<Widget> get _pages => [
     HomePage(
-      key: ValueKey(_randomSongsFuture), // 每次future变化，Key也会变化
+      key: ValueKey(_randomSongsFuture),
       api: widget.api,
       playerService: playerService,
       randomSongsFuture: _randomSongsFuture,
@@ -196,13 +191,8 @@ class _MusicHomePageState extends State<MusicHomePage> {
         });
         return _randomSongsFuture;
       },
-      scrollController: _scrollController,
     ),
-    LibraryPage(
-      api: widget.api,
-      playerService: playerService,
-      scrollController: _scrollController,
-    ),
+    LibraryPage(api: widget.api, playerService: playerService),
   ];
 
   @override
@@ -210,35 +200,6 @@ class _MusicHomePageState extends State<MusicHomePage> {
     super.initState();
     playerService = PlayerService(api: widget.api);
     _randomSongsFuture = widget.api.getRandomSongs(count: 9);
-    // 移除initState中的_pages初始化，改为通过getter动态生成
-
-    _scrollController.addListener(_handleScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose(); // 释放资源
-    super.dispose();
-  }
-
-  // 处理滚动逻辑
-  void _handleScroll() {
-    final currentPosition = _scrollController.position.pixels;
-
-    // 向上滚动且超过一定距离时隐藏AppBar
-    if (currentPosition > _lastScrollPosition && currentPosition > 100) {
-      if (_isAppBarVisible) {
-        setState(() => _isAppBarVisible = false);
-      }
-    }
-    // 向下滚动时显示AppBar
-    else if (currentPosition < _lastScrollPosition - 20) {
-      if (!_isAppBarVisible) {
-        setState(() => _isAppBarVisible = true);
-      }
-    }
-
-    _lastScrollPosition = currentPosition;
   }
 
   void _onItemTapped(int index) {
@@ -247,58 +208,12 @@ class _MusicHomePageState extends State<MusicHomePage> {
     });
   }
 
-  Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('baseUrl');
-    await prefs.remove('username');
-    await prefs.remove('password');
-
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const InitializerPage()),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final statusBarHeight = MediaQuery.of(context).padding.top;
-
     return Scaffold(
-      appBar: _isAppBarVisible
-          ? AppBar(
-              title: const Text('MineMusic'),
-              backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: _logout,
-                  tooltip: '退出登录',
-                ),
-              ],
-            )
-          : null,
-
-      // 关键修改：用SingleChildScrollView包裹页面内容并绑定控制器
       body: Stack(
         children: [
-          Padding(
-            padding: EdgeInsets.only(
-              top: _isAppBarVisible ? 0 : statusBarHeight,
-            ),
-            child: _pages[_selectedIndex],
-          ),
-
-          // _pages[_selectedIndex],
-          // SingleChildScrollView(
-          //   controller: _scrollController,
-          //   child: SizedBox(
-          //     // 确保滚动区域高度足够
-          //     height: MediaQuery.of(context).size.height,
-          //     child: _pages[_selectedIndex],
-          //   ),
-          // ),
+          _pages[_selectedIndex],
           Positioned(
             left: 0,
             right: 0,

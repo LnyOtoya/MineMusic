@@ -8,13 +8,11 @@ import 'artist_detail_page.dart';
 class LibraryPage extends StatefulWidget {
   final SubsonicApi api;
   final PlayerService playerService;
-  final ScrollController scrollController;
 
   const LibraryPage({
     super.key,
     required this.api,
     required this.playerService,
-    required this.scrollController,
   });
 
   @override
@@ -89,35 +87,18 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _buildCurrentTab() {
     switch (_selectedTab) {
       case 0:
-        return SongsTab(
-          api: widget.api,
-          playerService: widget.playerService,
-          scrollController: widget.scrollController,
-        );
+        return SongsTab(api: widget.api, playerService: widget.playerService);
       case 1:
-        return AlbumsTab(
-          api: widget.api,
-          playerService: widget.playerService,
-          scrollController: widget.scrollController,
-        );
+        return AlbumsTab(api: widget.api, playerService: widget.playerService);
       case 2:
-        return ArtistsTab(
-          api: widget.api,
-          playerService: widget.playerService,
-          scrollController: widget.scrollController,
-        );
+        return ArtistsTab(api: widget.api, playerService: widget.playerService);
       case 3:
         return PlaylistsTab(
           api: widget.api,
           playerService: widget.playerService,
-          scrollController: widget.scrollController,
         );
       default:
-        return SongsTab(
-          api: widget.api,
-          playerService: widget.playerService,
-          scrollController: widget.scrollController,
-        );
+        return SongsTab(api: widget.api, playerService: widget.playerService);
     }
   }
 }
@@ -126,14 +107,8 @@ class _LibraryPageState extends State<LibraryPage> {
 class SongsTab extends StatefulWidget {
   final SubsonicApi api;
   final PlayerService playerService;
-  final ScrollController scrollController;
 
-  const SongsTab({
-    super.key,
-    required this.api,
-    required this.playerService,
-    required this.scrollController,
-  });
+  const SongsTab({super.key, required this.api, required this.playerService});
 
   @override
   State<SongsTab> createState() => _SongsTabState();
@@ -203,7 +178,6 @@ class _SongsTabState extends State<SongsTab> {
         });
 
         return ListView.builder(
-          controller: widget.scrollController,
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 80),
           itemCount: songs.length,
           itemBuilder: (context, index) {
@@ -344,14 +318,8 @@ class _SongsTabState extends State<SongsTab> {
 class AlbumsTab extends StatefulWidget {
   final SubsonicApi api;
   final PlayerService playerService;
-  final ScrollController scrollController;
 
-  const AlbumsTab({
-    super.key,
-    required this.api,
-    required this.playerService,
-    required this.scrollController,
-  });
+  const AlbumsTab({super.key, required this.api, required this.playerService});
 
   @override
   State<AlbumsTab> createState() => _AlbumsTabState();
@@ -431,7 +399,6 @@ class _AlbumsTabState extends State<AlbumsTab> {
               children: [
                 Expanded(
                   child: GridView.builder(
-                    controller: widget.scrollController,
                     padding: const EdgeInsets.fromLTRB(24, 8, 24, 80),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
@@ -570,14 +537,8 @@ class _AlbumsTabState extends State<AlbumsTab> {
 class ArtistsTab extends StatefulWidget {
   final SubsonicApi api;
   final PlayerService playerService;
-  final ScrollController scrollController;
 
-  const ArtistsTab({
-    super.key,
-    required this.api,
-    required this.playerService,
-    required this.scrollController,
-  });
+  const ArtistsTab({super.key, required this.api, required this.playerService});
 
   @override
   State<ArtistsTab> createState() => _ArtistsTabState();
@@ -673,7 +634,6 @@ class _ArtistsTabState extends State<ArtistsTab> {
         });
 
         return ListView.builder(
-          controller: widget.scrollController,
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 80),
           itemCount: artists.length,
           itemBuilder: (context, index) {
@@ -791,13 +751,11 @@ class _ArtistsTabState extends State<ArtistsTab> {
 class PlaylistsTab extends StatefulWidget {
   final SubsonicApi api;
   final PlayerService playerService;
-  final ScrollController scrollController;
 
   const PlaylistsTab({
     super.key,
     required this.api,
     required this.playerService,
-    required this.scrollController,
   });
 
   @override
@@ -886,7 +844,6 @@ class _PlaylistsTabState extends State<PlaylistsTab> {
         });
 
         return ListView.builder(
-          controller: widget.scrollController,
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 80),
           itemCount: playlists.length,
           itemBuilder: (context, index) {

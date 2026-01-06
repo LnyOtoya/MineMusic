@@ -9,17 +9,13 @@ import 'detail_page.dart';
 
 //有状态组件statefulWidget,接受api实例和播放器服务
 class HomePage extends StatefulWidget {
-  //网络请求
   final SubsonicApi api;
 
-  //播放控制
   final PlayerService playerService;
 
   final Future<List<Map<String, dynamic>>> randomSongsFuture;
 
   final Future<List<Map<String, dynamic>>> Function() onRefreshRandomSongs;
-
-  final ScrollController? scrollController;
 
   const HomePage({
     super.key,
@@ -27,7 +23,6 @@ class HomePage extends StatefulWidget {
     required this.playerService,
     required this.randomSongsFuture,
     required this.onRefreshRandomSongs,
-    this.scrollController,
   });
 
   @override
@@ -88,7 +83,6 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       onRefresh: _refreshData,
       child: ListView(
-        controller: widget.scrollController,
         padding: EdgeInsets.zero,
         children: [
           const SizedBox(height: 16),
