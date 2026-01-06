@@ -6,6 +6,7 @@ import 'random_songs_page.dart';
 import 'newest_albums_page.dart';
 import 'similar_songs_page.dart';
 import 'detail_page.dart';
+import 'settings_page.dart';
 
 //有状态组件statefulWidget,接受api实例和播放器服务
 class HomePage extends StatefulWidget {
@@ -29,7 +30,8 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with AutomaticKeepAliveClientMixin {
   // 储存随机专辑的future对象
   late Future<List<Map<String, dynamic>>> _randomAlbumsFuture;
 
@@ -39,21 +41,32 @@ class _HomePageState extends State<HomePage> {
   // 记录当前歌曲ID，用于判断是否需要刷新
   String? _currentSongId;
 
+  // 标记是否已经初始化过数据
+  bool _isInitialized = false;
+
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
 
-    // 初始化时加载专辑的数量(在initState中调用getRandomAlbums加载专辑)
-    _randomAlbumsFuture = widget.api.getRandomAlbums(size: 9);
+    // 只在第一次初始化时加载数据
+    if (!_isInitialized) {
+      // 初始化时加载专辑的数量(在initState中调用getRandomAlbums加载专辑)
+      _randomAlbumsFuture = widget.api.getRandomAlbums(size: 9);
 
-    // 初始化时加载最近播放的歌曲
-    _recentPlayedFuture = widget.playerService.getRecentSongs(count: 5);
+      // 初始化时加载最近播放的歌曲
+      _recentPlayedFuture = widget.playerService.getRecentSongs(count: 5);
 
-    // 记录初始歌曲ID
-    _currentSongId = widget.playerService.currentSong?['id'];
+      // 记录初始歌曲ID
+      _currentSongId = widget.playerService.currentSong?['id'];
 
-    // 监听播放器状态变化
-    widget.playerService.addListener(_onPlayerStateChanged);
+      // 监听播放器状态变化
+      widget.playerService.addListener(_onPlayerStateChanged);
+
+      _isInitialized = true;
+    }
   }
 
   @override
@@ -78,6 +91,7 @@ class _HomePageState extends State<HomePage> {
   //构建ui (核心方法)
   @override
   Widget build(BuildContext context) {
+    super.build(context); // 必须调用，用于 AutomaticKeepAliveClientMixin
     return RefreshIndicator(
       color: Theme.of(context).colorScheme.primary,
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -85,12 +99,11 @@ class _HomePageState extends State<HomePage> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 40),
 
           _buildWelcomeSection(),
 
-          const SizedBox(height: 16),
-
+          const SizedBox(height: 12),
           _buildQuickAccess(),
 
           const SizedBox(height: 24),
@@ -111,17 +124,82 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _getGreeting(),
-            style: Theme.of(
-              context,
-            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getGreeting(),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '发现好音乐',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Material(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(28),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(28),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SettingsPage(
+                          api: widget.api,
+                          playerService: widget.playerService,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.secondary,
+                        ],
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.person_rounded,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      size: 32,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            '发现好音乐',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          const SizedBox(height: 16),
+          SearchBar(
+            hintText: '搜索歌曲、专辑、艺人...',
+            hintStyle: WidgetStatePropertyAll(
+              TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+            leading: const Icon(Icons.search_rounded),
+            backgroundColor: WidgetStatePropertyAll(
+              Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
+            elevation: WidgetStatePropertyAll(0),
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            ),
+            padding: WidgetStatePropertyAll(
+              const EdgeInsets.symmetric(horizontal: 16),
             ),
           ),
         ],
@@ -269,20 +347,22 @@ class _HomePageState extends State<HomePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
           child: Text(
             '最近常听',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              height: 1,
+            ),
           ),
         ),
+        const SizedBox(height: 0),
         FutureBuilder<List<Map<String, dynamic>>>(
           future: _recentPlayedFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Container(
-                margin: const EdgeInsets.fromLTRB(20, 8, 20, 80),
+                margin: const EdgeInsets.fromLTRB(20, 0, 20, 80),
                 height: 200,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -294,7 +374,7 @@ class _HomePageState extends State<HomePage> {
 
             if (snapshot.hasError) {
               return Container(
-                margin: const EdgeInsets.fromLTRB(20, 8, 20, 80),
+                margin: const EdgeInsets.fromLTRB(20, 0, 20, 80),
                 height: 200,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -326,7 +406,7 @@ class _HomePageState extends State<HomePage> {
 
             if (songs.isEmpty) {
               return Container(
-                margin: const EdgeInsets.fromLTRB(20, 8, 20, 80),
+                margin: const EdgeInsets.fromLTRB(20, 0, 20, 80),
                 height: 200,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -357,7 +437,7 @@ class _HomePageState extends State<HomePage> {
             }
 
             return Container(
-              margin: const EdgeInsets.fromLTRB(20, 8, 20, 80),
+              margin: const EdgeInsets.fromLTRB(20, 4, 20, 80),
               child: ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),

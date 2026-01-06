@@ -27,7 +27,7 @@ class _LibraryPageState extends State<LibraryPage> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          padding: const EdgeInsets.fromLTRB(24, 40, 24, 8),
           child: SizedBox(width: double.infinity, child: _buildTabBar()),
         ),
 

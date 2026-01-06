@@ -178,28 +178,28 @@ class _MusicHomePageState extends State<MusicHomePage> {
   int _selectedIndex = 0;
   late final PlayerService playerService;
   late Future<List<Map<String, dynamic>>> _randomSongsFuture;
-
-  List<Widget> get _pages => [
-    HomePage(
-      key: ValueKey(_randomSongsFuture),
-      api: widget.api,
-      playerService: playerService,
-      randomSongsFuture: _randomSongsFuture,
-      onRefreshRandomSongs: () {
-        setState(() {
-          _randomSongsFuture = widget.api.getRandomSongs(count: 9);
-        });
-        return _randomSongsFuture;
-      },
-    ),
-    LibraryPage(api: widget.api, playerService: playerService),
-  ];
+  late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     playerService = PlayerService(api: widget.api);
     _randomSongsFuture = widget.api.getRandomSongs(count: 9);
+
+    _pages = [
+      HomePage(
+        api: widget.api,
+        playerService: playerService,
+        randomSongsFuture: _randomSongsFuture,
+        onRefreshRandomSongs: () {
+          setState(() {
+            _randomSongsFuture = widget.api.getRandomSongs(count: 9);
+          });
+          return _randomSongsFuture;
+        },
+      ),
+      LibraryPage(api: widget.api, playerService: playerService),
+    ];
   }
 
   void _onItemTapped(int index) {
@@ -213,7 +213,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
     return Scaffold(
       body: Stack(
         children: [
-          _pages[_selectedIndex],
+          IndexedStack(index: _selectedIndex, children: _pages),
           Positioned(
             left: 0,
             right: 0,
