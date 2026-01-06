@@ -44,12 +44,25 @@ class _HomePageState extends State<HomePage>
   // 标记是否已经初始化过数据
   bool _isInitialized = false;
 
+  // 搜索框是否被聚焦
+  bool _isSearchFocused = false;
+
+  // 搜索框焦点控制器
+  final FocusNode _searchFocusNode = FocusNode();
+
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+
+    // 监听搜索框焦点变化
+    _searchFocusNode.addListener(() {
+      setState(() {
+        _isSearchFocused = _searchFocusNode.hasFocus;
+      });
+    });
 
     // 只在第一次初始化时加载数据
     if (!_isInitialized) {
@@ -72,6 +85,7 @@ class _HomePageState extends State<HomePage>
   @override
   void dispose() {
     widget.playerService.removeListener(_onPlayerStateChanged);
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -96,24 +110,32 @@ class _HomePageState extends State<HomePage>
       color: Theme.of(context).colorScheme.primary,
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       onRefresh: _refreshData,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const SizedBox(height: 40),
+      child: GestureDetector(
+        onTap: () {
+          if (_searchFocusNode.hasFocus) {
+            _searchFocusNode.unfocus();
+          }
+        },
+        behavior: HitTestBehavior.translucent,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const SizedBox(height: 40),
 
-          _buildWelcomeSection(),
+            _buildWelcomeSection(),
 
-          const SizedBox(height: 12),
-          _buildQuickAccess(),
+            const SizedBox(height: 12),
+            _buildQuickAccess(),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          _buildRandomSongs(),
+            _buildRandomSongs(),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          _buildRecentlyPlayed(),
-        ],
+            _buildRecentlyPlayed(),
+          ],
+        ),
       ),
     );
   }
@@ -133,73 +155,128 @@ class _HomePageState extends State<HomePage>
                     Text(
                       _getGreeting(),
                       style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '发现好音乐',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        letterSpacing: 0.2,
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 16),
-              Material(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(28),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(28),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SettingsPage(
-                          api: widget.api,
-                          playerService: widget.playerService,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    width: 56,
-                    height: 56,
+              Stack(
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
+                      shape: BoxShape.circle,
                       gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                         colors: [
                           Theme.of(context).colorScheme.primary,
                           Theme.of(context).colorScheme.secondary,
                         ],
                       ),
-                    ),
-                    child: Icon(
-                      Icons.person_rounded,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      size: 32,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                  Positioned.fill(
+                    child: Material(
+                      color: Colors.transparent,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(32),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SettingsPage(
+                                api: widget.api,
+                                playerService: widget.playerService,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Icon(
+                          Icons.person_rounded,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          size: 36,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          SearchBar(
-            hintText: '搜索歌曲、专辑、艺人...',
-            hintStyle: WidgetStatePropertyAll(
-              TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(height: 20),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: _isSearchFocused
+                  ? [
+                      BoxShadow(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.shadow.withOpacity(0.15),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : [],
             ),
-            leading: const Icon(Icons.search_rounded),
-            backgroundColor: WidgetStatePropertyAll(
-              Theme.of(context).colorScheme.surfaceContainerHighest,
-            ),
-            elevation: WidgetStatePropertyAll(0),
-            shape: WidgetStatePropertyAll(
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-            ),
-            padding: WidgetStatePropertyAll(
-              const EdgeInsets.symmetric(horizontal: 16),
+            child: SearchBar(
+              focusNode: _searchFocusNode,
+              onTap: () {
+                setState(() {
+                  _isSearchFocused = true;
+                });
+              },
+              hintText: '搜索歌曲、专辑、艺人...',
+              hintStyle: WidgetStatePropertyAll(
+                TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 16,
+                ),
+              ),
+              leading: Padding(
+                padding: const EdgeInsets.only(left: 16, right: 8),
+                child: Icon(
+                  Icons.search_rounded,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  size: 24,
+                ),
+              ),
+              backgroundColor: WidgetStatePropertyAll(
+                Theme.of(context).colorScheme.surfaceContainerHighest,
+              ),
+              elevation: WidgetStatePropertyAll(0),
+              shape: WidgetStatePropertyAll(
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              ),
+              padding: WidgetStatePropertyAll(
+                const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+              ),
             ),
           ),
         ],

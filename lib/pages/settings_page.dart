@@ -19,23 +19,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  List<Map<String, dynamic>> _playHistory = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPlayHistory();
-  }
-
-  Future<void> _loadPlayHistory() async {
-    final history = await widget.playerService.historyService.getHistory();
-    if (mounted) {
-      setState(() {
-        _playHistory = history;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,21 +48,13 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ]),
           const SizedBox(height: 16),
-          _buildSection('播放', [
+          _buildSection('缓存', [
             ListTile(
-              leading: const Icon(Icons.history_rounded),
-              title: const Text('播放历史'),
-              subtitle: Text('最近播放 ${_playHistory.length} 首歌曲'),
-              trailing: const Icon(Icons.chevron_right_rounded),
+              leading: const Icon(Icons.storage_rounded),
+              title: const Text('清除缓存'),
+              subtitle: const Text('清除所有下载的音频缓存'),
               onTap: () {
-                _showPlayHistory();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline_rounded),
-              title: const Text('清除播放历史'),
-              onTap: () {
-                _confirmClearHistory();
+                _confirmClearCache();
               },
             ),
           ]),
@@ -132,90 +107,23 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showPlayHistory() {
-    if (_playHistory.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('暂无播放历史')));
-      return;
-    }
-
+  void _confirmClearCache() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('播放历史'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: ListView.builder(
-            itemCount: _playHistory.length,
-            itemBuilder: (context, index) {
-              final song = _playHistory[index];
-              return ListTile(
-                title: Text(song['title'] ?? '未知歌曲'),
-                subtitle: Text(song['artist'] ?? '未知艺人'),
-                leading: song['coverArt'] != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          widget.api.getCoverArtUrl(song['coverArt']),
-                          width: 48,
-                          height: 48,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              width: 48,
-                              height: 48,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                              child: Icon(
-                                Icons.music_note_rounded,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : null,
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('关闭'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmClearHistory() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('清除播放历史'),
-        content: const Text('确定要清除所有播放历史吗？'),
+        title: const Text('清除缓存'),
+        content: const Text('确定要清除所有下载的音频缓存吗？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('取消'),
           ),
           FilledButton(
-            onPressed: () async {
-              await widget.playerService.clearHistory();
+            onPressed: () {
               Navigator.pop(context);
-              await _loadPlayHistory();
-              setState(() {});
-              if (mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('播放历史已清除')));
-              }
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('缓存清除功能开发中')));
             },
             child: const Text('确定'),
           ),
