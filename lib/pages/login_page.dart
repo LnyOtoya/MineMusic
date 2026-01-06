@@ -5,10 +5,7 @@ import '../services/subsonic_api.dart';
 class LoginPage extends StatefulWidget {
   final Function(SubsonicApi, String, String, String) onLoginSuccess;
 
-  const LoginPage({
-    super.key,
-    required this.onLoginSuccess,
-  });
+  const LoginPage({super.key, required this.onLoginSuccess});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -17,9 +14,10 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _baseUrlController = TextEditingController();
+  final _portController = TextEditingController(text: '4533');
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _rememberMe = true;
 
@@ -29,7 +27,6 @@ class _LoginPageState extends State<LoginPage> {
     _loadSavedCredentials();
   }
 
-  // 加载保存的登录信息
   Future<void> _loadSavedCredentials() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -38,9 +35,13 @@ class _LoginPageState extends State<LoginPage> {
       final savedPassword = prefs.getString('password');
       final savedRememberMe = prefs.getBool('rememberMe') ?? true;
 
-      if (savedBaseUrl != null && savedUsername != null && savedPassword != null) {
+      if (savedBaseUrl != null &&
+          savedUsername != null &&
+          savedPassword != null) {
+        final uri = Uri.parse(savedBaseUrl);
         setState(() {
-          _baseUrlController.text = savedBaseUrl;
+          _baseUrlController.text = '${uri.scheme}://${uri.host}';
+          _portController.text = uri.port.toString();
           _usernameController.text = savedUsername;
           _passwordController.text = savedPassword;
           _rememberMe = savedRememberMe;
@@ -51,10 +52,8 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // 保存登录信息
   Future<void> _saveCredentials() async {
     if (!_rememberMe) {
-      // 如果不记住密码，则清除保存的信息
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('baseUrl');
       await prefs.remove('username');
@@ -62,14 +61,26 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    final baseUrl = _buildBaseUrl();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('baseUrl', _baseUrlController.text.trim());
+    await prefs.setString('baseUrl', baseUrl);
     await prefs.setString('username', _usernameController.text.trim());
     await prefs.setString('password', _passwordController.text);
     await prefs.setBool('rememberMe', _rememberMe);
   }
 
-  // 验证并登录
+  String _buildBaseUrl() {
+    final scheme = _baseUrlController.text.startsWith('https')
+        ? 'https'
+        : 'http';
+    final host = _baseUrlController.text
+        .replaceFirst('http://', '')
+        .replaceFirst('https://', '')
+        .trim();
+    final port = _portController.text.trim();
+    return '$scheme://$host:$port';
+  }
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -80,29 +91,24 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final baseUrl = _baseUrlController.text.trim();
+      final baseUrl = _buildBaseUrl();
       final username = _usernameController.text.trim();
       final password = _passwordController.text;
 
-      // 创建 API 实例并测试连接
       final api = SubsonicApi(
         baseUrl: baseUrl,
         username: username,
         password: password,
       );
 
-      // 测试 ping 连接
       final success = await api.ping();
-      
+
       if (success) {
-        // 保存凭据
         await _saveCredentials();
-        
-        // 调用回调函数
         widget.onLoginSuccess(api, baseUrl, username, password);
       } else {
         if (mounted) {
-          _showErrorDialog('连接失败', '无法连接到服务器，请检查域名、端口和凭据是否正确。');
+          _showErrorDialog('连接失败', '无法连接到服务器，请检查地址、端口和凭据是否正确。');
         }
       }
     } catch (e) {
@@ -136,137 +142,266 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 标题
-              const Text(
-                '音乐播放器',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '连接到 Navidrome',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 40),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 20),
 
-              // 服务器地址输入
-              TextFormField(
-                controller: _baseUrlController,
-                decoration: const InputDecoration(
-                  labelText: '服务器地址',
-                  hintText: 'http://192.168.1.100:4533',
-                  prefixIcon: Icon(Icons.dns),
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入服务器地址';
-                  }
-                  if (!value.startsWith('http://') && !value.startsWith('https://')) {
-                    return '请输入完整的URL（包含http://或https://）';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                    Icon(
+                      Icons.music_note_rounded,
+                      size: 60,
+                      color: colorScheme.primary,
+                    ),
 
-              // 用户名输入
-              TextFormField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: '用户名',
-                  prefixIcon: Icon(Icons.person),
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入用户名';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-              // 密码输入
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: '密码',
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(),
-                ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入密码';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                    Text(
+                      'MineMusic',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
 
-              // 记住我选项
-              Row(
-                children: [
-                  Checkbox(
-                    value: _rememberMe,
-                    onChanged: (value) {
-                      setState(() {
-                        _rememberMe = value ?? true;
-                      });
-                    },
-                  ),
-                  const Text('记住登录信息'),
-                ],
-              ),
-              const SizedBox(height: 24),
+                    const SizedBox(height: 4),
 
-              // 登录按钮
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          '登录',
-                          style: TextStyle(fontSize: 16),
+                    Text(
+                      '连接到 Navidrome 服务器',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    Card(
+                      elevation: 0,
+                      color: colorScheme.surfaceContainerHighest,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              '服务器信息',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: TextFormField(
+                                    controller: _baseUrlController,
+                                    decoration: InputDecoration(
+                                      labelText: '地址',
+                                      hintText: '192.168.1.100',
+                                      prefixIcon: const Icon(Icons.dns_rounded),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      filled: true,
+                                      fillColor: colorScheme.surface,
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return '请输入服务器地址';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+
+                                const SizedBox(width: 12),
+
+                                SizedBox(
+                                  width: 80,
+                                  child: TextFormField(
+                                    controller: _portController,
+                                    decoration: InputDecoration(
+                                      labelText: '端口',
+                                      hintText: '4533',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      filled: true,
+                                      fillColor: colorScheme.surface,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 16,
+                                          ),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return '请输入端口';
+                                      }
+                                      final port = int.tryParse(value);
+                                      if (port == null ||
+                                          port < 1 ||
+                                          port > 65535) {
+                                        return '无效端口';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            TextFormField(
+                              controller: _usernameController,
+                              decoration: InputDecoration(
+                                labelText: '用户名',
+                                hintText: '输入用户名',
+                                prefixIcon: const Icon(Icons.person_rounded),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: colorScheme.surface,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return '请输入用户名';
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            TextFormField(
+                              controller: _passwordController,
+                              decoration: InputDecoration(
+                                labelText: '密码',
+                                hintText: '输入密码',
+                                prefixIcon: const Icon(Icons.lock_rounded),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: colorScheme.surface,
+                              ),
+                              obscureText: true,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return '请输入密码';
+                                }
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: _rememberMe,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _rememberMe = value ?? true;
+                                    });
+                                  },
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    '记住登录信息',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: colorScheme.onSurface,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                ),
-              ),
+                      ),
+                    ),
 
-              // 帮助文本
-              const SizedBox(height: 20),
-              const Text(
-                '请确保服务器地址格式正确，例如：http://your-domain.com:4533',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
+                    const SizedBox(height: 24),
+
+                    FilledButton.tonalIcon(
+                      onPressed: _isLoading ? null : _login,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Icon(Icons.login_rounded),
+                      label: Text(
+                        _isLoading ? '连接中...' : '登录',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    OutlinedButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(Icons.folder_rounded),
+                      label: const Text('本地访问', style: TextStyle(fontSize: 16)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    Text(
+                      '提示：确保服务器地址格式正确，例如：192.168.1.100',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 40),
+                  ],
                 ),
-                textAlign: TextAlign.center,
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -276,6 +411,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void dispose() {
     _baseUrlController.dispose();
+    _portController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
