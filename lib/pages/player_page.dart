@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_lyric/flutter_lyric.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
 import '../services/lyrics_api.dart';
-import '../models/lyrics.dart';
 
 class PlayerPage extends StatefulWidget {
   final PlayerService playerService;
@@ -28,13 +28,11 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
-  List<Lyric> _lyrics = [];
+  String _lrcLyrics = '';
   bool _isLoadingLyrics = false;
-  int _currentLyricIndex = 0;
+  late LyricController _lyricController;
   final PageController _pageController = PageController(initialPage: 0);
   int _currentPage = 0;
-  late ScrollController _lyricsScrollController;
-  Timer? _autoScrollTimer;
 
   final LyricsApi _lyricsApi = LyricsApi();
 
@@ -72,17 +70,15 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       ),
     );
 
+    // 初始化歌词控制器
+    _lyricController = LyricController();
+
     // 监听播放状态变化
     widget.playerService.addListener(_updatePlayerState);
     _updatePlayerState(); // 初始状态更新
 
-    // 监听播放位置更新歌词高亮
-    widget.playerService.addListener(_updateLyricPosition);
     // 加载当前歌曲歌词
     _loadLyrics();
-
-    // 初始化歌词滚动控制器
-    _lyricsScrollController = ScrollController();
   }
 
   @override
@@ -92,9 +88,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     _shapeAnimationController.dispose();
 
     _pageController.dispose();
-    _lyricsScrollController.dispose();
-    _autoScrollTimer?.cancel();
-    widget.playerService.removeListener(_updateLyricPosition);
+    _lyricController.dispose();
 
     widget.playerService.removeListener(_updatePlayerState);
     super.dispose();
@@ -119,7 +113,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       if (lrcLyrics.isNotEmpty) {
         print('✅ 从第三方API获取到歌词');
         setState(() {
-          _lyrics = parseLyrics(lrcLyrics);
+          _lrcLyrics = lrcLyrics;
+          _lyricController.loadLyric(lrcLyrics);
         });
         return;
       }
@@ -133,82 +128,25 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
       if (lyricData != null && lyricData['text'].isNotEmpty) {
         print('✅ 从Navidrome获取到歌词');
+        final lyricsText = lyricData['text'];
         setState(() {
-          _lyrics = parseLyrics(lyricData['text']);
+          _lrcLyrics = lyricsText;
+          _lyricController.loadLyric(lyricsText);
         });
       } else {
         print('⚠️ 未找到歌词');
         setState(() {
-          _lyrics = [];
+          _lrcLyrics = '';
         });
       }
     } catch (e) {
       print('❌ 加载歌词失败: $e');
       setState(() {
-        _lyrics = [];
+        _lrcLyrics = '';
       });
     } finally {
       setState(() => _isLoadingLyrics = false);
     }
-  }
-
-  // 更新歌词位置
-  void _updateLyricPosition() {
-    if (_lyrics.isEmpty) return;
-
-    final position = widget.playerService.currentPosition;
-    for (int i = 0; i < _lyrics.length; i++) {
-      if (position >= _lyrics[i].time &&
-          (i == _lyrics.length - 1 || position < _lyrics[i + 1].time)) {
-        if (_currentLyricIndex != i) {
-          setState(() => _currentLyricIndex = i);
-
-          // 如果在歌词页面，则自动滚动
-          if (_currentPage == 1) {
-            _scrollToCurrentLyric();
-          }
-        }
-        break;
-      }
-    }
-  }
-
-  void _scrollToCurrentLyric() {
-    if (_lyricsScrollController.hasClients) {
-      final screenHeight = MediaQuery.of(context).size.height;
-      final visibleHeight = screenHeight - 80 - 200;
-      final centerOffset = visibleHeight / 2;
-
-      final itemHeight = 24.0 + 48.0;
-      final currentLyricOffset = _currentLyricIndex * itemHeight;
-      final targetOffset = currentLyricOffset - centerOffset + 24.0;
-
-      _lyricsScrollController.animateTo(
-        targetOffset.clamp(
-          0.0,
-          _lyricsScrollController.position.maxScrollExtent,
-        ),
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-  void _onLyricsTouch() {
-    _autoScrollTimer?.cancel();
-    _autoScrollTimer = Timer(const Duration(seconds: 3), () {
-      _autoScrollTimer = null;
-      _scrollToCurrentLyric();
-    });
-  }
-
-  // 切换到歌词页
-  void _switchToLyrics() {
-    _pageController.animateToPage(
-      1,
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
   }
 
   // 更新播放器状态
@@ -232,6 +170,11 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       _currentPosition = widget.playerService.currentPosition;
       _totalDuration = widget.playerService.totalDuration;
     });
+
+    // 同步歌词进度
+    if (_lrcLyrics.isNotEmpty) {
+      _lyricController.setProgress(_currentPosition);
+    }
 
     // 控制专辑封面旋转
     // if (_isPlaying) {
@@ -345,65 +288,63 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     return Scaffold(
       body: _isLoadingLyrics
           ? Center(child: CircularProgressIndicator())
-          : _lyrics.isEmpty
+          : _lrcLyrics.isEmpty
           ? Center(child: Text('未找到歌词'))
           : Stack(
               children: [
-                // 歌词列表
-                GestureDetector(
-                  onTap: _onLyricsTouch,
-                  onVerticalDragStart: (_) => _onLyricsTouch(),
-                  onVerticalDragUpdate: (_) => _onLyricsTouch(),
-                  onVerticalDragEnd: (_) => _onLyricsTouch(),
-                  child: ListView.builder(
-                    controller: _lyricsScrollController,
-                    padding: EdgeInsets.only(
-                      left: 32,
-                      right: 16,
-                      top:
-                          (MediaQuery.of(context).size.height - 80 - 200) / 2 -
-                          48,
-                      bottom:
+                // 歌词视图
+                LyricView(
+                  controller: _lyricController,
+                  style: LyricStyle(
+                    textStyle:
+                        Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 22,
+                        ) ??
+                        TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 22,
+                        ),
+                    activeStyle:
+                        Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 28,
+                        ) ??
+                        TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 28,
+                        ),
+                    translationStyle:
+                        Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 16,
+                        ) ??
+                        TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 16,
+                        ),
+                    lineGap: 20,
+                    translationLineGap: 10,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical:
                           (MediaQuery.of(context).size.height - 80 - 200) / 2 -
                           48,
                     ),
-                    itemCount: _lyrics.length,
-                    itemBuilder: (context, index) {
-                      final lyric = _lyrics[index];
-                      final isCurrentLyric = index == _currentLyricIndex;
-
-                      return GestureDetector(
-                        onTap: () {
-                          widget.playerService.seekTo(lyric.time);
-                          _onLyricsTouch();
-                        },
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              lyric.text,
-                              style: isCurrentLyric
-                                  ? Theme.of(
-                                      context,
-                                    ).textTheme.headlineLarge?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                      fontWeight: FontWeight.w600,
-                                    )
-                                  : Theme.of(
-                                      context,
-                                    ).textTheme.headlineMedium?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                    ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+                    activeAnchorPosition: 0.5,
+                    selectionAnchorPosition: 0.5,
+                    contentAlignment: CrossAxisAlignment.center,
+                    lineTextAlign: TextAlign.center,
+                    selectionAlignment: MainAxisAlignment.center,
+                    selectedColor: Theme.of(context).colorScheme.primary,
+                    selectedTranslationColor: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant,
+                    scrollDuration: const Duration(milliseconds: 300),
+                    activeAutoResumeDuration: const Duration(seconds: 3),
+                    selectionAutoResumeDuration: const Duration(seconds: 1),
                   ),
                 ),
                 // 顶部遮罩
