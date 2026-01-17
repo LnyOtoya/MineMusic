@@ -581,7 +581,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                       activeColor: Theme.of(context).colorScheme.primary,
                       inactiveColor: Theme.of(
                         context,
-                      ).colorScheme.surfaceContainerHighest,
+                      ).colorScheme.surfaceVariant,
                       onChanged: (value) {
                         widget.playerService.seekTo(
                           Duration(milliseconds: value.toInt()),
