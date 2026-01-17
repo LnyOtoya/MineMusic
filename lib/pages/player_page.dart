@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/player_service.dart';
@@ -32,6 +33,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   int _currentLyricIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
   int _currentPage = 0;
+  late ScrollController _lyricsScrollController;
+  Timer? _autoScrollTimer;
 
   final LyricsApi _lyricsApi = LyricsApi();
 
@@ -77,6 +80,9 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     widget.playerService.addListener(_updateLyricPosition);
     // 加载当前歌曲歌词
     _loadLyrics();
+
+    // 初始化歌词滚动控制器
+    _lyricsScrollController = ScrollController();
   }
 
   @override
@@ -86,6 +92,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     _shapeAnimationController.dispose();
 
     _pageController.dispose();
+    _lyricsScrollController.dispose();
+    _autoScrollTimer?.cancel();
     widget.playerService.removeListener(_updateLyricPosition);
 
     widget.playerService.removeListener(_updatePlayerState);
@@ -154,10 +162,44 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           (i == _lyrics.length - 1 || position < _lyrics[i + 1].time)) {
         if (_currentLyricIndex != i) {
           setState(() => _currentLyricIndex = i);
+
+          // 如果在歌词页面，则自动滚动
+          if (_currentPage == 1) {
+            _scrollToCurrentLyric();
+          }
         }
         break;
       }
     }
+  }
+
+  void _scrollToCurrentLyric() {
+    if (_lyricsScrollController.hasClients) {
+      final screenHeight = MediaQuery.of(context).size.height;
+      final visibleHeight = screenHeight - 80 - 200;
+      final centerOffset = visibleHeight / 2;
+
+      final itemHeight = 24.0 + 48.0;
+      final currentLyricOffset = _currentLyricIndex * itemHeight;
+      final targetOffset = currentLyricOffset - centerOffset + 24.0;
+
+      _lyricsScrollController.animateTo(
+        targetOffset.clamp(
+          0.0,
+          _lyricsScrollController.position.maxScrollExtent,
+        ),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _onLyricsTouch() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = Timer(const Duration(seconds: 3), () {
+      _autoScrollTimer = null;
+      _scrollToCurrentLyric();
+    });
   }
 
   // 切换到歌词页
@@ -301,45 +343,120 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   // 构建歌词页面
   Widget _buildLyricsPage() {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('歌词'),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => _pageController.animateToPage(
-            0,
-            duration: Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          ),
-        ),
-      ),
       body: _isLoadingLyrics
           ? Center(child: CircularProgressIndicator())
           : _lyrics.isEmpty
           ? Center(child: Text('未找到歌词'))
-          : ListView.builder(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              itemCount: _lyrics.length,
-              itemBuilder: (context, index) {
-                final lyric = _lyrics[index];
-                return Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Center(
-                    child: Text(
-                      lyric.text,
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: index == _currentLyricIndex
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).textTheme.bodyLarge?.color,
-                        fontWeight: index == _currentLyricIndex
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+          : Stack(
+              children: [
+                // 歌词列表
+                GestureDetector(
+                  onTap: _onLyricsTouch,
+                  onVerticalDragStart: (_) => _onLyricsTouch(),
+                  onVerticalDragUpdate: (_) => _onLyricsTouch(),
+                  onVerticalDragEnd: (_) => _onLyricsTouch(),
+                  child: ListView.builder(
+                    controller: _lyricsScrollController,
+                    padding: EdgeInsets.only(
+                      left: 32,
+                      right: 16,
+                      top:
+                          (MediaQuery.of(context).size.height - 80 - 200) / 2 -
+                          48,
+                      bottom:
+                          (MediaQuery.of(context).size.height - 80 - 200) / 2 -
+                          48,
+                    ),
+                    itemCount: _lyrics.length,
+                    itemBuilder: (context, index) {
+                      final lyric = _lyrics[index];
+                      final isCurrentLyric = index == _currentLyricIndex;
+
+                      return GestureDetector(
+                        onTap: () {
+                          widget.playerService.seekTo(lyric.time);
+                          _onLyricsTouch();
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              lyric.text,
+                              style: isCurrentLyric
+                                  ? Theme.of(
+                                      context,
+                                    ).textTheme.headlineLarge?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    )
+                                  : Theme.of(
+                                      context,
+                                    ).textTheme.headlineMedium?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // 顶部遮罩
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Theme.of(context).colorScheme.surface,
+                          Theme.of(
+                            context,
+                          ).colorScheme.surface.withOpacity(0.95),
+                          Theme.of(
+                            context,
+                          ).colorScheme.surface.withOpacity(0.8),
+                          Theme.of(context).colorScheme.surface.withOpacity(0),
+                        ],
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ),
-                );
-              },
+                ),
+                // 底部遮罩
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Theme.of(context).colorScheme.surface.withOpacity(0),
+                          Theme.of(
+                            context,
+                          ).colorScheme.surface.withOpacity(0.8),
+                          Theme.of(
+                            context,
+                          ).colorScheme.surface.withOpacity(0.95),
+                          Theme.of(context).colorScheme.surface,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
     );
   }
