@@ -7,11 +7,13 @@ import 'login_page.dart';
 class SettingsPage extends StatefulWidget {
   final SubsonicApi api;
   final PlayerService playerService;
+  final Function(ThemeMode) setThemeMode;
 
   const SettingsPage({
     super.key,
     required this.api,
     required this.playerService,
+    required this.setThemeMode,
   });
 
   @override
@@ -19,6 +21,34 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  ThemeMode _currentThemeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedThemeMode = prefs.getString('themeMode');
+    if (savedThemeMode != null) {
+      setState(() {
+        switch (savedThemeMode) {
+          case 'light':
+            _currentThemeMode = ThemeMode.light;
+            break;
+          case 'dark':
+            _currentThemeMode = ThemeMode.dark;
+            break;
+          default:
+            _currentThemeMode = ThemeMode.system;
+            break;
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,6 +75,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 overflow: TextOverflow.ellipsis,
               ),
               trailing: const Icon(Icons.chevron_right_rounded),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          _buildSection('外观', [
+            ListTile(
+              leading: const Icon(Icons.brightness_6_rounded),
+              title: const Text('主题模式'),
+              subtitle: Text(_getThemeModeText()),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                _showThemeModeDialog();
+              },
             ),
           ]),
           const SizedBox(height: 16),
@@ -152,6 +194,79 @@ class _SettingsPageState extends State<SettingsPage> {
               }
             },
             child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getThemeModeText() {
+    switch (_currentThemeMode) {
+      case ThemeMode.light:
+        return '亮色模式';
+      case ThemeMode.dark:
+        return '暗色模式';
+      default:
+        return '跟随系统';
+    }
+  }
+
+  void _showThemeModeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('主题模式'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<ThemeMode>(
+              title: const Text('跟随系统'),
+              value: ThemeMode.system,
+              groupValue: _currentThemeMode,
+              onChanged: (value) {
+                if (value != null) {
+                  widget.setThemeMode(value);
+                  setState(() {
+                    _currentThemeMode = value;
+                  });
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('亮色模式'),
+              value: ThemeMode.light,
+              groupValue: _currentThemeMode,
+              onChanged: (value) {
+                if (value != null) {
+                  widget.setThemeMode(value);
+                  setState(() {
+                    _currentThemeMode = value;
+                  });
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('暗色模式'),
+              value: ThemeMode.dark,
+              groupValue: _currentThemeMode,
+              onChanged: (value) {
+                if (value != null) {
+                  widget.setThemeMode(value);
+                  setState(() {
+                    _currentThemeMode = value;
+                  });
+                  Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
           ),
         ],
       ),

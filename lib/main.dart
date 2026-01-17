@@ -45,8 +45,61 @@ Future<void> main() async {
 
 // 其他代码保持不变...
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedThemeMode = prefs.getString('themeMode');
+    if (savedThemeMode != null) {
+      setState(() {
+        switch (savedThemeMode) {
+          case 'light':
+            _themeMode = ThemeMode.light;
+            break;
+          case 'dark':
+            _themeMode = ThemeMode.dark;
+            break;
+          default:
+            _themeMode = ThemeMode.system;
+            break;
+        }
+      });
+    }
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    String themeModeString;
+    switch (mode) {
+      case ThemeMode.light:
+        themeModeString = 'light';
+        break;
+      case ThemeMode.dark:
+        themeModeString = 'dark';
+        break;
+      default:
+        themeModeString = 'system';
+        break;
+    }
+    await prefs.setString('themeMode', themeModeString);
+    setState(() {
+      _themeMode = mode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,8 +126,8 @@ class MyApp extends StatelessWidget {
           title: '音乐播放器',
           theme: ThemeData(colorScheme: lightScheme, useMaterial3: true),
           darkTheme: ThemeData(colorScheme: darkScheme, useMaterial3: true),
-          themeMode: ThemeMode.system,
-          home: const InitializerPage(),
+          themeMode: _themeMode,
+          home: InitializerPage(setThemeMode: setThemeMode),
         );
       },
     );
@@ -82,7 +135,9 @@ class MyApp extends StatelessWidget {
 }
 
 class InitializerPage extends StatefulWidget {
-  const InitializerPage({super.key});
+  final Function(ThemeMode) setThemeMode;
+
+  const InitializerPage({super.key, required this.setThemeMode});
 
   @override
   State<InitializerPage> createState() => _InitializerPageState();
@@ -120,6 +175,7 @@ class _InitializerPageState extends State<InitializerPage> {
               baseUrl: baseUrl,
               username: username,
               password: password,
+              setThemeMode: widget.setThemeMode,
             );
             _isLoading = false;
           });
@@ -139,6 +195,7 @@ class _InitializerPageState extends State<InitializerPage> {
               baseUrl: baseUrl,
               username: username,
               password: password,
+              setThemeMode: widget.setThemeMode,
             );
           });
         },
@@ -161,6 +218,7 @@ class MusicHomePage extends StatefulWidget {
   final String baseUrl;
   final String username;
   final String password;
+  final Function(ThemeMode) setThemeMode;
 
   const MusicHomePage({
     super.key,
@@ -168,6 +226,7 @@ class MusicHomePage extends StatefulWidget {
     required this.baseUrl,
     required this.username,
     required this.password,
+    required this.setThemeMode,
   });
 
   @override
@@ -197,6 +256,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
           });
           return _randomSongsFuture;
         },
+        setThemeMode: widget.setThemeMode,
       ),
       LibraryPage(api: widget.api, playerService: playerService),
     ];

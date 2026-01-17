@@ -18,12 +18,15 @@ class HomePage extends StatefulWidget {
 
   final Future<List<Map<String, dynamic>>> Function() onRefreshRandomSongs;
 
+  final Function(ThemeMode)? setThemeMode;
+
   const HomePage({
     super.key,
     required this.api,
     required this.playerService,
     required this.randomSongsFuture,
     required this.onRefreshRandomSongs,
+    this.setThemeMode,
   });
 
   @override
@@ -211,6 +214,7 @@ class _HomePageState extends State<HomePage>
                               builder: (context) => SettingsPage(
                                 api: widget.api,
                                 playerService: widget.playerService,
+                                setThemeMode: widget.setThemeMode ?? (mode) {},
                               ),
                             ),
                           );
