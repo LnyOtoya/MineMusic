@@ -33,6 +33,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   late LyricController _lyricController;
   final PageController _pageController = PageController(initialPage: 0);
   int _currentPage = 0;
+  String? _currentSongId;
 
   final LyricsApi _lyricsApi = LyricsApi();
 
@@ -152,6 +153,22 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   // 更新播放器状态
   void _updatePlayerState() {
     final newIsPlaying = widget.playerService.isPlaying;
+    final currentSong = widget.playerService.currentSong;
+    final newSongId = currentSong?['id']?.toString();
+
+    // 检测歌曲是否切换
+    if (newSongId != null && newSongId != _currentSongId) {
+      _currentSongId = newSongId;
+
+      // 重置播放位置，避免进度条超出范围
+      setState(() {
+        _currentPosition = Duration.zero;
+        _totalDuration = widget.playerService.totalDuration;
+      });
+
+      // 重新加载歌词
+      _loadLyrics();
+    }
 
     // 检测播放状态变化
     if (newIsPlaying != _isPlaying) {
@@ -166,9 +183,18 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       }
     }
 
+    // 获取新的播放位置和总时长
+    final newPosition = widget.playerService.currentPosition;
+    final newTotalDuration = widget.playerService.totalDuration;
+
+    // 确保播放位置不超过总时长，避免进度条超出范围
+    final safePosition = newPosition > newTotalDuration
+        ? newTotalDuration
+        : newPosition;
+
     setState(() {
-      _currentPosition = widget.playerService.currentPosition;
-      _totalDuration = widget.playerService.totalDuration;
+      _currentPosition = safePosition;
+      _totalDuration = newTotalDuration;
     });
 
     // 同步歌词进度
@@ -546,7 +572,10 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                     ),
                     child: Slider(
                       padding: const EdgeInsets.symmetric(horizontal: 0),
-                      value: _currentPosition.inMilliseconds.toDouble(),
+                      value: _currentPosition.inMilliseconds.toDouble().clamp(
+                        0,
+                        _totalDuration.inMilliseconds.toDouble(),
+                      ),
                       max: _totalDuration.inMilliseconds.toDouble(),
                       min: 0,
                       activeColor: Theme.of(context).colorScheme.primary,
