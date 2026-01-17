@@ -120,7 +120,7 @@ class _HomePageState extends State<HomePage>
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const SizedBox(height: 40),
+            const SizedBox(height: 64),
 
             _buildWelcomeSection(),
 
