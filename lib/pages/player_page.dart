@@ -15,11 +15,15 @@ class PlayerPage extends StatefulWidget {
   State<PlayerPage> createState() => _PlayerPageState();
 }
 
-class _PlayerPageState extends State<PlayerPage>
-    with SingleTickerProviderStateMixin {
+class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _albumRotation;
+  late AnimationController _playButtonController;
+  late Animation<double> _playButtonScale;
+  late AnimationController _shapeAnimationController;
+  late Animation<double> _shapeAnimation;
   bool _isPlaying = false;
+  bool _wasPlaying = false;
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
@@ -44,6 +48,27 @@ class _PlayerPageState extends State<PlayerPage>
     //   curve: Curves.linear,
     // );
 
+    // 初始化播放按钮动画
+    _playButtonController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _playButtonScale = Tween<double>(begin: 1.0, end: 0.9).animate(
+      CurvedAnimation(parent: _playButtonController, curve: Curves.easeInOut),
+    );
+
+    // 初始化形状过渡动画
+    _shapeAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _shapeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _shapeAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
     // 监听播放状态变化
     widget.playerService.addListener(_updatePlayerState);
     _updatePlayerState(); // 初始状态更新
@@ -57,6 +82,8 @@ class _PlayerPageState extends State<PlayerPage>
   @override
   void dispose() {
     // _animationController.dispose();
+    _playButtonController.dispose();
+    _shapeAnimationController.dispose();
 
     _pageController.dispose();
     widget.playerService.removeListener(_updateLyricPosition);
@@ -144,8 +171,22 @@ class _PlayerPageState extends State<PlayerPage>
 
   // 更新播放器状态
   void _updatePlayerState() {
+    final newIsPlaying = widget.playerService.isPlaying;
+
+    // 检测播放状态变化
+    if (newIsPlaying != _isPlaying) {
+      _wasPlaying = _isPlaying;
+      _isPlaying = newIsPlaying;
+
+      // 触发形状过渡动画
+      if (_isPlaying) {
+        _shapeAnimationController.forward();
+      } else {
+        _shapeAnimationController.reverse();
+      }
+    }
+
     setState(() {
-      _isPlaying = widget.playerService.isPlaying;
       _currentPosition = widget.playerService.currentPosition;
       _totalDuration = widget.playerService.totalDuration;
     });
@@ -163,6 +204,11 @@ class _PlayerPageState extends State<PlayerPage>
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
+  }
+
+  // 线性插值函数
+  double _lerpDouble(double a, double b, double t) {
+    return a + (b - a) * t;
   }
 
   // 获取播放来源文本
@@ -306,47 +352,38 @@ class _PlayerPageState extends State<PlayerPage>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // 退出按钮
-          IconButton(
-            icon: Icon(
-              Icons.arrow_back,
-              color: Theme.of(context).colorScheme.onSurface,
-              size: 24,
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.arrow_back,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  size: 24,
+                ),
+              ),
             ),
-            onPressed: () => Navigator.pop(context),
           ),
 
           // 来源和歌名
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _getSourceText(),
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 4),
-              // Text(
-              //   song['title'] ?? '未知歌曲',
-              //   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              //     color: Theme.of(context).colorScheme.onSurface,
-              //     fontWeight: FontWeight.w600,
-              //   ),
-              //   overflow: TextOverflow.ellipsis,
-              // ),
-            ],
-          ),
-
-          // 更多操作
-          IconButton(
-            icon: Icon(
-              Icons.more_vert,
-              color: Theme.of(context).colorScheme.onSurface,
-              size: 24,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(20),
             ),
-            onPressed: () {
-              // 暂不实现功能
-            },
+            child: Text(
+              _getSourceText(),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+            ),
           ),
         ],
       ),
@@ -362,16 +399,7 @@ class _PlayerPageState extends State<PlayerPage>
           width: double.infinity,
           height: double.infinity,
           constraints: const BoxConstraints(maxWidth: 360, maxHeight: 360),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withOpacity(0.2),
-                blurRadius: 20,
-                spreadRadius: 4,
-              ),
-            ],
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: song['coverArt'] != null
@@ -418,7 +446,7 @@ class _PlayerPageState extends State<PlayerPage>
             children: [
               // 歌曲名和艺术家
               Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(bottom: 40),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Column(
@@ -426,16 +454,16 @@ class _PlayerPageState extends State<PlayerPage>
                     children: [
                       Text(
                         song['title'] ?? '未知歌曲',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         song['artist'] ?? '未知艺术家',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -448,20 +476,31 @@ class _PlayerPageState extends State<PlayerPage>
               // 进度条
               Column(
                 children: [
-                  Slider(
-                    padding: const EdgeInsets.symmetric(horizontal: 0),
-                    value: _currentPosition.inMilliseconds.toDouble(),
-                    max: _totalDuration.inMilliseconds.toDouble(),
-                    min: 0,
-                    activeColor: Theme.of(context).colorScheme.primary,
-                    inactiveColor: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                    onChanged: (value) {
-                      widget.playerService.seekTo(
-                        Duration(milliseconds: value.toInt()),
-                      );
-                    },
+                  SliderTheme(
+                    data: SliderThemeData(
+                      trackHeight: 8,
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 0,
+                      ),
+                      overlayShape: const RoundSliderOverlayShape(
+                        overlayRadius: 0,
+                      ),
+                    ),
+                    child: Slider(
+                      padding: const EdgeInsets.symmetric(horizontal: 0),
+                      value: _currentPosition.inMilliseconds.toDouble(),
+                      max: _totalDuration.inMilliseconds.toDouble(),
+                      min: 0,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                      inactiveColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      onChanged: (value) {
+                        widget.playerService.seekTo(
+                          Duration(milliseconds: value.toInt()),
+                        );
+                      },
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -500,75 +539,110 @@ class _PlayerPageState extends State<PlayerPage>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                //随机播放
-                IconButton(
-                  icon: Icon(
-                    Icons.shuffle,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    size: 36,
-                  ),
-                  onPressed: () {},
-                ),
-
                 // 上一曲
-                IconButton(
-                  icon: Icon(
-                    Icons.skip_previous,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    size: 36,
-                  ),
+                _buildControlButton(
+                  icon: Icons.skip_previous,
                   onPressed: () => widget.playerService.previousSong(),
+                  isPlaying: _isPlaying,
+                  shapeAnimation: _shapeAnimation,
                 ),
 
                 // 播放/暂停
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withOpacity(0.2),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      _isPlaying ? Icons.pause : Icons.play_arrow,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      size: 32,
-                    ),
-                    onPressed: () => widget.playerService.togglePlayPause(),
+                GestureDetector(
+                  onTapDown: (_) => _playButtonController.forward(),
+                  onTapUp: (_) => _playButtonController.reverse(),
+                  onTapCancel: () => _playButtonController.reverse(),
+                  onTap: () => widget.playerService.togglePlayPause(),
+                  child: AnimatedBuilder(
+                    animation: Listenable.merge([
+                      _playButtonScale,
+                      _shapeAnimation,
+                    ]),
+                    builder: (context, child) {
+                      final progress = _shapeAnimation.value;
+                      final width = _lerpDouble(80.0, 64.0, progress);
+                      final borderRadius = _lerpDouble(16.0, 32.0, progress);
+
+                      return Transform.scale(
+                        scale: _playButtonScale.value,
+                        child: Container(
+                          width: width,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(borderRadius),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.2),
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            _isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            size: 32,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
 
                 // 下一曲
-                IconButton(
-                  icon: Icon(
-                    Icons.skip_next,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    size: 36,
-                  ),
+                _buildControlButton(
+                  icon: Icons.skip_next,
                   onPressed: () => widget.playerService.nextSong(),
-                ),
-
-                // 歌词按钮
-                IconButton(
-                  icon: Icon(
-                    Icons.lyrics_rounded,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    size: 28,
-                  ),
-                  onPressed: _switchToLyrics,
+                  isPlaying: _isPlaying,
+                  shapeAnimation: _shapeAnimation,
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildControlButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required bool isPlaying,
+    required Animation<double> shapeAnimation,
+  }) {
+    return GestureDetector(
+      onTapDown: (_) => _playButtonController.forward(),
+      onTapUp: (_) => _playButtonController.reverse(),
+      onTapCancel: () => _playButtonController.reverse(),
+      onTap: onPressed,
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_playButtonScale, shapeAnimation]),
+        builder: (context, child) {
+          final progress = shapeAnimation.value;
+          final width = _lerpDouble(64.0, 80.0, progress);
+          final borderRadius = _lerpDouble(16.0, 16.0, progress);
+
+          return Transform.scale(
+            scale: _playButtonScale.value,
+            child: Container(
+              width: width,
+              height: 64,
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(borderRadius),
+              ),
+              child: Icon(
+                icon,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                size: 28,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
