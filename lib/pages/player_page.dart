@@ -412,7 +412,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                   left: 0,
                   right: 0,
                   child: Container(
-                    height: 80,
+                    height: 200,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
