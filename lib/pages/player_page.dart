@@ -5,12 +5,19 @@ import 'package:flutter_lyric/flutter_lyric.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
 import '../services/lyrics_api.dart';
+import '../models/lyrics_api_type.dart';
 
 class PlayerPage extends StatefulWidget {
   final PlayerService playerService;
   final SubsonicApi api;
+  final LyricsApiType? lyricsApiType;
 
-  const PlayerPage({super.key, required this.playerService, required this.api});
+  const PlayerPage({
+    super.key,
+    required this.playerService,
+    required this.api,
+    this.lyricsApiType,
+  });
 
   @override
   State<PlayerPage> createState() => _PlayerPageState();
@@ -100,6 +107,16 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     final song = widget.playerService.currentSong;
     if (song == null) return;
 
+    final lyricsApiType = widget.lyricsApiType ?? LyricsApiType.disabled;
+
+    if (lyricsApiType == LyricsApiType.disabled) {
+      print('🚫 歌词功能已关闭');
+      setState(() {
+        _lrcLyrics = '';
+      });
+      return;
+    }
+
     setState(() => _isLoadingLyrics = true);
 
     try {
@@ -107,39 +124,46 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       final artist = song['artist'] ?? '';
 
       print('🎵 开始加载歌词: $title - $artist');
+      print('📡 使用API: ${lyricsApiType.displayName}');
 
-      // 优先使用第三方API获取带时间轴的歌词
-      final lrcLyrics = await _lyricsApi.getLyricsByKeyword(title, artist);
+      if (lyricsApiType == LyricsApiType.thirdParty) {
+        final lrcLyrics = await _lyricsApi.getLyricsByKeyword(title, artist);
 
-      if (lrcLyrics.isNotEmpty) {
-        print('✅ 从第三方API获取到歌词');
-        setState(() {
-          _lrcLyrics = lrcLyrics;
-          _lyricController.loadLyric(lrcLyrics);
-        });
-        return;
+        if (lrcLyrics.isNotEmpty) {
+          print('✅ 从第三方API获取到歌词');
+          setState(() {
+            _lrcLyrics = lrcLyrics;
+            _lyricController.loadLyric(lrcLyrics);
+          });
+          return;
+        }
+
+        print('⚠️ 第三方API未找到歌词');
       }
 
-      // 如果第三方API没有找到，尝试从Navidrome获取
-      print('⚠️ 第三方API未找到歌词，尝试从Navidrome获取');
-      final lyricData = await widget.api.getLyrics(
-        artist: artist,
-        title: title,
-      );
+      if (lyricsApiType == LyricsApiType.subsonic) {
+        final lyricData = await widget.api.getLyrics(
+          artist: artist,
+          title: title,
+        );
 
-      if (lyricData != null && lyricData['text'].isNotEmpty) {
-        print('✅ 从Navidrome获取到歌词');
-        final lyricsText = lyricData['text'];
-        setState(() {
-          _lrcLyrics = lyricsText;
-          _lyricController.loadLyric(lyricsText);
-        });
-      } else {
-        print('⚠️ 未找到歌词');
-        setState(() {
-          _lrcLyrics = '';
-        });
+        if (lyricData != null && lyricData['text'].isNotEmpty) {
+          print('✅ 从Subsonic/Navidrome获取到歌词');
+          final lyricsText = lyricData['text'];
+          setState(() {
+            _lrcLyrics = lyricsText;
+            _lyricController.loadLyric(lyricsText);
+          });
+          return;
+        }
+
+        print('⚠️ Subsonic/Navidrome未找到歌词');
       }
+
+      print('⚠️ 未找到歌词');
+      setState(() {
+        _lrcLyrics = '';
+      });
     } catch (e) {
       print('❌ 加载歌词失败: $e');
       setState(() {

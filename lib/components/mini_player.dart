@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
+import '../models/lyrics_api_type.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../pages/player_page.dart';
 
 class MiniPlayer extends StatefulWidget {
   final PlayerService playerService;
   final SubsonicApi api;
+  final LyricsApiType? lyricsApiType;
 
-  const MiniPlayer({super.key, required this.playerService, required this.api});
+  const MiniPlayer({
+    super.key,
+    required this.playerService,
+    required this.api,
+    this.lyricsApiType,
+  });
 
   @override
   State<MiniPlayer> createState() => _MiniPlayerState();
@@ -371,8 +378,11 @@ class _MiniPlayerState extends State<MiniPlayer>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            PlayerPage(playerService: widget.playerService, api: widget.api),
+        builder: (context) => PlayerPage(
+          playerService: widget.playerService,
+          api: widget.api,
+          lyricsApiType: widget.lyricsApiType,
+        ),
       ),
     );
   }

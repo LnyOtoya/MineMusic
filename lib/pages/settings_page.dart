@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
+import '../models/lyrics_api_type.dart';
 import 'login_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final SubsonicApi api;
   final PlayerService playerService;
   final Function(ThemeMode) setThemeMode;
+  final Function(LyricsApiType) setLyricsApiType;
 
   const SettingsPage({
     super.key,
     required this.api,
     required this.playerService,
     required this.setThemeMode,
+    required this.setLyricsApiType,
   });
 
   @override
@@ -22,11 +25,13 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   ThemeMode _currentThemeMode = ThemeMode.system;
+  LyricsApiType _currentLyricsApiType = LyricsApiType.disabled;
 
   @override
   void initState() {
     super.initState();
     _loadThemeMode();
+    _loadLyricsApiType();
   }
 
   Future<void> _loadThemeMode() async {
@@ -45,6 +50,18 @@ class _SettingsPageState extends State<SettingsPage> {
             _currentThemeMode = ThemeMode.system;
             break;
         }
+      });
+    }
+  }
+
+  Future<void> _loadLyricsApiType() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLyricsApiType = prefs.getString('lyricsApiType');
+    if (savedLyricsApiType != null) {
+      setState(() {
+        _currentLyricsApiType = LyricsApiTypeExtension.fromString(
+          savedLyricsApiType,
+        );
       });
     }
   }
@@ -86,6 +103,15 @@ class _SettingsPageState extends State<SettingsPage> {
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () {
                 _showThemeModeDialog();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.lyrics_rounded),
+              title: const Text('歌词API'),
+              subtitle: Text(_currentLyricsApiType.displayName),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                _showLyricsApiDialog();
               },
             ),
           ]),
@@ -256,6 +282,71 @@ class _SettingsPageState extends State<SettingsPage> {
                   widget.setThemeMode(value);
                   setState(() {
                     _currentThemeMode = value;
+                  });
+                  Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLyricsApiDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('歌词API'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<LyricsApiType>(
+              title: const Text('关闭歌词'),
+              subtitle: const Text('不显示歌词'),
+              value: LyricsApiType.disabled,
+              groupValue: _currentLyricsApiType,
+              onChanged: (value) {
+                if (value != null) {
+                  widget.setLyricsApiType(value);
+                  setState(() {
+                    _currentLyricsApiType = value;
+                  });
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            RadioListTile<LyricsApiType>(
+              title: const Text('Subsonic/Navidrome'),
+              subtitle: const Text('使用服务器内置歌词'),
+              value: LyricsApiType.subsonic,
+              groupValue: _currentLyricsApiType,
+              onChanged: (value) {
+                if (value != null) {
+                  widget.setLyricsApiType(value);
+                  setState(() {
+                    _currentLyricsApiType = value;
+                  });
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            RadioListTile<LyricsApiType>(
+              title: const Text('第三方API'),
+              subtitle: const Text('使用在线歌词服务'),
+              value: LyricsApiType.thirdParty,
+              groupValue: _currentLyricsApiType,
+              onChanged: (value) {
+                if (value != null) {
+                  widget.setLyricsApiType(value);
+                  setState(() {
+                    _currentLyricsApiType = value;
                   });
                   Navigator.pop(context);
                 }

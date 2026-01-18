@@ -9,7 +9,9 @@ class LyricsApi {
     String artist,
   ) async {
     try {
-      final keyword = '$title $artist';
+      final cleanTitle = _cleanString(title);
+      final cleanArtist = _cleanString(artist);
+      final keyword = '$cleanTitle $cleanArtist';
       final url = Uri.parse('$_baseUrl?keyword=${Uri.encodeComponent(keyword)}&limit=10');
 
       print('🔍 搜索歌词: $keyword');
@@ -41,6 +43,17 @@ class LyricsApi {
       print('❌ 搜索歌曲失败: $e');
       return [];
     }
+  }
+
+  String _cleanString(String input) {
+    return input
+        .replaceAll("'", "")
+        .replaceAll('"', "")
+        .replaceAll('`', '')
+        .replaceAll('´', '')
+        .replaceAll('’', '')
+        .replaceAll('‘', '')
+        .trim();
   }
 
   Future<String> getLrcLyrics(String mid) async {
