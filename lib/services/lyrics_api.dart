@@ -30,15 +30,20 @@ class LyricsApi {
         final data = json.decode(response.body);
         print('📄 响应数据: ${json.encode(data)}');
 
-        if (data['code'] == 200 && data['data'] != null) {
+        if (data['code'] == 1 && data['data'] != null) {
           final List<dynamic> songs = data['data'];
           return songs.map<Map<String, dynamic>>((song) {
+            final singerList = song['singer'] as List?;
+            final singer = singerList != null && singerList.isNotEmpty
+                ? singerList[0] as String
+                : '';
+
             return {
               'mid': song['mid'],
-              'title': song['song'],
-              'artist': song['singer'],
+              'title': song['name'],
+              'artist': singer,
               'album': song['album'],
-              'duration': song['interval'],
+              'duration': song['duration'],
             };
           }).toList();
         }
