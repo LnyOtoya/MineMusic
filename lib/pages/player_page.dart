@@ -161,7 +161,29 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       }
 
       if (lyricsApiType == LyricsApiType.txmusic2) {
-        print('⚠️ txmusic2 API未实现');
+        final lyricsData = await _lyricsApi.getTxMusic2Lyrics(title, artist);
+
+        if (lyricsData['lyrics'] != null && lyricsData['lyrics']!.isNotEmpty) {
+          print('✅ 从txmusic2获取到歌词');
+          print('📝 歌词长度: ${lyricsData['lyrics']!.length}');
+          print('📝 翻译长度: ${lyricsData['translation']!.length}');
+
+          setState(() {
+            _lrcLyrics = lyricsData['lyrics']!;
+            if (lyricsData['translation'] != null &&
+                lyricsData['translation']!.isNotEmpty) {
+              _lyricController.loadLyric(
+                lyricsData['lyrics']!,
+                translationLyric: lyricsData['translation']!,
+              );
+            } else {
+              _lyricController.loadLyric(lyricsData['lyrics']!);
+            }
+          });
+          return;
+        }
+
+        print('⚠️ txmusic2未找到歌词');
       }
 
       print('⚠️ 未找到歌词');
