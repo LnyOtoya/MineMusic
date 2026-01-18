@@ -107,7 +107,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             ListTile(
               leading: const Icon(Icons.lyrics_rounded),
-              title: const Text('歌词API'),
+              title: const Text('歌词API (需要重启)'),
               subtitle: Text(_currentLyricsApiType.displayName),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () {
@@ -338,9 +338,23 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
             RadioListTile<LyricsApiType>(
-              title: const Text('第三方API'),
+              title: const Text('txmusic1'),
               subtitle: const Text('使用在线歌词服务'),
               value: LyricsApiType.thirdParty,
+              groupValue: _currentLyricsApiType,
+              onChanged: (value) {
+                if (value != null) {
+                  widget.setLyricsApiType(value);
+                  setState(() {
+                    _currentLyricsApiType = value;
+                  });
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            RadioListTile<LyricsApiType>(
+              title: const Text('txmusic2'),
+              value: LyricsApiType.txmusic2,
               groupValue: _currentLyricsApiType,
               onChanged: (value) {
                 if (value != null) {

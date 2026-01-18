@@ -160,6 +160,10 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
         print('⚠️ Subsonic/Navidrome未找到歌词');
       }
 
+      if (lyricsApiType == LyricsApiType.txmusic2) {
+        print('⚠️ txmusic2 API未实现');
+      }
+
       print('⚠️ 未找到歌词');
       setState(() {
         _lrcLyrics = '';
