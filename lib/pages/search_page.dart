@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
@@ -31,14 +32,50 @@ class _SearchPageState extends State<SearchPage> {
   };
   bool _isSearching = false;
   bool _hasSearched = false;
+  List<String> _searchHistory = [];
 
   @override
   void initState() {
     super.initState();
+    _loadSearchHistory();
     if (widget.initialQuery.isNotEmpty) {
       _searchController.text = widget.initialQuery;
       _performSearch(widget.initialQuery);
     }
+  }
+
+  Future<void> _loadSearchHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _searchHistory = prefs.getStringList('search_history') ?? [];
+    });
+  }
+
+  Future<void> _saveSearchHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('search_history', _searchHistory);
+  }
+
+  Future<void> _addToSearchHistory(String query) async {
+    if (query.trim().isEmpty) return;
+
+    setState(() {
+      _searchHistory.remove(query);
+      _searchHistory.insert(0, query);
+      if (_searchHistory.length > 10) {
+        _searchHistory = _searchHistory.sublist(0, 10);
+      }
+    });
+
+    await _saveSearchHistory();
+  }
+
+  Future<void> _clearSearchHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('search_history');
+    setState(() {
+      _searchHistory = [];
+    });
   }
 
   @override
@@ -56,6 +93,8 @@ class _SearchPageState extends State<SearchPage> {
       });
       return;
     }
+
+    await _addToSearchHistory(query);
 
     setState(() {
       _isSearching = true;
@@ -173,7 +212,7 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildSearchResults() {
     if (!_hasSearched) {
-      return _buildEmptyState();
+      return _buildHistorySection();
     }
 
     final artists = _searchResults['artists'] ?? [];
@@ -200,6 +239,79 @@ class _SearchPageState extends State<SearchPage> {
           _buildSongsList(songs),
         ],
       ],
+    );
+  }
+
+  Widget _buildHistorySection() {
+    if (_searchHistory.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '历史搜索',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              TextButton.icon(
+                onPressed: _clearSearchHistory,
+                icon: Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                label: Text(
+                  '清除',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: _searchHistory.map((query) {
+              return _buildHistoryChip(query);
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHistoryChip(String query) {
+    return InkWell(
+      onTap: () {
+        _searchController.text = query;
+        _performSearch(query);
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          query,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ),
     );
   }
 
@@ -401,52 +513,48 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildAlbumsList(List<Map<String, dynamic>> albums) {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      itemCount: albums.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final album = albums[index];
-        return _buildAlbumItem(album);
-      },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: albums.map((album) {
+          return _buildAlbumCard(album);
+        }).toList(),
+      ),
     );
   }
 
-  Widget _buildAlbumItem(Map<String, dynamic> album) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetailPage(
-                api: widget.api,
-                playerService: widget.playerService,
-                item: album,
-                type: DetailType.album,
+  Widget _buildAlbumCard(Map<String, dynamic> album) {
+    return SizedBox(
+      width: 140,
+      child: Card(
+        elevation: 0,
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DetailPage(
+                  api: widget.api,
+                  playerService: widget.playerService,
+                  item: album,
+                  type: DetailType.album,
+                ),
               ),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
+            );
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
+              AspectRatio(
+                aspectRatio: 1,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
                   ),
                   child: album['coverArt'] != null
                       ? CachedNetworkImage(
@@ -454,36 +562,51 @@ class _SearchPageState extends State<SearchPage> {
                             album['coverArt'],
                           ),
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Icon(
-                            Icons.album_rounded,
+                          placeholder: (context, url) => Container(
                             color: Theme.of(
                               context,
-                            ).colorScheme.onSurfaceVariant,
+                            ).colorScheme.primaryContainer,
+                            child: Icon(
+                              Icons.album_rounded,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                            ),
                           ),
-                          errorWidget: (context, url, error) => Icon(
-                            Icons.album_rounded,
+                          errorWidget: (context, url, error) => Container(
                             color: Theme.of(
                               context,
-                            ).colorScheme.onSurfaceVariant,
+                            ).colorScheme.primaryContainer,
+                            child: Icon(
+                              Icons.album_rounded,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                            ),
                           ),
                         )
-                      : Icon(
-                          Icons.album_rounded,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      : Container(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          child: Icon(
+                            Icons.album_rounded,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                          ),
                         ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              Padding(
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       album['name'] ?? '未知专辑',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
@@ -495,19 +618,8 @@ class _SearchPageState extends State<SearchPage> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${album['songCount'] ?? 0} 首歌曲',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
                   ],
                 ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -517,101 +629,107 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildSongsList(List<Map<String, dynamic>> songs) {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      itemCount: songs.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final song = songs[index];
-        return _buildSongItem(song, songs);
-      },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: songs.map((song) {
+          return _buildSongCard(song, songs);
+        }).toList(),
+      ),
     );
   }
 
-  Widget _buildSongItem(
+  Widget _buildSongCard(
     Map<String, dynamic> song,
     List<Map<String, dynamic>> playlist,
   ) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          widget.playerService.playSong(
-            song,
-            sourceType: 'search',
-            playlist: playlist,
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
+    return SizedBox(
+      width: 140,
+      child: Card(
+        elevation: 0,
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          onTap: () {
+            widget.playerService.playSong(
+              song,
+              sourceType: 'search',
+              playlist: playlist,
+            );
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
+              AspectRatio(
+                aspectRatio: 1,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
                   ),
                   child: song['coverArt'] != null
                       ? CachedNetworkImage(
                           imageUrl: widget.api.getCoverArtUrl(song['coverArt']),
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Icon(
-                            Icons.music_note_rounded,
+                          placeholder: (context, url) => Container(
                             color: Theme.of(
                               context,
-                            ).colorScheme.onSurfaceVariant,
+                            ).colorScheme.secondaryContainer,
+                            child: Icon(
+                              Icons.music_note_rounded,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSecondaryContainer,
+                            ),
                           ),
-                          errorWidget: (context, url, error) => Icon(
-                            Icons.music_note_rounded,
+                          errorWidget: (context, url, error) => Container(
                             color: Theme.of(
                               context,
-                            ).colorScheme.onSurfaceVariant,
+                            ).colorScheme.secondaryContainer,
+                            child: Icon(
+                              Icons.music_note_rounded,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSecondaryContainer,
+                            ),
                           ),
                         )
-                      : Icon(
-                          Icons.music_note_rounded,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      : Container(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
+                          child: Icon(
+                            Icons.music_note_rounded,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSecondaryContainer,
+                          ),
                         ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              Padding(
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       song['title'] ?? '未知歌曲',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${song['artist'] ?? '未知艺术家'} • ${song['album'] ?? '未知专辑'}',
+                      song['artist'] ?? '未知艺术家',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatDuration(song['duration']),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
                     ),
                   ],
                 ),
