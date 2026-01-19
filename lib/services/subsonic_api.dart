@@ -1021,4 +1021,129 @@ class SubsonicApi {
       return [];
     }
   }
+
+  Future<Map<String, List<Map<String, dynamic>>>> search3({
+    required String query,
+    int artistCount = 20,
+    int albumCount = 20,
+    int songCount = 20,
+    int artistOffset = 0,
+    int albumOffset = 0,
+    int songOffset = 0,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/search3');
+
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MyMusicPlayer',
+        'f': 'xml',
+        'query': query,
+        'artistCount': artistCount.toString(),
+        'albumCount': albumCount.toString(),
+        'songCount': songCount.toString(),
+        'artistOffset': artistOffset.toString(),
+        'albumOffset': albumOffset.toString(),
+        'songOffset': songOffset.toString(),
+      };
+
+      final urlWithParams = url.replace(queryParameters: params);
+      print('🔍 搜索 URL: $urlWithParams');
+
+      final response = await http.get(urlWithParams);
+      print('📡 搜索响应状态: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(responseBody);
+
+        final searchResult = document
+            .findAllElements('searchResult3')
+            .firstOrNull;
+        if (searchResult == null) {
+          return {'artists': [], 'albums': [], 'songs': []};
+        }
+
+        final List<Map<String, dynamic>> artists = [];
+        final List<Map<String, dynamic>> albums = [];
+        final List<Map<String, dynamic>> songs = [];
+
+        final queryLower = query.toLowerCase();
+
+        for (var element in searchResult.findAllElements('artist')) {
+          final artistName = element.getAttribute('name') ?? '';
+          if (artistName.toLowerCase().contains(queryLower)) {
+            artists.add({
+              'id': element.getAttribute('id'),
+              'name': artistName,
+              'albumCount': element.getAttribute('albumCount'),
+              'coverArt': element.getAttribute('coverArt'),
+            });
+          }
+        }
+
+        final Map<String, Map<String, dynamic>> albumMap = {};
+        for (var element in searchResult.findAllElements('album')) {
+          final albumName = element.getAttribute('name') ?? '';
+          if (albumName.toLowerCase().contains(queryLower)) {
+            final artist = element.getAttribute('artist') ?? '';
+            final songCount =
+                int.tryParse(element.getAttribute('songCount') ?? '0') ?? 0;
+            final albumKey = '$artist-$albumName';
+
+            final albumData = {
+              'id': element.getAttribute('id'),
+              'name': albumName,
+              'artist': artist,
+              'artistId': element.getAttribute('artistId'),
+              'songCount': element.getAttribute('songCount'),
+              'duration': element.getAttribute('duration'),
+              'coverArt': element.getAttribute('coverArt'),
+              'created': element.getAttribute('created'),
+            };
+
+            if (albumMap.containsKey(albumKey)) {
+              final existingSongCount =
+                  int.tryParse(albumMap[albumKey]!['songCount'] ?? '0') ?? 0;
+              if (songCount > existingSongCount) {
+                albumMap[albumKey] = albumData;
+              }
+            } else {
+              albumMap[albumKey] = albumData;
+            }
+          }
+        }
+
+        albums.addAll(albumMap.values.toList());
+
+        for (var element in searchResult.findAllElements('song')) {
+          final songTitle = element.getAttribute('title') ?? '';
+          if (songTitle.toLowerCase().contains(queryLower)) {
+            songs.add({
+              'id': element.getAttribute('id'),
+              'title': songTitle,
+              'artist': element.getAttribute('artist'),
+              'album': element.getAttribute('album'),
+              'duration': element.getAttribute('duration'),
+              'coverArt': element.getAttribute('coverArt'),
+              'year': element.getAttribute('year'),
+              'genre': element.getAttribute('genre'),
+            });
+          }
+        }
+
+        print(
+          '✅ 搜索结果: ${artists.length} 艺术家, ${albums.length} 专辑, ${songs.length} 歌曲',
+        );
+        return {'artists': artists, 'albums': albums, 'songs': songs};
+      } else {
+        throw Exception('HTTP 错误: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('搜索失败: $e');
+      return {'artists': [], 'albums': [], 'songs': []};
+    }
+  }
 }

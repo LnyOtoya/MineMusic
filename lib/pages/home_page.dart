@@ -8,6 +8,7 @@ import 'newest_albums_page.dart';
 import 'similar_songs_page.dart';
 import 'detail_page.dart';
 import 'settings_page.dart';
+import 'search_page.dart';
 
 //有状态组件statefulWidget,接受api实例和播放器服务
 class HomePage extends StatefulWidget {
@@ -39,23 +40,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with AutomaticKeepAliveClientMixin {
-  // 储存随机专辑的future对象
   late Future<List<Map<String, dynamic>>> _randomAlbumsFuture;
-
-  // 储存最近播放的歌曲的future对象
   late Future<List<Map<String, dynamic>>> _recentPlayedFuture;
-
-  // 记录当前歌曲ID，用于判断是否需要刷新
   String? _currentSongId;
-
-  // 标记是否已经初始化过数据
   bool _isInitialized = false;
-
-  // 搜索框是否被聚焦
-  bool _isSearchFocused = false;
-
-  // 搜索框焦点控制器
-  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   bool get wantKeepAlive => true;
@@ -64,27 +52,11 @@ class _HomePageState extends State<HomePage>
   void initState() {
     super.initState();
 
-    // 监听搜索框焦点变化
-    _searchFocusNode.addListener(() {
-      setState(() {
-        _isSearchFocused = _searchFocusNode.hasFocus;
-      });
-    });
-
-    // 只在第一次初始化时加载数据
     if (!_isInitialized) {
-      // 初始化时加载专辑的数量(在initState中调用getRandomAlbums加载专辑)
       _randomAlbumsFuture = widget.api.getRandomAlbums(size: 9);
-
-      // 初始化时加载最近播放的歌曲
       _recentPlayedFuture = widget.playerService.getRecentSongs(count: 5);
-
-      // 记录初始歌曲ID
       _currentSongId = widget.playerService.currentSong?['id'];
-
-      // 监听播放器状态变化
       widget.playerService.addListener(_onPlayerStateChanged);
-
       _isInitialized = true;
     }
   }
@@ -92,7 +64,6 @@ class _HomePageState extends State<HomePage>
   @override
   void dispose() {
     widget.playerService.removeListener(_onPlayerStateChanged);
-    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -112,37 +83,29 @@ class _HomePageState extends State<HomePage>
   //构建ui (核心方法)
   @override
   Widget build(BuildContext context) {
-    super.build(context); // 必须调用，用于 AutomaticKeepAliveClientMixin
+    super.build(context);
     return RefreshIndicator(
       color: Theme.of(context).colorScheme.primary,
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       onRefresh: _refreshData,
-      child: GestureDetector(
-        onTap: () {
-          if (_searchFocusNode.hasFocus) {
-            _searchFocusNode.unfocus();
-          }
-        },
-        behavior: HitTestBehavior.translucent,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const SizedBox(height: 64),
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          const SizedBox(height: 64),
 
-            _buildWelcomeSection(),
+          _buildWelcomeSection(),
 
-            const SizedBox(height: 12),
-            _buildQuickAccess(),
+          const SizedBox(height: 12),
+          _buildQuickAccess(),
 
-            const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-            _buildRandomSongs(),
+          _buildRandomSongs(),
 
-            const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-            _buildRecentlyPlayed(),
-          ],
-        ),
+          _buildRecentlyPlayed(),
+        ],
       ),
     );
   }
@@ -238,54 +201,54 @@ class _HomePageState extends State<HomePage>
             ],
           ),
           const SizedBox(height: 20),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+          Container(
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(28),
-              boxShadow: _isSearchFocused
-                  ? [
-                      BoxShadow(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.shadow.withOpacity(0.15),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : [],
             ),
-            child: SearchBar(
-              focusNode: _searchFocusNode,
+            child: InkWell(
               onTap: () {
-                setState(() {
-                  _isSearchFocused = true;
-                });
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SearchPage(
+                      api: widget.api,
+                      playerService: widget.playerService,
+                    ),
+                  ),
+                );
               },
-              hintText: '搜索歌曲、专辑、艺人...',
-              hintStyle: WidgetStatePropertyAll(
-                TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 16,
+              borderRadius: BorderRadius.circular(28),
+              child: IgnorePointer(
+                child: SearchBar(
+                  hintText: '搜索歌曲、专辑、艺人...',
+                  hintStyle: WidgetStatePropertyAll(
+                    TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 16,
+                    ),
+                  ),
+                  leading: Padding(
+                    padding: const EdgeInsets.only(left: 16, right: 8),
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      size: 24,
+                    ),
+                  ),
+                  backgroundColor: WidgetStatePropertyAll(
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                  ),
+                  elevation: WidgetStatePropertyAll(0),
+                  shape: WidgetStatePropertyAll(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                  ),
+                  padding: WidgetStatePropertyAll(
+                    const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                  ),
                 ),
-              ),
-              leading: Padding(
-                padding: const EdgeInsets.only(left: 16, right: 8),
-                child: Icon(
-                  Icons.search_rounded,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 24,
-                ),
-              ),
-              backgroundColor: WidgetStatePropertyAll(
-                Theme.of(context).colorScheme.surfaceContainerHighest,
-              ),
-              elevation: WidgetStatePropertyAll(0),
-              shape: WidgetStatePropertyAll(
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-              ),
-              padding: WidgetStatePropertyAll(
-                const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
               ),
             ),
           ),
