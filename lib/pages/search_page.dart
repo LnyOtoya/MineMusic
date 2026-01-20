@@ -513,14 +513,20 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildAlbumsList(List<Map<String, dynamic>> albums) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: albums.map((album) {
-          return _buildAlbumCard(album);
-        }).toList(),
+    return SizedBox(
+      height: 220,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: albums.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: EdgeInsets.only(
+              right: index == albums.length - 1 ? 0 : 12,
+            ),
+            child: _buildAlbumCard(albums[index]),
+          );
+        },
       ),
     );
   }
@@ -597,19 +603,19 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       album['name'] ?? '未知专辑',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       album['artist'] ?? '未知艺术家',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -629,102 +635,87 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildSongsList(List<Map<String, dynamic>> songs) {
-    return Padding(
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: songs.map((song) {
-          return _buildSongCard(song, songs);
-        }).toList(),
-      ),
+      itemCount: songs.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        return _buildSongItem(songs[index], songs);
+      },
     );
   }
 
-  Widget _buildSongCard(
+  Widget _buildSongItem(
     Map<String, dynamic> song,
     List<Map<String, dynamic>> playlist,
   ) {
-    return SizedBox(
-      width: 140,
-      child: Card(
-        elevation: 0,
-        color: Theme.of(context).colorScheme.surfaceContainer,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: InkWell(
-          onTap: () {
-            widget.playerService.playSong(
-              song,
-              sourceType: 'search',
-              playlist: playlist,
-            );
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () {
+          widget.playerService.playSong(
+            song,
+            sourceType: 'search',
+            playlist: playlist,
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
             children: [
-              AspectRatio(
-                aspectRatio: 1,
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
+                  borderRadius: BorderRadius.circular(8),
                   child: song['coverArt'] != null
                       ? CachedNetworkImage(
                           imageUrl: widget.api.getCoverArtUrl(song['coverArt']),
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.secondaryContainer,
-                            child: Icon(
-                              Icons.music_note_rounded,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSecondaryContainer,
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.secondaryContainer,
-                            child: Icon(
-                              Icons.music_note_rounded,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSecondaryContainer,
-                            ),
-                          ),
-                        )
-                      : Container(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
-                          child: Icon(
+                          placeholder: (context, url) => Icon(
                             Icons.music_note_rounded,
                             color: Theme.of(
                               context,
-                            ).colorScheme.onSecondaryContainer,
+                            ).colorScheme.onSurfaceVariant,
                           ),
+                          errorWidget: (context, url, error) => Icon(
+                            Icons.music_note_rounded,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                      : Icon(
+                          Icons.music_note_rounded,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(12),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       song['title'] ?? '未知歌曲',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      song['artist'] ?? '未知艺术家',
+                      '${song['artist'] ?? '未知艺术家'} · ${song['album'] ?? '未知专辑'}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
