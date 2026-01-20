@@ -223,8 +223,9 @@ class MyAudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> onTaskRemoved() async {
-    await stop();
-    // 不再调用 super.onTaskRemoved()
+    // 不停止播放，保持后台服务运行
+    // 只在用户明确停止时才停止播放
+    await super.onTaskRemoved();
   }
 
   // 添加自定义的 dispose 方法

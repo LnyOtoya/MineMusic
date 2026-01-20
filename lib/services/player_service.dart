@@ -14,8 +14,7 @@ class PlayerService extends ChangeNotifier {
   // 歌词API类型
   static final ValueNotifier<LyricsApiType> lyricsApiTypeNotifier =
       ValueNotifier(LyricsApiType.disabled);
-  static final ValueNotifier<bool> lyricsEnabledNotifier =
-      ValueNotifier(false);
+  static final ValueNotifier<bool> lyricsEnabledNotifier = ValueNotifier(false);
 
   // 播放状态相关变量
   Map<String, dynamic>? _currentSong;
@@ -48,8 +47,9 @@ class PlayerService extends ChangeNotifier {
     final savedLyricsEnabled = prefs.getBool('lyricsEnabled') ?? false;
 
     if (savedLyricsApiType != null) {
-      lyricsApiTypeNotifier.value =
-          LyricsApiTypeExtension.fromString(savedLyricsApiType);
+      lyricsApiTypeNotifier.value = LyricsApiTypeExtension.fromString(
+        savedLyricsApiType,
+      );
     }
     lyricsEnabledNotifier.value = savedLyricsEnabled;
   }
@@ -74,7 +74,7 @@ class PlayerService extends ChangeNotifier {
         androidNotificationChannelName: 'MineMusic',
         androidNotificationOngoing: true,
         androidStopForegroundOnPause: true,
-        androidNotificationIcon: 'mipmap/ic_launcher',
+        androidNotificationIcon: 'drawable/ic_launcher_monochrome',
       ),
     );
 
