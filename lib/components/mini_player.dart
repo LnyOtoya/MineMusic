@@ -8,14 +8,8 @@ import '../pages/player_page.dart';
 class MiniPlayer extends StatefulWidget {
   final PlayerService playerService;
   final SubsonicApi api;
-  final LyricsApiType? lyricsApiType;
 
-  const MiniPlayer({
-    super.key,
-    required this.playerService,
-    required this.api,
-    this.lyricsApiType,
-  });
+  const MiniPlayer({super.key, required this.playerService, required this.api});
 
   @override
   State<MiniPlayer> createState() => _MiniPlayerState();
@@ -378,11 +372,8 @@ class _MiniPlayerState extends State<MiniPlayer>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PlayerPage(
-          playerService: widget.playerService,
-          api: widget.api,
-          lyricsApiType: widget.lyricsApiType,
-        ),
+        builder: (context) =>
+            PlayerPage(playerService: widget.playerService, api: widget.api),
       ),
     );
   }

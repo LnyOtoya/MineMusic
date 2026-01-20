@@ -10,14 +10,12 @@ class SettingsPage extends StatefulWidget {
   final SubsonicApi api;
   final PlayerService playerService;
   final Function(ThemeMode) setThemeMode;
-  final Function(LyricsApiType) setLyricsApiType;
 
   const SettingsPage({
     super.key,
     required this.api,
     required this.playerService,
     required this.setThemeMode,
-    required this.setLyricsApiType,
   });
 
   @override
@@ -27,12 +25,24 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   ThemeMode _currentThemeMode = ThemeMode.system;
   LyricsApiType _currentLyricsApiType = LyricsApiType.disabled;
+  bool _lyricsEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _loadThemeMode();
     _loadLyricsApiType();
+    _loadLyricsEnabled();
+
+    PlayerService.lyricsApiTypeNotifier.addListener(_onLyricsSettingsChanged);
+    PlayerService.lyricsEnabledNotifier.addListener(_onLyricsSettingsChanged);
+  }
+
+  void _onLyricsSettingsChanged() {
+    setState(() {
+      _currentLyricsApiType = PlayerService.lyricsApiTypeNotifier.value;
+      _lyricsEnabled = PlayerService.lyricsEnabledNotifier.value;
+    });
   }
 
   Future<void> _loadThemeMode() async {
@@ -49,7 +59,6 @@ class _SettingsPageState extends State<SettingsPage> {
             break;
           default:
             _currentThemeMode = ThemeMode.system;
-            break;
         }
       });
     }
@@ -65,6 +74,29 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       });
     }
+  }
+
+  Future<void> _loadLyricsEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLyricsEnabled = prefs.getBool('lyricsEnabled') ?? false;
+    setState(() {
+      _lyricsEnabled = savedLyricsEnabled;
+    });
+  }
+
+  Future<void> _saveLyricsEnabled(bool enabled) async {
+    await PlayerService.setLyricsEnabled(enabled);
+  }
+
+  @override
+  void dispose() {
+    PlayerService.lyricsApiTypeNotifier.removeListener(
+      _onLyricsSettingsChanged,
+    );
+    PlayerService.lyricsEnabledNotifier.removeListener(
+      _onLyricsSettingsChanged,
+    );
+    super.dispose();
   }
 
   @override
@@ -106,23 +138,33 @@ class _SettingsPageState extends State<SettingsPage> {
                 _showThemeModeDialog();
               },
             ),
+            SwitchListTile(
+              secondary: const Icon(Icons.lyrics_rounded),
+              title: const Text('启用歌词'),
+              subtitle: Text(_lyricsEnabled ? '已启用' : '已禁用'),
+              value: _lyricsEnabled,
+              onChanged: (value) async {
+                await _saveLyricsEnabled(value);
+                if (!value) {
+                  await PlayerService.setLyricsApiType(LyricsApiType.disabled);
+                } else if (_currentLyricsApiType == LyricsApiType.disabled) {
+                  await PlayerService.setLyricsApiType(LyricsApiType.customApi);
+                }
+              },
+            ),
             ListTile(
-              leading: const Icon(Icons.lyrics_rounded),
+              leading: const Icon(Icons.settings_rounded),
               title: const Text('歌词API'),
               subtitle: Text(_currentLyricsApiType.displayName),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () async {
+                if (!_lyricsEnabled) {
+                  await _saveLyricsEnabled(true);
+                }
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => CustomApiConfigPage(
-                      onLyricsApiTypeChanged: (type) {
-                        setState(() {
-                          _currentLyricsApiType = type;
-                        });
-                        widget.setLyricsApiType(type);
-                      },
-                    ),
+                    builder: (context) => const CustomApiConfigPage(),
                   ),
                 );
               },

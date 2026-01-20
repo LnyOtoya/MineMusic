@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
 import '../services/lyrics_api.dart';
@@ -10,14 +11,8 @@ import '../models/lyrics_api_type.dart';
 class PlayerPage extends StatefulWidget {
   final PlayerService playerService;
   final SubsonicApi api;
-  final LyricsApiType? lyricsApiType;
 
-  const PlayerPage({
-    super.key,
-    required this.playerService,
-    required this.api,
-    this.lyricsApiType,
-  });
+  const PlayerPage({super.key, required this.playerService, required this.api});
 
   @override
   State<PlayerPage> createState() => _PlayerPageState();
@@ -37,6 +32,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
   String _lrcLyrics = '';
   bool _isLoadingLyrics = false;
+  bool _lyricsEnabled = false;
+  LyricsApiType _currentLyricsApiType = LyricsApiType.disabled;
   late LyricController _lyricController;
   final PageController _pageController = PageController(initialPage: 0);
   int _currentPage = 0;
@@ -81,11 +78,27 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     // 初始化歌词控制器
     _lyricController = LyricController();
 
+    // 初始化歌词设置
+    _lyricsEnabled = PlayerService.lyricsEnabledNotifier.value;
+    _currentLyricsApiType = PlayerService.lyricsApiTypeNotifier.value;
+
+    // 监听歌词设置变化
+    PlayerService.lyricsEnabledNotifier.addListener(_onLyricsSettingsChanged);
+    PlayerService.lyricsApiTypeNotifier.addListener(_onLyricsSettingsChanged);
+
     // 监听播放状态变化
     widget.playerService.addListener(_updatePlayerState);
     _updatePlayerState(); // 初始状态更新
 
     // 加载当前歌曲歌词
+    _loadLyrics();
+  }
+
+  void _onLyricsSettingsChanged() {
+    setState(() {
+      _lyricsEnabled = PlayerService.lyricsEnabledNotifier.value;
+      _currentLyricsApiType = PlayerService.lyricsApiTypeNotifier.value;
+    });
     _loadLyrics();
   }
 
@@ -98,6 +111,13 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     _pageController.dispose();
     _lyricController.dispose();
 
+    PlayerService.lyricsEnabledNotifier.removeListener(
+      _onLyricsSettingsChanged,
+    );
+    PlayerService.lyricsApiTypeNotifier.removeListener(
+      _onLyricsSettingsChanged,
+    );
+
     widget.playerService.removeListener(_updatePlayerState);
     super.dispose();
   }
@@ -107,15 +127,15 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     final song = widget.playerService.currentSong;
     if (song == null) return;
 
-    final lyricsApiType = widget.lyricsApiType ?? LyricsApiType.disabled;
-
-    if (lyricsApiType == LyricsApiType.disabled) {
+    if (!_lyricsEnabled) {
       print('🚫 歌词功能已关闭');
       setState(() {
         _lrcLyrics = '';
       });
       return;
     }
+
+    final lyricsApiType = _currentLyricsApiType;
 
     setState(() => _isLoadingLyrics = true);
 
@@ -346,6 +366,41 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
   // 构建歌词页面
   Widget _buildLyricsPage() {
+    if (!_lyricsEnabled) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.lyrics_rounded,
+                size: 64,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withOpacity(0.3),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '歌词功能已关闭',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '请在设置中启用歌词',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: _isLoadingLyrics
           ? Center(child: CircularProgressIndicator())

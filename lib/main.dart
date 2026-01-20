@@ -46,8 +46,6 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
-// 其他代码保持不变...
-
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -57,13 +55,11 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.system;
-  LyricsApiType _lyricsApiType = LyricsApiType.disabled;
 
   @override
   void initState() {
     super.initState();
     _loadThemeMode();
-    _loadLyricsApiType();
   }
 
   Future<void> _loadThemeMode() async {
@@ -86,16 +82,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> _loadLyricsApiType() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLyricsApiType = prefs.getString('lyricsApiType');
-    if (savedLyricsApiType != null) {
-      setState(() {
-        _lyricsApiType = LyricsApiTypeExtension.fromString(savedLyricsApiType);
-      });
-    }
-  }
-
   Future<void> setThemeMode(ThemeMode mode) async {
     final prefs = await SharedPreferences.getInstance();
     String themeModeString;
@@ -113,14 +99,6 @@ class _MyAppState extends State<MyApp> {
     await prefs.setString('themeMode', themeModeString);
     setState(() {
       _themeMode = mode;
-    });
-  }
-
-  Future<void> setLyricsApiType(LyricsApiType type) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('lyricsApiType', type.storageKey);
-    setState(() {
-      _lyricsApiType = type;
     });
   }
 
@@ -150,10 +128,7 @@ class _MyAppState extends State<MyApp> {
           theme: ThemeData(colorScheme: lightScheme, useMaterial3: true),
           darkTheme: ThemeData(colorScheme: darkScheme, useMaterial3: true),
           themeMode: _themeMode,
-          home: InitializerPage(
-            setThemeMode: setThemeMode,
-            setLyricsApiType: setLyricsApiType,
-          ),
+          home: InitializerPage(setThemeMode: setThemeMode),
         );
       },
     );
@@ -162,13 +137,8 @@ class _MyAppState extends State<MyApp> {
 
 class InitializerPage extends StatefulWidget {
   final Function(ThemeMode) setThemeMode;
-  final Function(LyricsApiType) setLyricsApiType;
 
-  const InitializerPage({
-    super.key,
-    required this.setThemeMode,
-    required this.setLyricsApiType,
-  });
+  const InitializerPage({super.key, required this.setThemeMode});
 
   @override
   State<InitializerPage> createState() => _InitializerPageState();
@@ -209,7 +179,6 @@ class _InitializerPageState extends State<InitializerPage> {
               username: username,
               password: password,
               setThemeMode: widget.setThemeMode,
-              setLyricsApiType: widget.setLyricsApiType,
             );
             _isLoading = false;
           });
@@ -230,7 +199,6 @@ class _InitializerPageState extends State<InitializerPage> {
               username: username,
               password: password,
               setThemeMode: widget.setThemeMode,
-              setLyricsApiType: widget.setLyricsApiType,
             );
           });
         },
@@ -254,7 +222,6 @@ class MusicHomePage extends StatefulWidget {
   final String username;
   final String password;
   final Function(ThemeMode) setThemeMode;
-  final Function(LyricsApiType) setLyricsApiType;
 
   const MusicHomePage({
     super.key,
@@ -263,7 +230,6 @@ class MusicHomePage extends StatefulWidget {
     required this.username,
     required this.password,
     required this.setThemeMode,
-    required this.setLyricsApiType,
   });
 
   @override
@@ -275,14 +241,12 @@ class _MusicHomePageState extends State<MusicHomePage> {
   late final PlayerService playerService;
   late Future<List<Map<String, dynamic>>> _randomSongsFuture;
   late final List<Widget> _pages;
-  LyricsApiType _currentLyricsApiType = LyricsApiType.disabled;
 
   @override
   void initState() {
     super.initState();
     playerService = PlayerService(api: widget.api);
     _randomSongsFuture = widget.api.getRandomSongs(count: 9);
-    _loadLyricsApiType();
 
     _pages = [
       HomePage(
@@ -296,22 +260,9 @@ class _MusicHomePageState extends State<MusicHomePage> {
           return _randomSongsFuture;
         },
         setThemeMode: widget.setThemeMode,
-        setLyricsApiType: widget.setLyricsApiType,
       ),
       LibraryPage(api: widget.api, playerService: playerService),
     ];
-  }
-
-  Future<void> _loadLyricsApiType() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLyricsApiType = prefs.getString('lyricsApiType');
-    if (savedLyricsApiType != null) {
-      setState(() {
-        _currentLyricsApiType = LyricsApiTypeExtension.fromString(
-          savedLyricsApiType,
-        );
-      });
-    }
   }
 
   void _onItemTapped(int index) {
@@ -330,11 +281,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
             left: 0,
             right: 0,
             bottom: kBottomNavigationBarHeight - 60,
-            child: MiniPlayer(
-              playerService: playerService,
-              api: widget.api,
-              lyricsApiType: _currentLyricsApiType,
-            ),
+            child: MiniPlayer(playerService: playerService, api: widget.api),
           ),
         ],
       ),

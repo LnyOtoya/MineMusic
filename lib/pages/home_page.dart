@@ -22,8 +22,6 @@ class HomePage extends StatefulWidget {
 
   final Function(ThemeMode)? setThemeMode;
 
-  final Function(LyricsApiType)? setLyricsApiType;
-
   const HomePage({
     super.key,
     required this.api,
@@ -31,7 +29,6 @@ class HomePage extends StatefulWidget {
     required this.randomSongsFuture,
     required this.onRefreshRandomSongs,
     this.setThemeMode,
-    this.setLyricsApiType,
   });
 
   @override
@@ -182,8 +179,6 @@ class _HomePageState extends State<HomePage>
                                 api: widget.api,
                                 playerService: widget.playerService,
                                 setThemeMode: widget.setThemeMode ?? (mode) {},
-                                setLyricsApiType:
-                                    widget.setLyricsApiType ?? (type) {},
                               ),
                             ),
                           );

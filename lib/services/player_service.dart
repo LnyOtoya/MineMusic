@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'subsonic_api.dart';
 import 'audio_handler.dart';
 import 'play_history_service.dart';
+import '../models/lyrics_api_type.dart';
 
 class PlayerService extends ChangeNotifier {
   late MyAudioHandler _audioHandler;
   final SubsonicApi? _api;
   final PlayHistoryService _historyService = PlayHistoryService();
+
+  // 歌词API类型
+  static final ValueNotifier<LyricsApiType> lyricsApiTypeNotifier =
+      ValueNotifier(LyricsApiType.disabled);
+  static final ValueNotifier<bool> lyricsEnabledNotifier =
+      ValueNotifier(false);
 
   // 播放状态相关变量
   Map<String, dynamic>? _currentSong;
@@ -31,6 +39,31 @@ class PlayerService extends ChangeNotifier {
 
   PlayerService({SubsonicApi? api}) : _api = api {
     _initAudioService();
+    _loadLyricsSettings();
+  }
+
+  Future<void> _loadLyricsSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLyricsApiType = prefs.getString('lyricsApiType');
+    final savedLyricsEnabled = prefs.getBool('lyricsEnabled') ?? false;
+
+    if (savedLyricsApiType != null) {
+      lyricsApiTypeNotifier.value =
+          LyricsApiTypeExtension.fromString(savedLyricsApiType);
+    }
+    lyricsEnabledNotifier.value = savedLyricsEnabled;
+  }
+
+  static Future<void> setLyricsApiType(LyricsApiType type) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lyricsApiType', type.name);
+    lyricsApiTypeNotifier.value = type;
+  }
+
+  static Future<void> setLyricsEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('lyricsEnabled', enabled);
+    lyricsEnabledNotifier.value = enabled;
   }
 
   Future<void> _initAudioService() async {
