@@ -7,6 +7,7 @@ class LyricsApi {
       'https://api.vkeys.cn/v2/music/tencent/lyric';
   static const String _txmusic2SearchUrl =
       'https://api.vkeys.cn/v2/music/tencent/search/song';
+  static const String _customApiBaseUrl = 'http://192.168.31.215:4555';
 
   Future<List<Map<String, dynamic>>> searchSongs(
     String title,
@@ -258,6 +259,104 @@ class LyricsApi {
       return {'lyrics': '', 'translation': ''};
     } catch (e) {
       print('❌ 获取txmusic2歌词失败: $e');
+      return {'lyrics': '', 'translation': ''};
+    }
+  }
+
+  Future<Map<String, String>> getCustomApiLyrics(
+    String title,
+    String artist,
+  ) async {
+    try {
+      final cleanTitle = _cleanString(title);
+      final cleanArtist = _cleanString(artist);
+
+      print('🔍 搜索自建API歌曲: $cleanTitle - $cleanArtist');
+
+      final searchUrl = Uri.parse(
+        '$_customApiBaseUrl/search/search_by_type?search_type=song&keyword=${Uri.encodeComponent(cleanTitle)}&singer=${Uri.encodeComponent(cleanArtist)}',
+      );
+
+      print('📡 请求URL: $searchUrl');
+
+      final searchResponse = await http.get(searchUrl);
+      print('📡 搜索响应状态: ${searchResponse.statusCode}');
+
+      if (searchResponse.statusCode == 200) {
+        final searchData = json.decode(utf8.decode(searchResponse.bodyBytes));
+        print('📄 搜索响应数据: ${json.encode(searchData)}');
+
+        if (searchData['code'] == 200 && searchData['data'] != null) {
+          final List<dynamic> songs = searchData['data'];
+          if (songs.isEmpty) {
+            print('⚠️ 未找到匹配的歌曲');
+            return {'lyrics': '', 'translation': ''};
+          }
+
+          final List<Map<String, dynamic>> mappedSongs = songs.map((song) {
+            final songMap = song as Map<String, dynamic>;
+            final singerList = songMap['singer'] as List?;
+            final singerName = singerList != null && singerList.isNotEmpty
+                ? (singerList[0] as Map<String, dynamic>)['name'] ?? ''
+                : '';
+
+            return {
+              'mid': songMap['mid'],
+              'title': songMap['title'],
+              'artist': singerName,
+              'album': songMap['album']?['name'] ?? '',
+            };
+          }).toList();
+
+          final bestMatch = _findBestMatch(title, artist, mappedSongs);
+          if (bestMatch == null) {
+            print('⚠️ 未找到最佳匹配');
+            return {'lyrics': '', 'translation': ''};
+          }
+
+          print('✅ 找到最佳匹配: ${bestMatch['title']} - ${bestMatch['artist']}');
+          return await getCustomApiLrcLyrics(bestMatch['mid']);
+        }
+      }
+
+      return {'lyrics': '', 'translation': ''};
+    } catch (e) {
+      print('❌ 获取自建API歌词失败: $e');
+      return {'lyrics': '', 'translation': ''};
+    }
+  }
+
+  Future<Map<String, String>> getCustomApiLrcLyrics(String mid) async {
+    try {
+      final url = Uri.parse(
+        '$_customApiBaseUrl/lyric/get_lyric?value=$mid&qrc=true&roma=true&trans=true',
+      );
+
+      print('🎵 获取自建API歌词: mid=$mid');
+      print('📡 请求URL: $url');
+
+      final response = await http.get(url);
+      print('📡 响应状态: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        print('📄 响应数据: ${json.encode(data)}');
+
+        if (data['code'] == 200 && data['data'] != null) {
+          final lyrics = data['data']['lyric'];
+          final translation = data['data']['trans'];
+
+          if (lyrics != null && lyrics.isNotEmpty) {
+            print('✅ 成功获取自建API歌词，长度: ${lyrics.length}');
+            print('✅ 翻译长度: ${translation?.length ?? 0}');
+            return {'lyrics': lyrics, 'translation': translation ?? ''};
+          }
+        }
+      }
+
+      return {'lyrics': '', 'translation': ''};
+    } catch (e) {
+      print('❌ 获取自建API歌词失败: $e');
       return {'lyrics': '', 'translation': ''};
     }
   }

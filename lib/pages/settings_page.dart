@@ -366,6 +366,21 @@ class _SettingsPageState extends State<SettingsPage> {
                 }
               },
             ),
+            RadioListTile<LyricsApiType>(
+              title: const Text('自建API'),
+              subtitle: const Text('使用自建歌词服务 (192.168.31.215:4555)'),
+              value: LyricsApiType.customApi,
+              groupValue: _currentLyricsApiType,
+              onChanged: (value) {
+                if (value != null) {
+                  widget.setLyricsApiType(value);
+                  setState(() {
+                    _currentLyricsApiType = value;
+                  });
+                  Navigator.pop(context);
+                }
+              },
+            ),
           ],
         ),
         actions: [
