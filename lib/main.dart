@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/subsonic_api.dart';
 import 'services/player_service.dart';
+import 'models/lyrics_api_type.dart';
+import 'services/custom_lyrics_api_service.dart';
 import 'components/mini_player.dart';
 import 'pages/home_page.dart';
 import 'pages/library_page.dart';
@@ -183,6 +185,8 @@ class _InitializerPageState extends State<InitializerPage> {
   }
 
   Future<void> _initializeApp() async {
+    await CustomLyricsApiService.initializeDefaultApis();
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final baseUrl = prefs.getString('baseUrl');

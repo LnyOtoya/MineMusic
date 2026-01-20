@@ -4,6 +4,7 @@ import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import '../models/lyrics_api_type.dart';
 import 'login_page.dart';
+import 'custom_api_config_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final SubsonicApi api;
@@ -107,11 +108,16 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             ListTile(
               leading: const Icon(Icons.lyrics_rounded),
-              title: const Text('歌词API (需要重启)'),
+              title: const Text('歌词API'),
               subtitle: Text(_currentLyricsApiType.displayName),
               trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {
-                _showLyricsApiDialog();
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CustomApiConfigPage(),
+                  ),
+                );
               },
             ),
           ]),
@@ -282,100 +288,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   widget.setThemeMode(value);
                   setState(() {
                     _currentThemeMode = value;
-                  });
-                  Navigator.pop(context);
-                }
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLyricsApiDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('歌词API'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<LyricsApiType>(
-              title: const Text('关闭歌词'),
-              subtitle: const Text('不显示歌词'),
-              value: LyricsApiType.disabled,
-              groupValue: _currentLyricsApiType,
-              onChanged: (value) {
-                if (value != null) {
-                  widget.setLyricsApiType(value);
-                  setState(() {
-                    _currentLyricsApiType = value;
-                  });
-                  Navigator.pop(context);
-                }
-              },
-            ),
-            RadioListTile<LyricsApiType>(
-              title: const Text('Subsonic/Navidrome'),
-              subtitle: const Text('使用服务器内置歌词'),
-              value: LyricsApiType.subsonic,
-              groupValue: _currentLyricsApiType,
-              onChanged: (value) {
-                if (value != null) {
-                  widget.setLyricsApiType(value);
-                  setState(() {
-                    _currentLyricsApiType = value;
-                  });
-                  Navigator.pop(context);
-                }
-              },
-            ),
-            RadioListTile<LyricsApiType>(
-              title: const Text('txmusic1'),
-              subtitle: const Text('使用在线歌词服务'),
-              value: LyricsApiType.thirdParty,
-              groupValue: _currentLyricsApiType,
-              onChanged: (value) {
-                if (value != null) {
-                  widget.setLyricsApiType(value);
-                  setState(() {
-                    _currentLyricsApiType = value;
-                  });
-                  Navigator.pop(context);
-                }
-              },
-            ),
-            RadioListTile<LyricsApiType>(
-              title: const Text('txmusic2'),
-              value: LyricsApiType.txmusic2,
-              groupValue: _currentLyricsApiType,
-              onChanged: (value) {
-                if (value != null) {
-                  widget.setLyricsApiType(value);
-                  setState(() {
-                    _currentLyricsApiType = value;
-                  });
-                  Navigator.pop(context);
-                }
-              },
-            ),
-            RadioListTile<LyricsApiType>(
-              title: const Text('自建API'),
-              subtitle: const Text('使用自建歌词服务 (192.168.31.215:4555)'),
-              value: LyricsApiType.customApi,
-              groupValue: _currentLyricsApiType,
-              onChanged: (value) {
-                if (value != null) {
-                  widget.setLyricsApiType(value);
-                  setState(() {
-                    _currentLyricsApiType = value;
                   });
                   Navigator.pop(context);
                 }

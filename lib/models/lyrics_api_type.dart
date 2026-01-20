@@ -1,4 +1,4 @@
-enum LyricsApiType { disabled, subsonic, thirdParty, txmusic2, customApi }
+enum LyricsApiType { disabled, subsonic, customApi }
 
 extension LyricsApiTypeExtension on LyricsApiType {
   String get displayName {
@@ -7,10 +7,6 @@ extension LyricsApiTypeExtension on LyricsApiType {
         return '关闭歌词';
       case LyricsApiType.subsonic:
         return 'Subsonic/Navidrome';
-      case LyricsApiType.thirdParty:
-        return 'txmusic1';
-      case LyricsApiType.txmusic2:
-        return 'txmusic2';
       case LyricsApiType.customApi:
         return '自建API';
     }
@@ -22,10 +18,6 @@ extension LyricsApiTypeExtension on LyricsApiType {
         return 'disabled';
       case LyricsApiType.subsonic:
         return 'subsonic';
-      case LyricsApiType.thirdParty:
-        return 'thirdParty';
-      case LyricsApiType.txmusic2:
-        return 'txmusic2';
       case LyricsApiType.customApi:
         return 'customApi';
     }
@@ -37,10 +29,6 @@ extension LyricsApiTypeExtension on LyricsApiType {
         return LyricsApiType.disabled;
       case 'subsonic':
         return LyricsApiType.subsonic;
-      case 'thirdParty':
-        return LyricsApiType.thirdParty;
-      case 'txmusic2':
-        return LyricsApiType.txmusic2;
       case 'customApi':
         return LyricsApiType.customApi;
       default:

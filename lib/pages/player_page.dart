@@ -126,21 +126,6 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       print('🎵 开始加载歌词: $title - $artist');
       print('📡 使用API: ${lyricsApiType.displayName}');
 
-      if (lyricsApiType == LyricsApiType.thirdParty) {
-        final lrcLyrics = await _lyricsApi.getLyricsByKeyword(title, artist);
-
-        if (lrcLyrics.isNotEmpty) {
-          print('✅ 从第三方API获取到歌词');
-          setState(() {
-            _lrcLyrics = lrcLyrics;
-            _lyricController.loadLyric(lrcLyrics);
-          });
-          return;
-        }
-
-        print('⚠️ 第三方API未找到歌词');
-      }
-
       if (lyricsApiType == LyricsApiType.subsonic) {
         final lyricData = await widget.api.getLyrics(
           artist: artist,
@@ -158,32 +143,6 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
         }
 
         print('⚠️ Subsonic/Navidrome未找到歌词');
-      }
-
-      if (lyricsApiType == LyricsApiType.txmusic2) {
-        final lyricsData = await _lyricsApi.getTxMusic2Lyrics(title, artist);
-
-        if (lyricsData['lyrics'] != null && lyricsData['lyrics']!.isNotEmpty) {
-          print('✅ 从txmusic2获取到歌词');
-          print('📝 歌词长度: ${lyricsData['lyrics']!.length}');
-          print('📝 翻译长度: ${lyricsData['translation']!.length}');
-
-          setState(() {
-            _lrcLyrics = lyricsData['lyrics']!;
-            if (lyricsData['translation'] != null &&
-                lyricsData['translation']!.isNotEmpty) {
-              _lyricController.loadLyric(
-                lyricsData['lyrics']!,
-                translationLyric: lyricsData['translation']!,
-              );
-            } else {
-              _lyricController.loadLyric(lyricsData['lyrics']!);
-            }
-          });
-          return;
-        }
-
-        print('⚠️ txmusic2未找到歌词');
       }
 
       if (lyricsApiType == LyricsApiType.customApi) {
