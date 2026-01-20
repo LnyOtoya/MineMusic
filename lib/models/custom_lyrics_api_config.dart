@@ -3,19 +3,20 @@ class CustomLyricsApiConfig {
   final String baseUrl;
   final String searchEndpoint;
   final String lyricEndpoint;
-  final String searchMethod; // GET or POST
-  final String lyricMethod; // GET or POST
-  final Map<String, String> searchParams; // 参数映射
-  final Map<String, String> lyricParams; // 参数映射
-  final String songIdField; // 歌曲ID字段名
-  final String titleField; // 歌名字段名
-  final String artistField; // 艺术家字段名
-  final String lyricField; // 歌词字段名
-  final String translationField; // 翻译字段名
-  final String successCode; // 成功响应码
-  final String dataField; // 数据字段名
-  final String artistPath; // 艺术家路径，如 'singer[0].name'
+  final String searchMethod;
+  final String lyricMethod;
+  final Map<String, String> searchParams;
+  final Map<String, String> lyricParams;
+  final String songIdField;
+  final String titleField;
+  final String artistField;
+  final String lyricField;
+  final String translationField;
+  final String successCode;
+  final String dataField;
+  final String artistPath;
   final bool isEnabled;
+  final bool useQrcFormat;
 
   const CustomLyricsApiConfig({
     required this.name,
@@ -35,6 +36,7 @@ class CustomLyricsApiConfig {
     this.dataField = 'data',
     this.artistPath = 'artist',
     this.isEnabled = true,
+    this.useQrcFormat = false,
   });
 
   // 从JSON创建配置
@@ -57,6 +59,7 @@ class CustomLyricsApiConfig {
       dataField: json['dataField'] ?? 'data',
       artistPath: json['artistPath'] ?? 'artist',
       isEnabled: json['isEnabled'] ?? true,
+      useQrcFormat: json['useQrcFormat'] ?? false,
     );
   }
 
@@ -80,6 +83,7 @@ class CustomLyricsApiConfig {
       'dataField': dataField,
       'artistPath': artistPath,
       'isEnabled': isEnabled,
+      'useQrcFormat': useQrcFormat,
     };
   }
 
@@ -102,6 +106,7 @@ class CustomLyricsApiConfig {
     String? dataField,
     String? artistPath,
     bool? isEnabled,
+    bool? useQrcFormat,
   }) {
     return CustomLyricsApiConfig(
       name: name ?? this.name,
@@ -121,6 +126,7 @@ class CustomLyricsApiConfig {
       dataField: dataField ?? this.dataField,
       artistPath: artistPath ?? this.artistPath,
       isEnabled: isEnabled ?? this.isEnabled,
+      useQrcFormat: useQrcFormat ?? this.useQrcFormat,
     );
   }
 

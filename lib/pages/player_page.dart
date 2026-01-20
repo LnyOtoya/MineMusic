@@ -2,11 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
 import '../services/lyrics_api.dart';
 import '../models/lyrics_api_type.dart';
+import '../utils/lrc_to_qrc_converter.dart';
 
 class PlayerPage extends StatefulWidget {
   final PlayerService playerService;
@@ -35,6 +35,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   bool _lyricsEnabled = false;
   LyricsApiType _currentLyricsApiType = LyricsApiType.disabled;
   late LyricController _lyricController;
+  ValueNotifier<LyricStyle>? _lyricStyleNotifier;
   final PageController _pageController = PageController(initialPage: 0);
   int _currentPage = 0;
   String? _currentSongId;
@@ -44,15 +45,6 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    // 初始化专辑封面旋转动画
-    // _animationController = AnimationController(
-    //   vsync: this,
-    //   duration: const Duration(seconds: 20),
-    // );
-    // _albumRotation = CurvedAnimation(
-    //   parent: _animationController,
-    //   curve: Curves.linear,
-    // );
 
     // 初始化播放按钮动画
     _playButtonController = AnimationController(
@@ -92,6 +84,37 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
     // 加载当前歌曲歌词
     _loadLyrics();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // 初始化歌词样式通知器（在 initState 之后调用，可以安全访问 Theme）
+    _lyricStyleNotifier ??= ValueNotifier(
+      LyricStyles.default1.copyWith(
+        textStyle: TextStyle(
+          fontSize: 22,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        activeStyle: TextStyle(
+          fontSize: 28,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.normal,
+        ),
+        translationStyle: TextStyle(
+          fontSize: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        selectedColor: Theme.of(context).colorScheme.onSurfaceVariant,
+        selectedTranslationColor: Theme.of(
+          context,
+        ).colorScheme.onSurfaceVariant,
+        activeHighlightColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 1),
+      ),
+    );
   }
 
   void _onLyricsSettingsChanged() {
@@ -155,9 +178,21 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
         if (lyricData != null && lyricData['text'].isNotEmpty) {
           print('✅ 从Subsonic/Navidrome获取到歌词');
           final lyricsText = lyricData['text'];
+
+          final isQrc = LrcToQrcConverter.isQrcFormat(lyricsText);
+          final qrcLyrics = isQrc
+              ? lyricsText
+              : LrcToQrcConverter.convertLrcToQrc(lyricsText);
+
+          if (isQrc) {
+            print('✅ 检测到QRC格式，使用原始歌词（支持逐字高亮）');
+          } else {
+            print('🔄 已转换为QRC格式，支持逐字高亮');
+          }
+
           setState(() {
-            _lrcLyrics = lyricsText;
-            _lyricController.loadLyric(lyricsText);
+            _lrcLyrics = qrcLyrics;
+            _lyricController.loadLyric(qrcLyrics);
           });
           return;
         }
@@ -173,16 +208,33 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           print('📝 歌词长度: ${lyricsData['lyrics']!.length}');
           print('📝 翻译长度: ${lyricsData['translation']!.length}');
 
+          final lyricsText = lyricsData['lyrics']!;
+          final translationText = lyricsData['translation'];
+
+          final isQrc = LrcToQrcConverter.isQrcFormat(lyricsText);
+          final qrcLyrics = isQrc
+              ? lyricsText
+              : LrcToQrcConverter.convertLrcToQrc(lyricsText);
+
+          if (isQrc) {
+            print('✅ 检测到QRC格式，使用原始歌词（支持逐字高亮）');
+          } else {
+            print('🔄 已转换为QRC格式，支持逐字高亮');
+          }
+
           setState(() {
-            _lrcLyrics = lyricsData['lyrics']!;
-            if (lyricsData['translation'] != null &&
-                lyricsData['translation']!.isNotEmpty) {
+            _lrcLyrics = qrcLyrics;
+            if (translationText != null && translationText.isNotEmpty) {
+              final isTransQrc = LrcToQrcConverter.isQrcFormat(translationText);
+              final qrcTranslation = isTransQrc
+                  ? translationText
+                  : LrcToQrcConverter.convertLrcToQrc(translationText);
               _lyricController.loadLyric(
-                lyricsData['lyrics']!,
-                translationLyric: lyricsData['translation']!,
+                qrcLyrics,
+                translationLyric: qrcTranslation,
               );
             } else {
-              _lyricController.loadLyric(lyricsData['lyrics']!);
+              _lyricController.loadLyric(qrcLyrics);
             }
           });
           return;
@@ -377,7 +429,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                 size: 64,
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               Text(
@@ -392,7 +444,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -406,114 +458,42 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           ? Center(child: CircularProgressIndicator())
           : _lrcLyrics.isEmpty
           ? Center(child: Text('未找到歌词'))
-          : Stack(
-              children: [
-                // 歌词视图
-                LyricView(
-                  controller: _lyricController,
-                  style: LyricStyle(
-                    textStyle:
-                        Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 22,
-                        ) ??
-                        TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 22,
-                        ),
-                    activeStyle:
-                        Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 28,
-                        ) ??
-                        TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 28,
-                        ),
-                    translationStyle:
-                        Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 16,
-                        ) ??
-                        TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 16,
-                        ),
-                    lineGap: 20,
-                    translationLineGap: 10,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical:
-                          (MediaQuery.of(context).size.height - 80 - 200) / 2 -
-                          48,
+          : ValueListenableBuilder(
+              valueListenable: _lyricStyleNotifier!,
+              builder: (context, style, child) {
+                final isDark =
+                    MediaQuery.of(context).platformBrightness ==
+                    Brightness.dark;
+                if (isDark) {
+                  style = style.copyWith(
+                    textStyle: style.textStyle.copyWith(
+                      color: Colors.black.withValues(alpha: 0.4),
                     ),
-                    activeAnchorPosition: 0.5,
-                    selectionAnchorPosition: 0.5,
-                    contentAlignment: CrossAxisAlignment.center,
-                    lineTextAlign: TextAlign.center,
-                    selectionAlignment: MainAxisAlignment.center,
-                    selectedColor: Theme.of(context).colorScheme.primary,
-                    selectedTranslationColor: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant,
-                    scrollDuration: const Duration(milliseconds: 300),
-                    activeAutoResumeDuration: const Duration(seconds: 3),
-                    selectionAutoResumeDuration: const Duration(seconds: 1),
-                  ),
-                ),
-                // 顶部遮罩
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Theme.of(context).colorScheme.surface,
-                          Theme.of(
-                            context,
-                          ).colorScheme.surface.withOpacity(0.95),
-                          Theme.of(
-                            context,
-                          ).colorScheme.surface.withOpacity(0.8),
-                          Theme.of(context).colorScheme.surface.withOpacity(0),
-                        ],
+                    activeStyle: style.activeStyle.copyWith(
+                      color: Colors.black.withValues(alpha: 0.4),
+                    ),
+                    translationStyle: style.translationStyle.copyWith(
+                      color: Colors.black.withValues(alpha: 0.4),
+                    ),
+                    selectedColor: Colors.black.withValues(alpha: 0.4),
+                    selectedTranslationColor: Colors.black.withValues(
+                      alpha: 0.4,
+                    ),
+                    activeHighlightColor: Colors.black.withValues(alpha: 0.9),
+                    translationActiveColor: Colors.black.withValues(alpha: 0.6),
+                  );
+                }
+                return Stack(
+                  children: [
+                    RepaintBoundary(
+                      child: LyricView(
+                        controller: _lyricController,
+                        style: style,
                       ),
                     ),
-                  ),
-                ),
-                // 底部遮罩
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Theme.of(context).colorScheme.surface.withOpacity(0),
-                          Theme.of(
-                            context,
-                          ).colorScheme.surface.withOpacity(0.8),
-                          Theme.of(
-                            context,
-                          ).colorScheme.surface.withOpacity(0.95),
-                          Theme.of(context).colorScheme.surface,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             ),
     );
   }

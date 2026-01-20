@@ -391,7 +391,16 @@ class LyricsApi {
         if (lyrics != null && lyrics.isNotEmpty) {
           print('✅ 成功获取自定义API歌词，长度: ${lyrics.length}');
           print('✅ 翻译长度: ${translation?.length ?? 0}');
-          return {'lyrics': lyrics, 'translation': translation ?? ''};
+          
+          final lyricsText = lyrics.toString();
+          
+          if (apiConfig.useQrcFormat) {
+            print('✅ 使用QRC格式（支持逐字高亮）');
+            return {'lyrics': lyricsText, 'translation': translation ?? ''};
+          } else {
+            print('✅ 使用LRC格式（仅逐行高亮）');
+            return {'lyrics': lyricsText, 'translation': translation ?? ''};
+          }
         }
       }
 

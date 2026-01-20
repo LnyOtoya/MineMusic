@@ -273,6 +273,7 @@ class _CustomApiConfigPageState extends State<CustomApiConfigPage> {
               _buildDetailRow('成功响应码', api.successCode),
               _buildDetailRow('数据字段', api.dataField),
               _buildDetailRow('艺术家路径', api.artistPath),
+              _buildDetailRow('QRC格式', api.useQrcFormat ? '是' : '否'),
             ],
           ),
         ),
@@ -388,6 +389,7 @@ class _ApiEditPageState extends State<ApiEditPage> {
   late TextEditingController _artistPathController;
   String _searchMethod = 'GET';
   String _lyricMethod = 'GET';
+  bool _useQrcFormat = false;
 
   @override
   void initState() {
@@ -428,6 +430,7 @@ class _ApiEditPageState extends State<ApiEditPage> {
     );
     _searchMethod = api?.searchMethod ?? 'GET';
     _lyricMethod = api?.lyricMethod ?? 'GET';
+    _useQrcFormat = api?.useQrcFormat ?? false;
   }
 
   @override
@@ -498,6 +501,12 @@ class _ApiEditPageState extends State<ApiEditPage> {
                 'GET',
                 'POST',
               ], (value) => setState(() => _lyricMethod = value)),
+              SwitchListTile(
+                title: const Text('使用QRC格式（支持逐字高亮）'),
+                subtitle: const Text('启用后将支持逐字高亮效果'),
+                value: _useQrcFormat,
+                onChanged: (value) => setState(() => _useQrcFormat = value),
+              ),
             ]),
             _buildSection('字段映射', [
               _buildTextField(
@@ -660,6 +669,7 @@ class _ApiEditPageState extends State<ApiEditPage> {
       successCode: _successCodeController.text.trim(),
       dataField: _dataFieldController.text.trim(),
       artistPath: _artistPathController.text.trim(),
+      useQrcFormat: _useQrcFormat,
     );
 
     try {

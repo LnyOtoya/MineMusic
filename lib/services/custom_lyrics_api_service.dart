@@ -150,10 +150,11 @@ class CustomLyricsApiService {
         dataField: 'data',
         artistPath: 'singer[0].name',
         isEnabled: true,
+        useQrcFormat: true,
       );
 
       await addCustomApi(defaultApi);
-      print('✅ 已添加默认自建API配置');
+      print('✅ 已添加默认自建API配置（启用QRC格式）');
     }
   }
 }
