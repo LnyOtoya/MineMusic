@@ -115,7 +115,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const CustomApiConfigPage(),
+                    builder: (context) => CustomApiConfigPage(
+                      onLyricsApiTypeChanged: (type) {
+                        setState(() {
+                          _currentLyricsApiType = type;
+                        });
+                        widget.setLyricsApiType(type);
+                      },
+                    ),
                   ),
                 );
               },

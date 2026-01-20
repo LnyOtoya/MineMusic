@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/custom_lyrics_api_config.dart';
 import '../models/lyrics_api_type.dart';
 import '../services/custom_lyrics_api_service.dart';
 
 class CustomApiConfigPage extends StatefulWidget {
   final Function()? onConfigChanged;
+  final Function(LyricsApiType)? onLyricsApiTypeChanged;
 
-  const CustomApiConfigPage({super.key, this.onConfigChanged});
+  const CustomApiConfigPage({
+    super.key,
+    this.onConfigChanged,
+    this.onLyricsApiTypeChanged,
+  });
 
   @override
   State<CustomApiConfigPage> createState() => _CustomApiConfigPageState();
@@ -312,6 +318,9 @@ class _CustomApiConfigPageState extends State<CustomApiConfigPage> {
     await CustomLyricsApiService.setSelectedApi(api);
     await _refresh();
     widget.onConfigChanged?.call();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lyricsApiType', LyricsApiType.customApi.name);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
