@@ -8,6 +8,8 @@ import 'components/mini_player.dart';
 import 'pages/home_page.dart';
 import 'pages/library_page.dart';
 import 'pages/login_page.dart';
+import 'pages/songs_page.dart';
+import 'pages/playlists_page.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'models/lyrics_api_type.dart';
 // import 'package:just_audio_background/just_audio_background.dart';
@@ -262,6 +264,8 @@ class _MusicHomePageState extends State<MusicHomePage> {
         setThemeMode: widget.setThemeMode,
       ),
       LibraryPage(api: widget.api, playerService: playerService),
+      SongsPage(api: widget.api, playerService: playerService),
+      PlaylistsPage(api: widget.api, playerService: playerService),
     ];
   }
 
@@ -305,6 +309,16 @@ class _MusicHomePageState extends State<MusicHomePage> {
             icon: Icon(Icons.library_music_rounded),
             selectedIcon: Icon(Icons.library_music_outlined),
             label: '音乐库',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.music_note_rounded),
+            selectedIcon: Icon(Icons.music_note_outlined),
+            label: '歌曲',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.playlist_play_rounded),
+            selectedIcon: Icon(Icons.playlist_play_outlined),
+            label: '歌单',
           ),
         ],
       ),
