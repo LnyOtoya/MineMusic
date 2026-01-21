@@ -40,6 +40,10 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   int _currentPage = 0;
   String? _currentSongId;
 
+  bool _showStyleToolbar = false;
+  bool _showFontSizeSlider = false;
+  String _currentAlignment = '中'; // 左、中、右
+
   final LyricsApi _lyricsApi = LyricsApi();
 
   @override
@@ -462,11 +466,10 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                     MediaQuery.of(context).platformBrightness ==
                     Brightness.dark;
 
-                // 确保始终设置翻译相关样式
+                // 确保始终设置翻译相关样式，但保留用户调整的字体大小
                 style = style.copyWith(
                   // 基本翻译样式
-                  translationStyle: TextStyle(
-                    fontSize: 16,
+                  translationStyle: style.translationStyle.copyWith(
                     color: isDark
                         ? Colors.black.withValues(alpha: 0.4)
                         : Theme.of(context).colorScheme.onSurfaceVariant,
@@ -482,15 +485,13 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                   // 翻译行间距
                   translationLineGap: 8.0,
                   // 基本文本样式
-                  textStyle: TextStyle(
-                    fontSize: 22,
+                  textStyle: style.textStyle.copyWith(
                     color: isDark
                         ? Colors.black.withValues(alpha: 0.4)
                         : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   // 激活状态的文本样式
-                  activeStyle: TextStyle(
-                    fontSize: 28,
+                  activeStyle: style.activeStyle.copyWith(
                     color: isDark
                         ? Colors.black.withValues(alpha: 0.8)
                         : Theme.of(context).colorScheme.onSurfaceVariant,
@@ -516,6 +517,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                         style: style,
                       ),
                     ),
+                    // 歌词样式调整工具栏
+                    _buildStyleToolbar(),
                   ],
                 );
               },
@@ -595,7 +598,430 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     );
   }
 
-  // 默认封面
+  // 构建字体大小调整按钮
+  Widget _buildFontSizeButtons() {
+    return Column(
+      children: [
+        // 增大字体按钮
+        GestureDetector(
+          onTap: () {
+            final currentStyle = _lyricStyleNotifier!.value;
+            final newTextSize = (currentStyle.textStyle.fontSize ?? 22) + 2;
+            final newActiveSize = (currentStyle.activeStyle.fontSize ?? 28) + 2;
+            final newTranslationSize =
+                (currentStyle.translationStyle.fontSize ?? 16) + 1;
+
+            _lyricStyleNotifier!.value = currentStyle.copyWith(
+              textStyle: currentStyle.textStyle.copyWith(fontSize: newTextSize),
+              activeStyle: currentStyle.activeStyle.copyWith(
+                fontSize: newActiveSize,
+              ),
+              translationStyle: currentStyle.translationStyle.copyWith(
+                fontSize: newTranslationSize,
+              ),
+            );
+          },
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withAlpha(200),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Icon(
+                Icons.text_increase,
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 8),
+        // 减小字体按钮
+        GestureDetector(
+          onTap: () {
+            final currentStyle = _lyricStyleNotifier!.value;
+            final newTextSize = (currentStyle.textStyle.fontSize ?? 22) - 2;
+            final newActiveSize = (currentStyle.activeStyle.fontSize ?? 28) - 2;
+            final newTranslationSize =
+                (currentStyle.translationStyle.fontSize ?? 16) - 1;
+
+            // 最小字体大小限制
+            if (newTextSize >= 12 &&
+                newActiveSize >= 16 &&
+                newTranslationSize >= 10) {
+              _lyricStyleNotifier!.value = currentStyle.copyWith(
+                textStyle: currentStyle.textStyle.copyWith(
+                  fontSize: newTextSize,
+                ),
+                activeStyle: currentStyle.activeStyle.copyWith(
+                  fontSize: newActiveSize,
+                ),
+                translationStyle: currentStyle.translationStyle.copyWith(
+                  fontSize: newTranslationSize,
+                ),
+              );
+            }
+          },
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withAlpha(200),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Icon(
+                Icons.text_decrease,
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 构建对齐方式调整按钮
+  Widget _buildAlignmentButtons() {
+    return Column(
+      children: [
+        // 左对齐按钮
+        GestureDetector(
+          onTap: () {
+            final currentStyle = _lyricStyleNotifier!.value;
+            _lyricStyleNotifier!.value = currentStyle.copyWith(
+              textAlign: TextAlign.left,
+              contentAlignment: CrossAxisAlignment.start,
+            );
+          },
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withAlpha(200),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Icon(
+                Icons.format_align_left,
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 8),
+        // 居中对齐按钮
+        GestureDetector(
+          onTap: () {
+            final currentStyle = _lyricStyleNotifier!.value;
+            _lyricStyleNotifier!.value = currentStyle.copyWith(
+              textAlign: TextAlign.center,
+              contentAlignment: CrossAxisAlignment.center,
+            );
+          },
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withAlpha(200),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Icon(
+                Icons.format_align_center,
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 8),
+        // 右对齐按钮
+        GestureDetector(
+          onTap: () {
+            final currentStyle = _lyricStyleNotifier!.value;
+            _lyricStyleNotifier!.value = currentStyle.copyWith(
+              textAlign: TextAlign.right,
+              contentAlignment: CrossAxisAlignment.end,
+            );
+          },
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withAlpha(200),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Icon(
+                Icons.format_align_right,
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 构建样式调整工具栏
+  Widget _buildStyleToolbar() {
+    return Stack(
+      children: [
+        // 主控制按钮
+        Positioned(
+          bottom: 32,
+          right: 16,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _showStyleToolbar = !_showStyleToolbar;
+                _showFontSizeSlider = false;
+              });
+            },
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(50),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Icon(
+                  _showStyleToolbar ? Icons.close : Icons.format_size,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  size: 28,
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // 展开的工具栏
+        if (_showStyleToolbar) ...[
+          // 背景遮罩
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _showStyleToolbar = false;
+                _showFontSizeSlider = false;
+              });
+            },
+            child: Container(
+              color: Colors.transparent,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+          ),
+
+          // 工具栏按钮
+          Positioned(
+            bottom: 100,
+            right: 16,
+            child: Column(
+              children: [
+                // 字体大小调整按钮
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _showFontSizeSlider = !_showFontSizeSlider;
+                    });
+                  },
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(30),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.text_fields,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // 对齐方式调整按钮
+                GestureDetector(
+                  onTap: () {
+                    _toggleAlignment();
+                  },
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(30),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        _currentAlignment,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 字体大小滑动条
+          if (_showFontSizeSlider) ...[
+            Positioned(
+              bottom: 200,
+              left: 16,
+              right: 80,
+              child: Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(50),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '字体大小',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Slider(
+                      value:
+                          (_lyricStyleNotifier!.value.textStyle.fontSize ?? 22),
+                      min: 12,
+                      max: 36,
+                      divisions: 12,
+                      label:
+                          '${(_lyricStyleNotifier!.value.textStyle.fontSize ?? 22).toStringAsFixed(0)}',
+                      onChanged: (value) {
+                        final currentStyle = _lyricStyleNotifier!.value;
+                        final scaleFactor =
+                            value / (currentStyle.textStyle.fontSize ?? 22);
+                        final newActiveSize =
+                            (currentStyle.activeStyle.fontSize ?? 28) *
+                            scaleFactor;
+                        final newTranslationSize =
+                            (currentStyle.translationStyle.fontSize ?? 16) *
+                            scaleFactor;
+
+                        _lyricStyleNotifier!.value = currentStyle.copyWith(
+                          textStyle: currentStyle.textStyle.copyWith(
+                            fontSize: value,
+                          ),
+                          activeStyle: currentStyle.activeStyle.copyWith(
+                            fontSize: newActiveSize,
+                          ),
+                          translationStyle: currentStyle.translationStyle
+                              .copyWith(fontSize: newTranslationSize),
+                        );
+                      },
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '小',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          '大',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  // 切换对齐方式
+  void _toggleAlignment() {
+    setState(() {
+      if (_currentAlignment == '左') {
+        _currentAlignment = '中';
+        _updateAlignment(TextAlign.center, CrossAxisAlignment.center);
+      } else if (_currentAlignment == '中') {
+        _currentAlignment = '右';
+        _updateAlignment(TextAlign.right, CrossAxisAlignment.end);
+      } else {
+        _currentAlignment = '左';
+        _updateAlignment(TextAlign.left, CrossAxisAlignment.start);
+      }
+    });
+  }
+
+  // 更新对齐方式
+  void _updateAlignment(
+    TextAlign textAlign,
+    CrossAxisAlignment contentAlignment,
+  ) {
+    final currentStyle = _lyricStyleNotifier!.value;
+    _lyricStyleNotifier!.value = currentStyle.copyWith(
+      textAlign: textAlign,
+      contentAlignment: contentAlignment,
+    );
+  }
+
+  // 构建默认封面
   Widget _buildDefaultCover() {
     return Container(
       color: Theme.of(context).colorScheme.primaryContainer,
