@@ -158,9 +158,6 @@ class _SettingsPageState extends State<SettingsPage> {
               subtitle: Text(_currentLyricsApiType.displayName),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () async {
-                if (!_lyricsEnabled) {
-                  await _saveLyricsEnabled(true);
-                }
                 await Navigator.push(
                   context,
                   MaterialPageRoute(

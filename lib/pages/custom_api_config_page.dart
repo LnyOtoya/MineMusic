@@ -169,14 +169,18 @@ class _CustomApiConfigPageState extends State<CustomApiConfigPage> {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (!isSelected)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.check_circle_outline_rounded,
-                                  ),
-                                  onPressed: () => _selectApi(api),
-                                  tooltip: '使用此API',
+                              IconButton(
+                                icon: Icon(
+                                  isSelected
+                                      ? Icons.check_circle_rounded
+                                      : Icons.check_circle_outline_rounded,
+                                  color: isSelected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
                                 ),
+                                onPressed: () => _selectApi(api),
+                                tooltip: isSelected ? '取消选择' : '使用此API',
+                              ),
                               PopupMenuButton<String>(
                                 onSelected: (value) {
                                   if (value == 'edit') {
@@ -312,20 +316,38 @@ class _CustomApiConfigPageState extends State<CustomApiConfigPage> {
   }
 
   Future<void> _selectApi(CustomLyricsApiConfig api) async {
-    await CustomLyricsApiService.setSelectedApi(api);
+    final isCurrentlySelected = _selectedApi?.name == api.name;
+
+    if (isCurrentlySelected) {
+      // 取消选择
+      await CustomLyricsApiService.setSelectedApi(null);
+      await PlayerService.setLyricsApiType(LyricsApiType.disabled);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('已取消选择'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      // 选择API
+      await CustomLyricsApiService.setSelectedApi(api);
+      await PlayerService.setLyricsApiType(LyricsApiType.customApi);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('已选择: ${api.name}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+
     await _refresh();
     widget.onConfigChanged?.call();
-
-    await PlayerService.setLyricsApiType(LyricsApiType.customApi);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('已选择: ${api.name}'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
   }
 
   Future<void> _showDeleteConfirmDialog(CustomLyricsApiConfig api) async {
