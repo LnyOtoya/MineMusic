@@ -20,7 +20,7 @@ class RandomSongsPage extends StatefulWidget {
 }
 
 class _RandomSongsPageState extends State<RandomSongsPage> {
-  late Future<List<Map<String, dynamic>>> _songsFuture;
+  Future<List<Map<String, dynamic>>> _songsFuture = Future.value([]);
   String _totalDuration = "--:--";
 
   static const String _cacheKeyDate = 'random_songs_date';
