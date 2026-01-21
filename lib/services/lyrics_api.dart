@@ -221,13 +221,19 @@ class LyricsApi {
         score += 5;
       }
 
+      // 如果歌手信息不完整，给予一定的基础分数
+      if (songArtist.isEmpty || targetArtist.isEmpty) {
+        score += 3;
+      }
+
       if (score > bestScore) {
         bestScore = score;
         bestMatch = song;
       }
     }
 
-    return bestScore >= 10 ? bestMatch : songs.first;
+    // 如果找到合适的匹配，返回它；否则返回第一首歌
+    return bestMatch;
   }
 
   Future<Map<String, String>> getTxMusic2LrcLyrics(String mid) async {
@@ -285,8 +291,10 @@ class LyricsApi {
       );
 
       final searchParams = Map<String, String>.from(apiConfig.searchParams);
-      searchParams['keyword'] = title;
-      searchParams['singer'] = artist;
+      // 将歌名和歌手合并到一个keyword参数中
+      searchParams['keyword'] = '$title $artist';
+      // 添加搜索类型参数，确保搜索歌曲
+      searchParams['searchtype'] = 'song';
 
       final searchUrlWithParams = searchUrl.replace(
         queryParameters: searchParams,
@@ -324,7 +332,40 @@ class LyricsApi {
 
         final List<Map<String, dynamic>> mappedSongs = songs.map((song) {
           final songMap = song as Map<String, dynamic>;
-          final artistName = _getNestedValue(songMap, apiConfig.artistPath);
+          // 直接处理歌手信息
+          String artistName = '';
+          if (songMap.containsKey('singer')) {
+            final singerData = songMap['singer'];
+            if (singerData is List && singerData.isNotEmpty) {
+              final singerNames = singerData
+                  .where(
+                    (item) =>
+                        item is Map<String, dynamic> && item['name'] != null,
+                  )
+                  .map((item) => item['name'].toString())
+                  .toList();
+              artistName = singerNames.join('/');
+            } else if (singerData is Map<String, dynamic> &&
+                singerData['name'] != null) {
+              artistName = singerData['name'].toString();
+            }
+          } else if (songMap.containsKey('artist')) {
+            final artistData = songMap['artist'];
+            if (artistData is String) {
+              artistName = artistData;
+            } else if (artistData is List && artistData.isNotEmpty) {
+              final artistNames = artistData
+                  .where(
+                    (item) =>
+                        item is Map<String, dynamic> && item['name'] != null,
+                  )
+                  .map((item) => item['name'].toString())
+                  .toList();
+              artistName = artistNames.join('/');
+            }
+          } else if (songMap.containsKey('author')) {
+            artistName = songMap['author'].toString();
+          }
 
           return {
             'mid': songMap[apiConfig.songIdField],
@@ -360,6 +401,10 @@ class LyricsApi {
 
       final lyricParams = Map<String, String>.from(apiConfig.lyricParams);
       lyricParams['value'] = mid;
+      // 添加必要的参数以获取翻译和逐字歌词
+      lyricParams['trans'] = 'true';
+      lyricParams['qrc'] = 'true';
+      lyricParams['roma'] = 'true';
 
       final urlWithParams = url.replace(queryParameters: lyricParams);
 
@@ -391,9 +436,9 @@ class LyricsApi {
         if (lyrics != null && lyrics.isNotEmpty) {
           print('✅ 成功获取自定义API歌词，长度: ${lyrics.length}');
           print('✅ 翻译长度: ${translation?.length ?? 0}');
-          
+
           final lyricsText = lyrics.toString();
-          
+
           if (apiConfig.useQrcFormat) {
             print('✅ 使用QRC格式（支持逐字高亮）');
             return {'lyrics': lyricsText, 'translation': translation ?? ''};
@@ -411,26 +456,71 @@ class LyricsApi {
     }
   }
 
-  dynamic _getNestedValue(Map<String, dynamic> data, String path) {
+  dynamic _getNestedValue(dynamic data, String path) {
+    if (data == null) return null;
+
+    // 直接处理singer字段的情况
+    if (data is Map<String, dynamic>) {
+      // 检查是否有singer字段
+      if (data.containsKey('singer')) {
+        final singerData = data['singer'];
+        if (singerData is List && singerData.isNotEmpty) {
+          // 特殊处理歌手列表，返回所有歌手名字的组合
+          final singerNames = singerData
+              .where(
+                (item) => item is Map<String, dynamic> && item['name'] != null,
+              )
+              .map((item) => item['name'].toString())
+              .toList();
+          return singerNames.join('/');
+        } else if (singerData is Map<String, dynamic> &&
+            singerData['name'] != null) {
+          // 处理单个歌手对象的情况
+          return singerData['name'].toString();
+        }
+      }
+
+      // 检查是否有artist字段
+      if (data.containsKey('artist')) {
+        final artistData = data['artist'];
+        if (artistData is String) {
+          return artistData;
+        } else if (artistData is List && artistData.isNotEmpty) {
+          // 特殊处理歌手列表，返回所有歌手名字的组合
+          final artistNames = artistData
+              .where(
+                (item) => item is Map<String, dynamic> && item['name'] != null,
+              )
+              .map((item) => item['name'].toString())
+              .toList();
+          return artistNames.join('/');
+        }
+      }
+
+      // 检查是否有author字段
+      if (data.containsKey('author')) {
+        return data['author'].toString();
+      }
+    }
+
+    // 处理路径解析
     final keys = path.split('.');
     dynamic value = data;
 
     for (final key in keys) {
       if (value is Map<String, dynamic>) {
-        value = value[key];
+        if (value.containsKey(key)) {
+          value = value[key];
+        } else {
+          return null;
+        }
       } else if (value is List && value.isNotEmpty) {
         final index = int.tryParse(key);
         if (index != null && index < value.length) {
-          final item = value[index];
-          if (item is Map<String, dynamic>) {
-            final remainingPath = path.substring(path.indexOf('.') + 1);
-            if (remainingPath.isEmpty) {
-              return item;
-            }
-            return _getNestedValue(item, remainingPath);
-          }
+          value = value[index];
+        } else {
+          return null;
         }
-        return null;
       } else {
         return null;
       }
