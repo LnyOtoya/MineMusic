@@ -68,7 +68,6 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 64),
             _buildHeader(),
             Expanded(child: _buildPlaylistsList()),
           ],
@@ -78,24 +77,81 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 64, 20, 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+            Colors.transparent,
+          ],
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '我的歌单',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '我的歌单',
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.8,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  // 未来可以添加创建歌单功能
+                },
+                icon: Icon(
+                  Icons.add_rounded,
+                  size: 28,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             '浏览和管理你的歌单',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 0.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.playlist_play_rounded,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _playlistsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return Text(
+                        '${snapshot.data?.length ?? 0} 个歌单',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      );
+                    }
+                    return const Text('加载中...');
+                  },
+                ),
+              ],
             ),
           ),
         ],

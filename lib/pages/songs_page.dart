@@ -46,7 +46,6 @@ class _SongsPageState extends State<SongsPage> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 64),
             _buildHeader(),
             Expanded(child: _buildSongsList()),
           ],
@@ -56,24 +55,81 @@ class _SongsPageState extends State<SongsPage> {
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 64, 20, 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+            Colors.transparent,
+          ],
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '所有歌曲',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '所有歌曲',
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.8,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  // 未来可以添加搜索功能
+                },
+                icon: Icon(
+                  Icons.search_rounded,
+                  size: 28,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             '浏览和播放所有歌曲',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 0.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.music_note_rounded,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _songsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return Text(
+                        '${snapshot.data?.length ?? 0} 首歌曲',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      );
+                    }
+                    return const Text('加载中...');
+                  },
+                ),
+              ],
             ),
           ),
         ],
@@ -185,112 +241,116 @@ class _SongsPageState extends State<SongsPage> {
   }
 
   Widget _buildSongItem(Map<String, dynamic> song, int index) {
-    return InkWell(
-      onTap: () => _playSong(song),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerLow,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        onTap: () => _playSong(song),
+        onLongPress: () => _showSongMenu(song),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: ClipRRect(
           borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            // 歌曲序号
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  '${index + 1}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
-            const SizedBox(width: 12),
-
-            // 封面图
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                ),
-                child: song['coverArt'] != null
-                    ? CachedNetworkImage(
-                        imageUrl: widget.api.getCoverArtUrl(song['coverArt']),
-                        fit: BoxFit.cover,
-                        width: 56,
-                        height: 56,
-                        placeholder: (context, url) => Icon(
-                          Icons.music_note_rounded,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        errorWidget: (context, url, error) => Icon(
-                          Icons.music_note_rounded,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      )
-                    : Icon(
-                        Icons.music_note_rounded,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // 歌曲信息
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    song['title'] ?? '未知标题',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${song['artist'] ?? '未知艺术家'} • ${song['album'] ?? '未知专辑'}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            child: song['coverArt'] != null
+                ? CachedNetworkImage(
+                    imageUrl: widget.api.getCoverArtUrl(song['coverArt']),
+                    fit: BoxFit.cover,
+                    width: 48,
+                    height: 48,
+                    placeholder: (context, url) => Icon(
+                      Icons.music_note_rounded,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
+                    errorWidget: (context, url, error) => Icon(
+                      Icons.music_note_rounded,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                : Icon(
+                    Icons.music_note_rounded,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                ],
-              ),
-            ),
-
-            // 歌曲时长
-            Text(
-              _formatDuration(song['duration']),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // 更多操作按钮
-            Icon(
-              Icons.more_vert_rounded,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ],
+          ),
+        ),
+        title: Text(
+          song['title'] ?? '未知标题',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          '${song['artist'] ?? '未知艺术家'} • ${song['album'] ?? '未知专辑'}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
+    );
+  }
+
+  void _showSongMenu(Map<String, dynamic> song) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(
+                  Icons.playlist_add_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                title: const Text('加入歌单'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // 未来实现加入歌单逻辑
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.download_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                title: const Text('下载'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // 未来实现下载逻辑
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.skip_next_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                title: const Text('下一曲播放'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // 未来实现下一曲播放逻辑
+                },
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Icon(
+                  Icons.close_rounded,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                title: const Text('取消'),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
