@@ -225,13 +225,10 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           setState(() {
             _lrcLyrics = qrcLyrics;
             if (translationText != null && translationText.isNotEmpty) {
-              final isTransQrc = LrcToQrcConverter.isQrcFormat(translationText);
-              final qrcTranslation = isTransQrc
-                  ? translationText
-                  : LrcToQrcConverter.convertLrcToQrc(translationText);
+              // 翻译歌词保持LRC格式，不需要转换为QRC格式
               _lyricController.loadLyric(
                 qrcLyrics,
-                translationLyric: qrcTranslation,
+                translationLyric: translationText,
               );
             } else {
               _lyricController.loadLyric(qrcLyrics);
@@ -464,25 +461,53 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                 final isDark =
                     MediaQuery.of(context).platformBrightness ==
                     Brightness.dark;
-                if (isDark) {
-                  style = style.copyWith(
-                    textStyle: style.textStyle.copyWith(
-                      color: Colors.black.withValues(alpha: 0.4),
-                    ),
-                    activeStyle: style.activeStyle.copyWith(
-                      color: Colors.black.withValues(alpha: 0.4),
-                    ),
-                    translationStyle: style.translationStyle.copyWith(
-                      color: Colors.black.withValues(alpha: 0.4),
-                    ),
-                    selectedColor: Colors.black.withValues(alpha: 0.4),
-                    selectedTranslationColor: Colors.black.withValues(
-                      alpha: 0.4,
-                    ),
-                    activeHighlightColor: Colors.black.withValues(alpha: 0.9),
-                    translationActiveColor: Colors.black.withValues(alpha: 0.6),
-                  );
-                }
+
+                // 确保始终设置翻译相关样式
+                style = style.copyWith(
+                  // 基本翻译样式
+                  translationStyle: TextStyle(
+                    fontSize: 16,
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.4)
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  // 激活状态的翻译样式
+                  translationActiveColor: isDark
+                      ? Colors.black.withValues(alpha: 0.6)
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  // 选中状态的翻译样式
+                  selectedTranslationColor: isDark
+                      ? Colors.black.withValues(alpha: 0.4)
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  // 翻译行间距
+                  translationLineGap: 8.0,
+                  // 基本文本样式
+                  textStyle: TextStyle(
+                    fontSize: 22,
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.4)
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  // 激活状态的文本样式
+                  activeStyle: TextStyle(
+                    fontSize: 28,
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.8)
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  // 选中状态的文本样式
+                  selectedColor: isDark
+                      ? Colors.black.withValues(alpha: 0.4)
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  // 高亮颜色
+                  activeHighlightColor: isDark
+                      ? Colors.black.withValues(alpha: 0.9)
+                      : Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 1),
+                );
+
                 return Stack(
                   children: [
                     RepaintBoundary(
