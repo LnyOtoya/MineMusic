@@ -25,6 +25,12 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   late Animation<double> _playButtonScale;
   late AnimationController _shapeAnimationController;
   late Animation<double> _shapeAnimation;
+  late AnimationController _toolbarAnimationController;
+  late Animation<double> _toolbarAnimation;
+  late AnimationController _buttonScaleController;
+  late Animation<double> _buttonScale;
+  late AnimationController _buttonRotationController;
+  late Animation<double> _buttonRotation;
   bool _isPlaying = false;
   bool _wasPlaying = false;
   Duration _currentPosition = Duration.zero;
@@ -67,6 +73,39 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     _shapeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _shapeAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    // 初始化工具栏动画
+    _toolbarAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _toolbarAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _toolbarAnimationController,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    // 初始化按钮缩放动画
+    _buttonScaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _buttonScale = Tween<double>(begin: 1.0, end: 0.9).animate(
+      CurvedAnimation(parent: _buttonScaleController, curve: Curves.easeInOut),
+    );
+
+    // 初始化按钮旋转动画
+    _buttonRotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500), // 延长动画时间，确保可见
+    );
+    _buttonRotation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _buttonRotationController,
         curve: Curves.easeInOut,
       ),
     );
@@ -134,6 +173,9 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     // _animationController.dispose();
     _playButtonController.dispose();
     _shapeAnimationController.dispose();
+    _toolbarAnimationController.dispose();
+    _buttonScaleController.dispose();
+    _buttonRotationController.dispose();
 
     _pageController.dispose();
     _lyricController.dispose();
@@ -778,33 +820,81 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           bottom: 32,
           right: 16,
           child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _showStyleToolbar = !_showStyleToolbar;
-                _showFontSizeSlider = false;
-              });
+            onTapDown: (_) => _buttonScaleController.forward(),
+            onTapUp: (_) {
+              _buttonScaleController.reverse();
+              if (_showStyleToolbar) {
+                // 收起工具栏
+                _buttonRotationController.forward(from: 0).then((_) {
+                  _buttonRotationController.reset();
+                  _toolbarAnimationController.reverse();
+                });
+                // 立即更新状态，使图标切换与旋转动画同步
+                setState(() {
+                  _showStyleToolbar = false;
+                  _showFontSizeSlider = false;
+                });
+              } else {
+                // 展开工具栏
+                _buttonRotationController.forward(from: 0).then((_) {
+                  _buttonRotationController.reset();
+                  _toolbarAnimationController.forward(from: 0);
+                });
+                // 立即更新状态，使图标切换与旋转动画同步
+                setState(() {
+                  _showStyleToolbar = true;
+                  _showFontSizeSlider = false;
+                });
+              }
             },
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(50),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
+            onTapCancel: () => _buttonScaleController.reverse(),
+            child: AnimatedBuilder(
+              animation: Listenable.merge([_buttonScale, _buttonRotation]),
+              builder: (context, child) {
+                double rotationAngle = _buttonRotation.value * 2 * 3.14159;
+                // 收起时使用负角度
+                if (_showStyleToolbar) {
+                  rotationAngle = -rotationAngle;
+                }
+                return Transform.scale(
+                  scale: _buttonScale.value,
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(50),
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Transform.rotate(
+                        angle: rotationAngle,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            );
+                          },
+                          child: Icon(
+                            _showStyleToolbar ? Icons.close : Icons.format_size,
+                            key: ValueKey<bool>(_showStyleToolbar),
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              child: Center(
-                child: Icon(
-                  _showStyleToolbar ? Icons.close : Icons.format_size,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  size: 28,
-                ),
-              ),
+                );
+              },
             ),
           ),
         ),
@@ -814,6 +904,12 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           // 背景遮罩
           GestureDetector(
             onTap: () {
+              // 逆时针旋转360度
+              _buttonRotationController.forward(from: 0).then((_) {
+                _buttonRotationController.reset();
+                _toolbarAnimationController.reverse();
+              });
+              // 立即更新状态，使图标切换与旋转动画同步
               setState(() {
                 _showStyleToolbar = false;
                 _showFontSizeSlider = false;
@@ -830,74 +926,97 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           Positioned(
             bottom: 100,
             right: 16,
-            child: Column(
-              children: [
-                // 字体大小调整按钮
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _showFontSizeSlider = !_showFontSizeSlider;
-                    });
-                  },
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(30),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
+            child: AnimatedBuilder(
+              animation: _toolbarAnimation,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: _toolbarAnimation.value,
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - _toolbarAnimation.value) * 20),
+                    child: Column(
+                      children: [
+                        // 字体大小调整按钮
+                        GestureDetector(
+                          onTapDown: (_) => _buttonScaleController.forward(),
+                          onTapUp: (_) {
+                            _buttonScaleController.reverse();
+                            setState(() {
+                              _showFontSizeSlider = !_showFontSizeSlider;
+                            });
+                          },
+                          onTapCancel: () => _buttonScaleController.reverse(),
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primaryContainer,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(30),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.text_fields,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
+                                size: 24,
+                              ),
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.text_fields,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 16),
+                        SizedBox(height: 16),
 
-                // 对齐方式调整按钮
-                GestureDetector(
-                  onTap: () {
-                    _toggleAlignment();
-                  },
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(30),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
+                        // 对齐方式调整按钮
+                        GestureDetector(
+                          onTapDown: (_) => _buttonScaleController.forward(),
+                          onTapUp: (_) {
+                            _buttonScaleController.reverse();
+                            _toggleAlignment();
+                          },
+                          onTapCancel: () => _buttonScaleController.reverse(),
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primaryContainer,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(30),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                _currentAlignment,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    child: Center(
-                      child: Text(
-                        _currentAlignment,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
 
@@ -907,84 +1026,103 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
               bottom: 200,
               left: 16,
               right: 80,
-              child: Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(50),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      '字体大小',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurface,
+              child: AnimatedBuilder(
+                animation: _toolbarAnimation,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _toolbarAnimation.value,
+                    child: Transform.translate(
+                      offset: Offset(0, (1 - _toolbarAnimation.value) * 20),
+                      child: Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(50),
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              '字体大小',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            SizedBox(height: 12),
+                            Slider(
+                              value:
+                                  (_lyricStyleNotifier!
+                                      .value
+                                      .textStyle
+                                      .fontSize ??
+                                  22),
+                              min: 12,
+                              max: 36,
+                              divisions: 12,
+                              label:
+                                  '${(_lyricStyleNotifier!.value.textStyle.fontSize ?? 22).toStringAsFixed(0)}',
+                              onChanged: (value) {
+                                final currentStyle = _lyricStyleNotifier!.value;
+                                final scaleFactor =
+                                    value /
+                                    (currentStyle.textStyle.fontSize ?? 22);
+                                final newActiveSize =
+                                    (currentStyle.activeStyle.fontSize ?? 28) *
+                                    scaleFactor;
+                                final newTranslationSize =
+                                    (currentStyle.translationStyle.fontSize ??
+                                        16) *
+                                    scaleFactor;
+
+                                _lyricStyleNotifier!.value = currentStyle
+                                    .copyWith(
+                                      textStyle: currentStyle.textStyle
+                                          .copyWith(fontSize: value),
+                                      activeStyle: currentStyle.activeStyle
+                                          .copyWith(fontSize: newActiveSize),
+                                      translationStyle: currentStyle
+                                          .translationStyle
+                                          .copyWith(
+                                            fontSize: newTranslationSize,
+                                          ),
+                                    );
+                              },
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '小',
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                Text(
+                                  '大',
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    SizedBox(height: 12),
-                    Slider(
-                      value:
-                          (_lyricStyleNotifier!.value.textStyle.fontSize ?? 22),
-                      min: 12,
-                      max: 36,
-                      divisions: 12,
-                      label:
-                          '${(_lyricStyleNotifier!.value.textStyle.fontSize ?? 22).toStringAsFixed(0)}',
-                      onChanged: (value) {
-                        final currentStyle = _lyricStyleNotifier!.value;
-                        final scaleFactor =
-                            value / (currentStyle.textStyle.fontSize ?? 22);
-                        final newActiveSize =
-                            (currentStyle.activeStyle.fontSize ?? 28) *
-                            scaleFactor;
-                        final newTranslationSize =
-                            (currentStyle.translationStyle.fontSize ?? 16) *
-                            scaleFactor;
-
-                        _lyricStyleNotifier!.value = currentStyle.copyWith(
-                          textStyle: currentStyle.textStyle.copyWith(
-                            fontSize: value,
-                          ),
-                          activeStyle: currentStyle.activeStyle.copyWith(
-                            fontSize: newActiveSize,
-                          ),
-                          translationStyle: currentStyle.translationStyle
-                              .copyWith(fontSize: newTranslationSize),
-                        );
-                      },
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '小',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        Text(
-                          '大',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ],

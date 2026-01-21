@@ -243,6 +243,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
   late final PlayerService playerService;
   late Future<List<Map<String, dynamic>>> _randomSongsFuture;
   late final List<Widget> _pages;
+  late PageController _pageController;
 
   @override
   void initState() {
@@ -267,6 +268,15 @@ class _MusicHomePageState extends State<MusicHomePage> {
       SongsPage(api: widget.api, playerService: playerService),
       PlaylistsPage(api: widget.api, playerService: playerService),
     ];
+
+    // 初始化页面控制器
+    _pageController = PageController(initialPage: _selectedIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Widget _buildNavigationDestination({
@@ -286,6 +296,8 @@ class _MusicHomePageState extends State<MusicHomePage> {
     setState(() {
       _selectedIndex = index;
     });
+    // 控制页面滚动到对应的索引
+    _pageController.jumpToPage(index);
   }
 
   @override
@@ -293,7 +305,15 @@ class _MusicHomePageState extends State<MusicHomePage> {
     return Scaffold(
       body: Stack(
         children: [
-          IndexedStack(index: _selectedIndex, children: _pages),
+          PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            children: _pages,
+          ),
           Positioned(
             left: 0,
             right: 0,
@@ -316,12 +336,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
         child: NavigationBar(
           height: 64,
           selectedIndex: _selectedIndex,
-          onDestinationSelected: (index) {
-            // 添加水波纹效果的点击处理
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
+          onDestinationSelected: _onItemTapped,
           indicatorColor: Theme.of(context).colorScheme.primaryContainer,
           indicatorShape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
