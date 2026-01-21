@@ -164,10 +164,10 @@ class SubsonicApi {
       };
 
       final urlWithParams = url.replace(queryParameters: params);
-      print('🎲 请求随机歌曲 URL: $urlWithParams');
+      // print('🎲 请求随机歌曲 URL: $urlWithParams');
 
       final response = await http.get(urlWithParams);
-      print('📡 随机歌曲响应状态: ${response.statusCode}');
+      // print('📡 随机歌曲响应状态: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final responseBody = utf8.decode(response.bodyBytes);
@@ -190,13 +190,13 @@ class SubsonicApi {
           });
         }
 
-        print('✅ 获取到 ${songs.length} 首随机歌曲');
+        // print('✅ 获取到 ${songs.length} 首随机歌曲');
         return songs;
       } else {
         throw Exception('HTTP 错误: ${response.statusCode}');
       }
     } catch (e) {
-      print('获取随机歌曲失败: $e');
+      // print('获取随机歌曲失败: $e');
       return [];
     }
   }

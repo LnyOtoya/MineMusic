@@ -81,29 +81,24 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return RefreshIndicator(
-      color: Theme.of(context).colorScheme.primary,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
-      onRefresh: _refreshData,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const SizedBox(height: 64),
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        const SizedBox(height: 64),
 
-          _buildWelcomeSection(),
+        _buildWelcomeSection(),
 
-          const SizedBox(height: 12),
-          _buildQuickAccess(),
+        const SizedBox(height: 12),
+        _buildQuickAccess(),
 
-          const SizedBox(height: 24),
+        const SizedBox(height: 24),
 
-          _buildRandomSongs(),
+        _buildRandomSongs(),
 
-          const SizedBox(height: 24),
+        const SizedBox(height: 24),
 
-          _buildRecentlyPlayed(),
-        ],
-      ),
+        _buildRecentlyPlayed(),
+      ],
     );
   }
 
@@ -812,7 +807,7 @@ class _HomePageState extends State<HomePage>
 
   // 刷新所有数据
   Future<void> _refreshData() async {
-    await widget.onRefreshRandomSongs();
+    // await widget.onRefreshRandomSongs();
     if (mounted) {
       setState(() {});
     }
