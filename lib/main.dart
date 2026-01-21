@@ -269,6 +269,19 @@ class _MusicHomePageState extends State<MusicHomePage> {
     ];
   }
 
+  Widget _buildNavigationDestination({
+    required IconData icon,
+    required IconData selectedIcon,
+    required String label,
+    required int index,
+  }) {
+    return NavigationDestination(
+      icon: Icon(icon),
+      selectedIcon: Icon(selectedIcon),
+      label: label,
+    );
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -290,37 +303,59 @@ class _MusicHomePageState extends State<MusicHomePage> {
         ],
       ),
 
-      bottomNavigationBar: NavigationBar(
-        height: 64,
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _onItemTapped,
-        indicatorColor: Theme.of(context).colorScheme.primaryContainer,
-        indicatorShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Colors.transparent, width: 4),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border(
+            top: BorderSide(
+              color: Theme.of(context).colorScheme.surfaceVariant,
+              width: 1,
+            ),
+          ),
         ),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_rounded),
-            selectedIcon: Icon(Icons.home_outlined),
-            label: '主页',
+        child: NavigationBar(
+          height: 64,
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: (index) {
+            // 添加水波纹效果的点击处理
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          indicatorColor: Theme.of(context).colorScheme.primaryContainer,
+          indicatorShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Colors.transparent, width: 4),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.library_music_rounded),
-            selectedIcon: Icon(Icons.library_music_outlined),
-            label: '音乐库',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.music_note_rounded),
-            selectedIcon: Icon(Icons.music_note_outlined),
-            label: '歌曲',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.playlist_play_rounded),
-            selectedIcon: Icon(Icons.playlist_play_outlined),
-            label: '歌单',
-          ),
-        ],
+          surfaceTintColor: Theme.of(context).colorScheme.surface,
+          backgroundColor: Colors.transparent,
+          destinations: [
+            _buildNavigationDestination(
+              icon: Icons.home_rounded,
+              selectedIcon: Icons.home_outlined,
+              label: '主页',
+              index: 0,
+            ),
+            _buildNavigationDestination(
+              icon: Icons.library_music_rounded,
+              selectedIcon: Icons.library_music_outlined,
+              label: '音乐库',
+              index: 1,
+            ),
+            _buildNavigationDestination(
+              icon: Icons.music_note_rounded,
+              selectedIcon: Icons.music_note_outlined,
+              label: '歌曲',
+              index: 2,
+            ),
+            _buildNavigationDestination(
+              icon: Icons.playlist_play_rounded,
+              selectedIcon: Icons.playlist_play_outlined,
+              label: '歌单',
+              index: 3,
+            ),
+          ],
+        ),
       ),
     );
   }
