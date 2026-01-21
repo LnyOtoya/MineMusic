@@ -100,38 +100,6 @@ class _SongsPageState extends State<SongsPage> {
               letterSpacing: 0.2,
             ),
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.music_note_rounded,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _songsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return Text(
-                        '${snapshot.data?.length ?? 0} 首歌曲',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      );
-                    }
-                    return const Text('加载中...');
-                  },
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -243,53 +211,82 @@ class _SongsPageState extends State<SongsPage> {
   Widget _buildSongItem(Map<String, dynamic> song, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        onTap: () => _playSong(song),
-        onLongPress: () => _showSongMenu(song),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: ClipRRect(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _playSong(song),
+          onLongPress: () => _showSongMenu(song),
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            ),
-            child: song['coverArt'] != null
-                ? CachedNetworkImage(
-                    imageUrl: widget.api.getCoverArtUrl(song['coverArt']),
-                    fit: BoxFit.cover,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
                     width: 48,
                     height: 48,
-                    placeholder: (context, url) => Icon(
-                      Icons.music_note_rounded,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                     ),
-                    errorWidget: (context, url, error) => Icon(
-                      Icons.music_note_rounded,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  )
-                : Icon(
-                    Icons.music_note_rounded,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    child: song['coverArt'] != null
+                        ? CachedNetworkImage(
+                            imageUrl: widget.api.getCoverArtUrl(
+                              song['coverArt'],
+                            ),
+                            fit: BoxFit.cover,
+                            width: 48,
+                            height: 48,
+                            placeholder: (context, url) => Icon(
+                              Icons.music_note_rounded,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                            errorWidget: (context, url, error) => Icon(
+                              Icons.music_note_rounded,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          )
+                        : Icon(
+                            Icons.music_note_rounded,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                   ),
-          ),
-        ),
-        title: Text(
-          song['title'] ?? '未知标题',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          '${song['artist'] ?? '未知艺术家'} • ${song['album'] ?? '未知专辑'}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        song['title'] ?? '未知标题',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${song['artist'] ?? '未知艺术家'} • ${song['album'] ?? '未知专辑'}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

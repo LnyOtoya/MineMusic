@@ -122,38 +122,6 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
               letterSpacing: 0.2,
             ),
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.playlist_play_rounded,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _playlistsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return Text(
-                        '${snapshot.data?.length ?? 0} 个歌单',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      );
-                    }
-                    return const Text('加载中...');
-                  },
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
