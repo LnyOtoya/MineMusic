@@ -8,12 +8,14 @@ class ArtistDetailPage extends StatefulWidget {
   final SubsonicApi api;
   final PlayerService playerService;
   final Map<String, dynamic> artist;
+  final String? avatarUrl;
 
   const ArtistDetailPage({
     super.key,
     required this.api,
     required this.playerService,
     required this.artist,
+    this.avatarUrl,
   });
 
   @override
@@ -28,10 +30,21 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
   void initState() {
     super.initState();
     _albumsFuture = widget.api.getAlbumsByArtist(widget.artist['id']);
-    _artistAvatarFuture = widget.api.getArtistAvatar(
-      widget.artist['name'] ?? '',
-      artistId: widget.artist['id'],
-    );
+    // 打印日志，确认是否正确传递了头像URL
+    print('🔍 ArtistDetailPage initState:');
+    print('   - artist name: ${widget.artist['name']}');
+    print('   - avatarUrl: ${widget.avatarUrl}');
+    // 如果提供了头像URL，直接使用它，否则从API获取
+    if (widget.avatarUrl != null) {
+      print('   - 使用传递的头像URL');
+      _artistAvatarFuture = Future.value(widget.avatarUrl);
+    } else {
+      print('   - 从API获取头像');
+      _artistAvatarFuture = widget.api.getArtistAvatar(
+        widget.artist['name'] ?? '',
+        artistId: widget.artist['id'],
+      );
+    }
   }
 
   @override
