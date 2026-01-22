@@ -401,6 +401,7 @@ class _ApiEditPageState extends State<ApiEditPage> {
   late TextEditingController _baseUrlController;
   late TextEditingController _searchEndpointController;
   late TextEditingController _lyricEndpointController;
+  late TextEditingController _singerEndpointController;
   late TextEditingController _songIdFieldController;
   late TextEditingController _titleFieldController;
   late TextEditingController _artistFieldController;
@@ -411,6 +412,7 @@ class _ApiEditPageState extends State<ApiEditPage> {
   late TextEditingController _artistPathController;
   String _searchMethod = 'GET';
   String _lyricMethod = 'GET';
+  String _singerMethod = 'GET';
   bool _useQrcFormat = false;
 
   @override
@@ -425,6 +427,9 @@ class _ApiEditPageState extends State<ApiEditPage> {
     );
     _lyricEndpointController = TextEditingController(
       text: api?.lyricEndpoint ?? '/lyric/get_lyric',
+    );
+    _singerEndpointController = TextEditingController(
+      text: api?.singerEndpoint ?? '/singer/get_info',
     );
     _songIdFieldController = TextEditingController(
       text: api?.songIdField ?? 'mid',
@@ -452,6 +457,7 @@ class _ApiEditPageState extends State<ApiEditPage> {
     );
     _searchMethod = api?.searchMethod ?? 'GET';
     _lyricMethod = api?.lyricMethod ?? 'GET';
+    _singerMethod = api?.singerMethod ?? 'GET';
     _useQrcFormat = api?.useQrcFormat ?? false;
   }
 
@@ -461,6 +467,7 @@ class _ApiEditPageState extends State<ApiEditPage> {
     _baseUrlController.dispose();
     _searchEndpointController.dispose();
     _lyricEndpointController.dispose();
+    _singerEndpointController.dispose();
     _songIdFieldController.dispose();
     _titleFieldController.dispose();
     _artistFieldController.dispose();
@@ -528,6 +535,20 @@ class _ApiEditPageState extends State<ApiEditPage> {
                 subtitle: const Text('启用后将支持逐字高亮效果'),
                 value: _useQrcFormat,
                 onChanged: (value) => setState(() => _useQrcFormat = value),
+              ),
+            ]),
+            _buildSection('歌手接口', [
+              _buildTextField(
+                _singerEndpointController,
+                '歌手端点',
+                '例如: /singer/get_info',
+                required: true,
+              ),
+              _buildDropdown(
+                '请求方法',
+                _singerMethod,
+                ['GET', 'POST'],
+                (value) => setState(() => _singerMethod = value),
               ),
             ]),
             _buildSection('字段映射', [
@@ -681,8 +702,10 @@ class _ApiEditPageState extends State<ApiEditPage> {
       baseUrl: _baseUrlController.text.trim(),
       searchEndpoint: _searchEndpointController.text.trim(),
       lyricEndpoint: _lyricEndpointController.text.trim(),
+      singerEndpoint: _singerEndpointController.text.trim(),
       searchMethod: _searchMethod,
       lyricMethod: _lyricMethod,
+      singerMethod: _singerMethod,
       songIdField: _songIdFieldController.text.trim(),
       titleField: _titleFieldController.text.trim(),
       artistField: _artistFieldController.text.trim(),

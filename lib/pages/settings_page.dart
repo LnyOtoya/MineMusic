@@ -34,6 +34,10 @@ class _SettingsPageState extends State<SettingsPage> {
     _loadLyricsApiType();
     _loadLyricsEnabled();
 
+    // 默认设置为自建API
+    PlayerService.setLyricsApiType(LyricsApiType.customApi);
+    PlayerService.setLyricsEnabled(true);
+
     PlayerService.lyricsApiTypeNotifier.addListener(_onLyricsSettingsChanged);
     PlayerService.lyricsEnabledNotifier.addListener(_onLyricsSettingsChanged);
   }

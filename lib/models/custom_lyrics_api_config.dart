@@ -3,10 +3,13 @@ class CustomLyricsApiConfig {
   final String baseUrl;
   final String searchEndpoint;
   final String lyricEndpoint;
+  final String singerEndpoint;
   final String searchMethod;
   final String lyricMethod;
+  final String singerMethod;
   final Map<String, String> searchParams;
   final Map<String, String> lyricParams;
+  final Map<String, String> singerParams;
   final String songIdField;
   final String titleField;
   final String artistField;
@@ -23,10 +26,13 @@ class CustomLyricsApiConfig {
     required this.baseUrl,
     required this.searchEndpoint,
     required this.lyricEndpoint,
+    this.singerEndpoint = '/singer/get_info',
     this.searchMethod = 'GET',
     this.lyricMethod = 'GET',
+    this.singerMethod = 'GET',
     this.searchParams = const {},
     this.lyricParams = const {},
+    this.singerParams = const {},
     this.songIdField = 'mid',
     this.titleField = 'title',
     this.artistField = 'artist',
@@ -46,16 +52,19 @@ class CustomLyricsApiConfig {
       baseUrl: json['baseUrl'] ?? '',
       searchEndpoint: json['searchEndpoint'] ?? '',
       lyricEndpoint: json['lyricEndpoint'] ?? '',
+      singerEndpoint: json['singerEndpoint'] ?? '/singer/get_info',
       searchMethod: json['searchMethod'] ?? 'GET',
       lyricMethod: json['lyricMethod'] ?? 'GET',
+      singerMethod: json['singerMethod'] ?? 'GET',
       searchParams: Map<String, String>.from(json['searchParams'] ?? {}),
       lyricParams: Map<String, String>.from(json['lyricParams'] ?? {}),
+      singerParams: Map<String, String>.from(json['singerParams'] ?? {}),
       songIdField: json['songIdField'] ?? 'mid',
       titleField: json['titleField'] ?? 'title',
       artistField: json['artistField'] ?? 'artist',
       lyricField: json['lyricField'] ?? 'lyric',
       translationField: json['translationField'] ?? 'trans',
-      successCode: json['successCode']?.toString() ?? '200',
+      successCode: json['successCode'] ?? '200',
       dataField: json['dataField'] ?? 'data',
       artistPath: json['artistPath'] ?? 'artist',
       isEnabled: json['isEnabled'] ?? true,
@@ -70,10 +79,13 @@ class CustomLyricsApiConfig {
       'baseUrl': baseUrl,
       'searchEndpoint': searchEndpoint,
       'lyricEndpoint': lyricEndpoint,
+      'singerEndpoint': singerEndpoint,
       'searchMethod': searchMethod,
       'lyricMethod': lyricMethod,
+      'singerMethod': singerMethod,
       'searchParams': searchParams,
       'lyricParams': lyricParams,
+      'singerParams': singerParams,
       'songIdField': songIdField,
       'titleField': titleField,
       'artistField': artistField,
@@ -93,10 +105,13 @@ class CustomLyricsApiConfig {
     String? baseUrl,
     String? searchEndpoint,
     String? lyricEndpoint,
+    String? singerEndpoint,
     String? searchMethod,
     String? lyricMethod,
+    String? singerMethod,
     Map<String, String>? searchParams,
     Map<String, String>? lyricParams,
+    Map<String, String>? singerParams,
     String? songIdField,
     String? titleField,
     String? artistField,
@@ -113,10 +128,13 @@ class CustomLyricsApiConfig {
       baseUrl: baseUrl ?? this.baseUrl,
       searchEndpoint: searchEndpoint ?? this.searchEndpoint,
       lyricEndpoint: lyricEndpoint ?? this.lyricEndpoint,
+      singerEndpoint: singerEndpoint ?? this.singerEndpoint,
       searchMethod: searchMethod ?? this.searchMethod,
       lyricMethod: lyricMethod ?? this.lyricMethod,
+      singerMethod: singerMethod ?? this.singerMethod,
       searchParams: searchParams ?? this.searchParams,
       lyricParams: lyricParams ?? this.lyricParams,
+      singerParams: singerParams ?? this.singerParams,
       songIdField: songIdField ?? this.songIdField,
       titleField: titleField ?? this.titleField,
       artistField: artistField ?? this.artistField,
@@ -137,12 +155,19 @@ class CustomLyricsApiConfig {
         other.name == name &&
         other.baseUrl == baseUrl &&
         other.searchEndpoint == searchEndpoint &&
-        other.lyricEndpoint == lyricEndpoint;
+        other.lyricEndpoint == lyricEndpoint &&
+        other.singerEndpoint == singerEndpoint;
   }
 
   @override
   int get hashCode {
-    return Object.hash(name, baseUrl, searchEndpoint, lyricEndpoint);
+    return Object.hash(
+      name,
+      baseUrl,
+      searchEndpoint,
+      lyricEndpoint,
+      singerEndpoint,
+    );
   }
 
   @override
