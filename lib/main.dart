@@ -6,7 +6,6 @@ import 'models/lyrics_api_type.dart';
 import 'services/custom_lyrics_api_service.dart';
 import 'components/mini_player.dart';
 import 'pages/home_page.dart';
-import 'pages/library_page.dart';
 import 'pages/login_page.dart';
 import 'pages/songs_page.dart';
 import 'pages/playlists_page.dart';
@@ -264,7 +263,6 @@ class _MusicHomePageState extends State<MusicHomePage> {
         },
         setThemeMode: widget.setThemeMode,
       ),
-      LibraryPage(api: widget.api, playerService: playerService),
       SongsPage(api: widget.api, playerService: playerService),
       PlaylistsPage(api: widget.api, playerService: playerService),
     ];
@@ -346,22 +344,16 @@ class _MusicHomePageState extends State<MusicHomePage> {
               index: 0,
             ),
             _buildNavigationDestination(
-              icon: Icons.library_music_rounded,
-              selectedIcon: Icons.library_music_outlined,
-              label: '音乐库',
-              index: 1,
-            ),
-            _buildNavigationDestination(
               icon: Icons.music_note_rounded,
               selectedIcon: Icons.music_note_outlined,
               label: '歌曲',
-              index: 2,
+              index: 1,
             ),
             _buildNavigationDestination(
               icon: Icons.playlist_play_rounded,
               selectedIcon: Icons.playlist_play_outlined,
               label: '歌单',
-              index: 3,
+              index: 2,
             ),
           ],
         ),

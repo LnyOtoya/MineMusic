@@ -7,6 +7,7 @@ import '../services/subsonic_api.dart';
 import '../services/lyrics_api.dart';
 import '../models/lyrics_api_type.dart';
 import '../utils/lrc_to_qrc_converter.dart';
+import 'artist_detail_page.dart';
 
 class PlayerPage extends StatefulWidget {
   final PlayerService playerService;
@@ -1244,12 +1245,43 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        song['artist'] ?? '未知艺术家',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      GestureDetector(
+                        onTap: () {
+                          if (song['artist'] != null &&
+                              song['artist'] != '未知艺术家' &&
+                              song['artistId'] != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ArtistDetailPage(
+                                  artist: {
+                                    'id': song['artistId'],
+                                    'name': song['artist'],
+                                  },
+                                  api: widget.api,
+                                  playerService: widget.playerService,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Text(
+                          song['artist'] ?? '未知艺术家',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                                decoration: song['artistId'] != null
+                                    ? TextDecoration.underline
+                                    : TextDecoration.none,
+                                decorationColor: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                                decorationThickness: 1,
+                              ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
