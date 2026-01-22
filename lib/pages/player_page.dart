@@ -8,6 +8,7 @@ import '../services/lyrics_api.dart';
 import '../models/lyrics_api_type.dart';
 import '../utils/lrc_to_qrc_converter.dart';
 import 'artist_detail_page.dart';
+import 'detail_page.dart';
 
 class PlayerPage extends StatefulWidget {
   final PlayerService playerService;
@@ -1236,13 +1237,38 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        song['title'] ?? '未知歌曲',
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                        overflow: TextOverflow.ellipsis,
+                      GestureDetector(
+                        onTap: () {
+                          if (song['album'] != null &&
+                              song['album'] != '未知专辑' &&
+                              song['albumId'] != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DetailPage(
+                                  item: {
+                                    'id': song['albumId'],
+                                    'name': song['album'],
+                                    'coverArt': song['coverArt'],
+                                    'artist': song['artist'],
+                                  },
+                                  type: DetailType.album,
+                                  api: widget.api,
+                                  playerService: widget.playerService,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Text(
+                          song['title'] ?? '未知歌曲',
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                decoration: TextDecoration.none,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       GestureDetector(
@@ -1272,13 +1298,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurfaceVariant,
-                                decoration: song['artistId'] != null
-                                    ? TextDecoration.underline
-                                    : TextDecoration.none,
-                                decorationColor: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                                decorationThickness: 1,
+                                decoration: TextDecoration.none,
                               ),
                           overflow: TextOverflow.ellipsis,
                         ),

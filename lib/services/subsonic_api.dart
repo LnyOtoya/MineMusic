@@ -186,6 +186,7 @@ class SubsonicApi {
             'artist': artist,
             'artistId': element.getAttribute('artistId'),
             'album': album,
+            'albumId': element.getAttribute('albumId'),
             'duration': element.getAttribute('duration'),
             'coverArt': element.getAttribute('coverArt'),
           });
@@ -313,6 +314,7 @@ class SubsonicApi {
             'artist': artist,
             'artistId': element.getAttribute('artistId'),
             'album': album,
+            'albumId': element.getAttribute('albumId'),
             'duration': element.getAttribute('duration'),
             'coverArt': element.getAttribute('coverArt'),
           });
@@ -400,6 +402,7 @@ class SubsonicApi {
             'artist': artist,
             'artistId': element.getAttribute('artistId'),
             'album': album,
+            'albumId': element.getAttribute('albumId'),
             'duration': element.getAttribute('duration'),
             'coverArt': element.getAttribute('coverArt'),
           });
@@ -503,6 +506,7 @@ class SubsonicApi {
             'artist': element.getAttribute('artist'),
             'artistId': element.getAttribute('artistId'),
             'album': element.getAttribute('album'),
+            'albumId': element.getAttribute('albumId'),
             'duration': element.getAttribute('duration'),
             'coverArt': element.getAttribute('coverArt'),
           });
@@ -548,6 +552,7 @@ class SubsonicApi {
             'artist': element.getAttribute('artist'),
             'artistId': element.getAttribute('artistId'),
             'album': element.getAttribute('album'),
+            'albumId': element.getAttribute('albumId'),
             'duration': element.getAttribute('duration'),
             'coverArt': element.getAttribute('coverArt'),
           });
@@ -884,6 +889,7 @@ class SubsonicApi {
             'artist': artist,
             'artistId': element.getAttribute('artistId'),
             'album': album,
+            'albumId': element.getAttribute('albumId'),
             'duration': element.getAttribute('duration'),
             'coverArt': element.getAttribute('coverArt'),
           });
@@ -940,6 +946,7 @@ class SubsonicApi {
               'artist': artist,
               'artistId': element.getAttribute('artistId'),
               'album': element.getAttribute('album') ?? '未知专辑',
+              'albumId': element.getAttribute('albumId'),
               'duration': element.getAttribute('duration'),
               'coverArt': element.getAttribute('coverArt'),
               'year': element.getAttribute('year'),
@@ -1007,6 +1014,7 @@ class SubsonicApi {
                     'artist': artist,
                     'artistId': element.getAttribute('artistId'),
                     'album': element.getAttribute('album') ?? '未知专辑',
+                    'albumId': element.getAttribute('albumId'),
                     'duration': element.getAttribute('duration'),
                     'coverArt': element.getAttribute('coverArt'),
                     'year': yearStr,
@@ -1135,6 +1143,7 @@ class SubsonicApi {
               'artist': element.getAttribute('artist'),
               'artistId': element.getAttribute('artistId'),
               'album': element.getAttribute('album'),
+              'albumId': element.getAttribute('albumId'),
               'duration': element.getAttribute('duration'),
               'coverArt': element.getAttribute('coverArt'),
               'year': element.getAttribute('year'),
