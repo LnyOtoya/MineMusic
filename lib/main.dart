@@ -326,15 +326,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
       ),
 
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          border: Border(
-            top: BorderSide(
-              color: Theme.of(context).colorScheme.surfaceVariant,
-              width: 1,
-            ),
-          ),
-        ),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
         child: NavigationBar(
           height: 64,
           selectedIndex: _selectedIndex,
