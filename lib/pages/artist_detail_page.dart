@@ -50,14 +50,25 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.artist['name'] ?? '未知艺术家')),
+      appBar: AppBar(
+        title: Text(widget.artist['name'] ?? '未知艺术家'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+      ),
       body: Column(
         children: [
           // 歌手信息区域
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Theme.of(context).colorScheme.primaryContainer,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+            ),
             child: Column(
               children: [
                 // 歌手头像
@@ -65,26 +76,27 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                   future: _artistAvatarFuture,
                   builder: (context, avatarSnapshot) {
                     return Container(
-                      width: 120,
-                      height: 120,
+                      width: 140,
+                      height: 140,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(60),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(70),
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(60),
+                        borderRadius: BorderRadius.circular(70),
                         child:
                             avatarSnapshot.connectionState ==
                                 ConnectionState.waiting
                             ? Container(
-                                color: Theme.of(context).colorScheme.surface,
-                                child: const Icon(Icons.person, size: 64),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceVariant,
+                                child: Icon(
+                                  Icons.person,
+                                  size: 64,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                               )
                             : avatarSnapshot.hasData &&
                                   avatarSnapshot.data != null
@@ -92,36 +104,66 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                                 imageUrl: avatarSnapshot.data!,
                                 fit: BoxFit.cover,
                                 placeholder: (context, url) => Container(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  child: const Icon(Icons.person, size: 64),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceVariant,
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 64,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                                 errorWidget: (context, url, error) => Container(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  child: const Icon(Icons.person, size: 64),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceVariant,
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 64,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                               )
                             : Container(
-                                color: Theme.of(context).colorScheme.surface,
-                                child: const Icon(Icons.person, size: 64),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceVariant,
+                                child: Icon(
+                                  Icons.person,
+                                  size: 64,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                               ),
                       ),
                     );
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 // 歌手名称
                 Text(
                   widget.artist['name'] ?? '未知艺术家',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 // 歌手介绍（暂时使用默认文本）
                 Text(
                   '暂无艺术家介绍信息',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -139,10 +181,22 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error, size: 64, color: Colors.red),
+                        Icon(
+                          Icons.error,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                         const SizedBox(height: 16),
-                        Text('加载专辑失败: ${snapshot.error}'),
-                        TextButton(
+                        Text(
+                          '加载专辑失败: ${snapshot.error}',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
                           onPressed: () {
                             setState(() {
                               _albumsFuture = widget.api.getAlbumsByArtist(
@@ -160,16 +214,35 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                 final albums = snapshot.data ?? [];
 
                 if (albums.isEmpty) {
-                  return const Center(child: Text('该艺术家暂无专辑'));
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.album,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '该艺术家暂无专辑',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 return GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(10),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.72, //修改此文件可以解决专辑图长度
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 0.65, //修改此文件可以解决专辑图长度
                   ),
                   itemCount: albums.length,
                   itemBuilder: (context, index) {
@@ -188,10 +261,11 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
   Widget _buildAlbumCard(Map<String, dynamic> album) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      surfaceTintColor: Theme.of(context).colorScheme.surface,
       child: InkWell(
         onTap: () => _openAlbumDetail(album),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -199,50 +273,69 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
               aspectRatio: 1,
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
+                  top: Radius.circular(10),
                 ),
                 child: album['coverArt'] != null
                     ? CachedNetworkImage(
                         imageUrl: widget.api.getCoverArtUrl(album['coverArt']),
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          child: const Icon(Icons.album, size: 64),
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          child: Icon(
+                            Icons.album,
+                            size: 40,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                         errorWidget: (context, url, error) => Container(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          child: const Icon(Icons.album, size: 64),
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          child: Icon(
+                            Icons.album,
+                            size: 40,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       )
                     : Container(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        child: const Icon(Icons.album, size: 64),
+                        color: Theme.of(context).colorScheme.surfaceVariant,
+                        child: Icon(
+                          Icons.album,
+                          size: 40,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     album['name'] ?? '未知专辑',
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    maxLines: 2,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
+                  const SizedBox(height: 1),
                   Text(
-                    album['artist'] ?? '未知艺术家',
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  Text(
-                    '${album['songCount'] ?? 0} 首歌曲',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    '${album['songCount'] ?? 0} 首',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 6),
           ],
         ),
       ),
