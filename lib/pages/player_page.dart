@@ -40,6 +40,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   late Animation<double> _fontSizeSliderAnimation;
   bool _isPlaying = false;
   bool _wasPlaying = false;
+  bool _isInitialized = false;
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
@@ -159,6 +160,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     // 监听播放状态变化
     widget.playerService.addListener(_updatePlayerState);
     _updatePlayerState(); // 初始状态更新
+    _isInitialized = true; // 初始化完成
 
     // 加载当前歌曲歌词
     _loadLyrics();
@@ -428,9 +430,19 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
       // 触发形状过渡动画
       if (_isPlaying) {
-        _shapeAnimationController.forward();
+        if (_isInitialized) {
+          _shapeAnimationController.forward();
+        } else {
+          // 初始化时直接设置为播放状态，不触发动画
+          _shapeAnimationController.value = 1.0;
+        }
       } else {
-        _shapeAnimationController.reverse();
+        if (_isInitialized) {
+          _shapeAnimationController.reverse();
+        } else {
+          // 初始化时直接设置为暂停状态，不触发动画
+          _shapeAnimationController.value = 0.0;
+        }
       }
     }
 
@@ -1652,8 +1664,6 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                 _buildControlButton(
                   icon: Icons.skip_previous,
                   onPressed: () => widget.playerService.previousSong(),
-                  isPlaying: _isPlaying,
-                  shapeAnimation: _shapeAnimation,
                   primaryContainerColor: primaryContainerColor,
                   onPrimaryContainerColor: onPrimaryContainerColor,
                 ),
@@ -1682,17 +1692,13 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             color: primaryColor,
                             borderRadius: BorderRadius.circular(borderRadius),
-                            boxShadow: [
-                              BoxShadow(
-                                color: primaryColor.withOpacity(0.2),
-                                blurRadius: 10,
-                              ),
-                            ],
                           ),
-                          child: Icon(
-                            _isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: onPrimaryColor,
-                            size: 32,
+                          child: Center(
+                            child: Icon(
+                              _isPlaying ? Icons.pause : Icons.play_arrow,
+                              color: onPrimaryColor,
+                              size: 32,
+                            ),
                           ),
                         ),
                       );
@@ -1704,8 +1710,6 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                 _buildControlButton(
                   icon: Icons.skip_next,
                   onPressed: () => widget.playerService.nextSong(),
-                  isPlaying: _isPlaying,
-                  shapeAnimation: _shapeAnimation,
                   primaryContainerColor: primaryContainerColor,
                   onPrimaryContainerColor: onPrimaryContainerColor,
                 ),
@@ -1720,8 +1724,6 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   Widget _buildControlButton({
     required IconData icon,
     required VoidCallback onPressed,
-    required bool isPlaying,
-    required Animation<double> shapeAnimation,
     required Color primaryContainerColor,
     required Color onPrimaryContainerColor,
   }) {
@@ -1731,20 +1733,16 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       onTapCancel: () => _playButtonController.reverse(),
       onTap: onPressed,
       child: AnimatedBuilder(
-        animation: Listenable.merge([_playButtonScale, shapeAnimation]),
+        animation: _playButtonScale,
         builder: (context, child) {
-          final progress = shapeAnimation.value;
-          final width = _lerpDouble(64.0, 80.0, progress);
-          final borderRadius = _lerpDouble(16.0, 16.0, progress);
-
           return Transform.scale(
             scale: _playButtonScale.value,
             child: Container(
-              width: width,
+              width: 64,
               height: 64,
               decoration: BoxDecoration(
                 color: primaryContainerColor.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(borderRadius),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(icon, color: onPrimaryContainerColor, size: 28),
             ),
