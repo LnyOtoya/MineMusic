@@ -5,6 +5,7 @@ import '../services/player_service.dart';
 import '../models/lyrics_api_type.dart';
 import 'login_page.dart';
 import 'custom_api_config_page.dart';
+import 'about_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final SubsonicApi api;
@@ -183,8 +184,14 @@ class _SettingsPageState extends State<SettingsPage> {
             ListTile(
               leading: const Icon(Icons.info_outline_rounded),
               title: const Text('关于'),
-              subtitle: const Text('MineMusic v1.1.1'),
+              subtitle: const Text('MineMusic v1.1.2'),
               trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AboutPage()),
+                );
+              },
             ),
           ]),
           const SizedBox(height: 16),

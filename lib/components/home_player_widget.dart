@@ -34,7 +34,7 @@ class HomePlayerWidget extends StatelessWidget {
             children: [
               // 圆形封面
               Hero(
-                tag: 'album_cover',
+                tag: 'home_album_cover',
                 child: ClipOval(
                   child: Container(
                     width: containerSize,
@@ -120,6 +120,7 @@ class HomePlayerWidget extends StatelessWidget {
                     ],
                   ),
                   child: FloatingActionButton(
+                    heroTag: 'play_pause_button',
                     onPressed: onPlayPause,
                     backgroundColor: Colors.transparent,
                     elevation: 0,
@@ -158,6 +159,7 @@ class HomePlayerWidget extends StatelessWidget {
                     ],
                   ),
                   child: FloatingActionButton(
+                    heroTag: 'next_button',
                     onPressed: onNext,
                     backgroundColor: Colors.transparent,
                     elevation: 0,

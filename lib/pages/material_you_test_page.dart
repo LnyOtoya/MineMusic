@@ -75,6 +75,7 @@ class MaterialYouTestPage extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'material_you_add_button',
         onPressed: () {},
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
