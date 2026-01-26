@@ -310,7 +310,7 @@ class _SongsPageState extends State<SongsPage> {
                 title: const Text('加入歌单'),
                 onTap: () {
                   Navigator.pop(context);
-                  // 未来实现加入歌单逻辑
+                  _showAddToPlaylistDialog(song);
                 },
               ),
               ListTile(
@@ -379,6 +379,65 @@ class _SongsPageState extends State<SongsPage> {
         sourceType: 'songs',
         playlist: _songs, // 传入排序后的列表
       );
+    }
+  }
+
+  // 显示添加到歌单对话框
+  void _showAddToPlaylistDialog(Map<String, dynamic> song) async {
+    try {
+      List<Map<String, dynamic>> playlists = await widget.api.getPlaylists();
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('加入歌单'),
+            content: SizedBox(
+              height: 300,
+              width: double.maxFinite,
+              child: ListView.builder(
+                itemCount: playlists.length,
+                itemBuilder: (context, index) {
+                  final playlist = playlists[index];
+                  return ListTile(
+                    title: Text(playlist['name'] ?? '未知歌单'),
+                    subtitle: Text('歌曲数: ${playlist['songCount'] ?? 0}'),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      // 将歌曲添加到歌单
+                      bool success = await widget.api.addSongToPlaylist(
+                        playlist['id'],
+                        song['id'],
+                      );
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('歌曲已添加到歌单 "${playlist['name']}"'),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('添加歌曲到歌单失败')),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      print('获取歌单列表失败: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('获取歌单列表失败')));
     }
   }
 }

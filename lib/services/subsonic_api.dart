@@ -507,6 +507,113 @@ class SubsonicApi {
     }
   }
 
+  //删除播放列表
+  Future<bool> deletePlaylist(String playlistId) async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/deletePlaylist');
+
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MyMusicPlayer',
+        'f': 'xml',
+        'id': playlistId,
+      };
+
+      final urlWithParams = url.replace(queryParameters: params);
+      final response = await http.get(urlWithParams);
+
+      if (response.statusCode == 200) {
+        print('✅ 播放列表删除成功');
+        return true;
+      } else {
+        print('❌ 播放列表删除失败: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('删除播放列表失败: $e');
+      return false;
+    }
+  }
+
+  //将歌曲添加到歌单
+  Future<bool> addSongToPlaylist(String playlistId, String songId) async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/updatePlaylist');
+
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MyMusicPlayer',
+        'f': 'xml',
+        'playlistId': playlistId,
+        'songIdToAdd': songId,
+      };
+
+      final urlWithParams = url.replace(queryParameters: params);
+      final response = await http.get(urlWithParams);
+
+      if (response.statusCode == 200) {
+        print('✅ 歌曲添加到歌单成功');
+        return true;
+      } else {
+        print('❌ 歌曲添加到歌单失败: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('添加歌曲到歌单失败: $e');
+      return false;
+    }
+  }
+
+  //从歌单中删除歌曲
+  Future<bool> removeSongFromPlaylist(String playlistId, String songId) async {
+    try {
+      // 首先获取歌单中的所有歌曲，找到要删除歌曲的索引
+      final playlistSongs = await getPlaylistSongs(playlistId);
+      int songIndex = -1;
+      for (int i = 0; i < playlistSongs.length; i++) {
+        if (playlistSongs[i]['id'] == songId) {
+          songIndex = i;
+          break;
+        }
+      }
+
+      if (songIndex == -1) {
+        print('❌ 歌曲不在歌单中');
+        return false;
+      }
+
+      final url = Uri.parse('$baseUrl/rest/updatePlaylist');
+
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MyMusicPlayer',
+        'f': 'xml',
+        'playlistId': playlistId,
+        'songIndexToRemove': songIndex.toString(),
+      };
+
+      final urlWithParams = url.replace(queryParameters: params);
+      final response = await http.get(urlWithParams);
+
+      if (response.statusCode == 200) {
+        print('✅ 歌曲从歌单中删除成功');
+        return true;
+      } else {
+        print('❌ 歌曲从歌单中删除失败: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('从歌单中删除歌曲失败: $e');
+      return false;
+    }
+  }
+
   //获取歌曲搜索
   Future<List<Map<String, dynamic>>> getAllSongsViaSearch() async {
     try {

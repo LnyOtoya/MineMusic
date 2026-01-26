@@ -78,6 +78,169 @@ class _DetailPageState extends State<DetailPage> {
     );
   }
 
+  // 显示歌曲操作菜单
+  void _showSongMenu(Map<String, dynamic> song) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        if (widget.type == DetailType.playlist) {
+          // 歌单详情页菜单
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.delete_rounded),
+                title: const Text('从歌单中删除'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _removeSongFromPlaylist(song);
+                },
+              ),
+            ],
+          );
+        } else {
+          // 其他页面菜单
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.play_arrow_rounded),
+                title: const Text('播放'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _playSong(song, [song]);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.playlist_add_rounded),
+                title: const Text('加入歌单'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAddToPlaylistDialog(song);
+                },
+              ),
+            ],
+          );
+        }
+      },
+    );
+  }
+
+  // 显示添加到歌单对话框
+  void _showAddToPlaylistDialog(Map<String, dynamic> song) async {
+    try {
+      List<Map<String, dynamic>> playlists = await widget.api.getPlaylists();
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('加入歌单'),
+            content: SizedBox(
+              height: 300,
+              width: double.maxFinite,
+              child: ListView.builder(
+                itemCount: playlists.length,
+                itemBuilder: (context, index) {
+                  final playlist = playlists[index];
+                  return ListTile(
+                    title: Text(playlist['name'] ?? '未知歌单'),
+                    subtitle: Text('歌曲数: ${playlist['songCount'] ?? 0}'),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      // 将歌曲添加到歌单
+                      bool success = await widget.api.addSongToPlaylist(
+                        playlist['id'],
+                        song['id'],
+                      );
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('歌曲已添加到歌单 "${playlist['name']}"'),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('添加歌曲到歌单失败')),
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      print('获取歌单列表失败: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('获取歌单列表失败')));
+    }
+  }
+
+  // 从歌单中删除歌曲
+  void _removeSongFromPlaylist(Map<String, dynamic> song) async {
+    try {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('从歌单中删除'),
+            content: Text('确定要从歌单中删除歌曲 "${song['title']}" 吗？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  // 调用API删除歌曲
+                  bool success = await widget.api.removeSongFromPlaylist(
+                    widget.item['id'],
+                    song['id'],
+                  );
+                  if (success) {
+                    // 重新加载歌单
+                    _loadSongs();
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('歌曲已从歌单中删除')));
+                  } else {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('删除歌曲失败')));
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.error.withOpacity(0.8),
+                ),
+                child: const Text('删除'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      print('从歌单中删除歌曲失败: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('删除歌曲失败')));
+    }
+  }
+
   Widget _buildPlaylistCoverGrid(List<Map<String, dynamic>> songs) {
     List<String> coverArts = [];
     for (var i = 0; i < songs.length && i < 4; i++) {
@@ -365,6 +528,7 @@ class _DetailPageState extends State<DetailPage> {
                       ),
                       child: InkWell(
                         onTap: () => _playSong(song, songs),
+                        onLongPress: () => _showSongMenu(song),
                         borderRadius: BorderRadius.circular(12),
                         child: Padding(
                           padding: const EdgeInsets.all(16),

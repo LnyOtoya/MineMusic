@@ -104,7 +104,7 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
               ),
               IconButton(
                 onPressed: () {
-                  // 未来可以添加创建歌单功能
+                  _showCreatePlaylistDialog();
                 },
                 icon: Icon(
                   Icons.add_rounded,
@@ -243,89 +243,97 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
   }
 
   Widget _buildPlaylistCard(Map<String, dynamic> playlist) {
-    return InkWell(
-      onTap: () => _openPlaylistDetail(playlist),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: Container(
-                width: double.infinity,
-                height: 160,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => _openPlaylistDetail(playlist),
+        onLongPress: () => _showDeletePlaylistDialog(playlist),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
                 ),
-                child: playlist['coverArt'] != null
-                    ? CachedNetworkImage(
-                        imageUrl: widget.api.getCoverArtUrl(
-                          playlist['coverArt'],
-                        ),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: 160,
-                        placeholder: (context, url) => Icon(
+                child: Container(
+                  width: double.infinity,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                  ),
+                  child: playlist['coverArt'] != null
+                      ? CachedNetworkImage(
+                          imageUrl: widget.api.getCoverArtUrl(
+                            playlist['coverArt'],
+                          ),
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: 140,
+                          placeholder: (context, url) => Icon(
+                            Icons.playlist_play_rounded,
+                            size: 56,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                          errorWidget: (context, url, error) => Icon(
+                            Icons.playlist_play_rounded,
+                            size: 56,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                      : Icon(
                           Icons.playlist_play_rounded,
-                          size: 64,
+                          size: 56,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                        errorWidget: (context, url, error) => Icon(
-                          Icons.playlist_play_rounded,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      )
-                    : Icon(
-                        Icons.playlist_play_rounded,
-                        size: 64,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    playlist['name'] ?? '未知歌单',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '歌曲数: ${playlist['songCount'] ?? 0}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  if (playlist['comment'] != null &&
-                      playlist['comment']!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      playlist['comment']!,
+                      playlist['name'] ?? '未知歌单',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '歌曲数: ${playlist['songCount'] ?? 0}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
+                    if (playlist['comment'] != null &&
+                        playlist['comment']!.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        playlist['comment']!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -342,6 +350,122 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
           type: DetailType.playlist,
         ),
       ),
+    );
+  }
+
+  // 显示创建歌单对话框
+  void _showCreatePlaylistDialog() {
+    TextEditingController nameController = TextEditingController();
+    TextEditingController commentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('创建歌单'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: '歌单名称',
+                  hintText: '请输入歌单名称',
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: commentController,
+                decoration: const InputDecoration(
+                  labelText: '歌单注释',
+                  hintText: '请输入歌单注释（可选）',
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                String name = nameController.text.trim();
+                if (name.isEmpty) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('歌单名称不能为空')));
+                  return;
+                }
+
+                // 创建歌单
+                bool success = await widget.api.createPlaylist(name, []);
+                if (success) {
+                  // 重新加载歌单
+                  _cachedPlaylists = null;
+                  _loadPlaylists();
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('歌单 "$name" 创建成功')));
+                } else {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('歌单创建失败')));
+                }
+              },
+              child: const Text('创建'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 显示删除歌单对话框
+  void _showDeletePlaylistDialog(Map<String, dynamic> playlist) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('删除歌单'),
+          content: Text('确定要删除歌单 "${playlist['name']}" 吗？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                bool success = await widget.api.deletePlaylist(playlist['id']);
+                if (success) {
+                  // 重新加载歌单
+                  _cachedPlaylists = null;
+                  _loadPlaylists();
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('歌单 "${playlist['name']}" 删除成功')),
+                  );
+                } else {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('歌单删除失败')));
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.error.withOpacity(0.8),
+              ),
+              child: const Text('删除'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
