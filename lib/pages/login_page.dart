@@ -350,13 +350,13 @@ class _LoginPageState extends State<LoginPage> {
                     FilledButton.tonalIcon(
                       onPressed: _isLoading ? null : _login,
                       icon: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation(
-                                  Colors.white,
+                                  Theme.of(context).colorScheme.onPrimary,
                                 ),
                               ),
                             )

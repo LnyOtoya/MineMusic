@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/subsonic_api.dart';
 import 'services/player_service.dart';
+import 'services/color_manager_service.dart';
 import 'models/lyrics_api_type.dart';
 import 'services/custom_lyrics_api_service.dart';
 import 'components/mini_player.dart';
@@ -11,6 +12,7 @@ import 'pages/songs_page.dart';
 import 'pages/playlists_page.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'models/lyrics_api_type.dart';
+import 'utils/tonal_surface_helper.dart';
 // import 'package:just_audio_background/just_audio_background.dart';
 // import 'package:audio_session/audio_session.dart';  // 新增
 
@@ -61,6 +63,15 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _loadThemeMode();
+    _setupColorListeners();
+  }
+
+  void _setupColorListeners() {
+    // 添加颜色变化监听器
+    ColorManagerService().addListener((colorScheme) {
+      // 颜色变化时触发重建，确保使用最新的颜色方案
+      setState(() {});
+    });
   }
 
   Future<void> _loadThemeMode() async {
@@ -105,33 +116,20 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return DynamicColorBuilder(
-      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        ColorScheme lightScheme;
-        ColorScheme darkScheme;
+    // 使用 ColorManagerService 提供的动态颜色方案
+    final lightScheme = ColorManagerService().getCurrentColorScheme(
+      Brightness.light,
+    );
+    final darkScheme = ColorManagerService().getCurrentColorScheme(
+      Brightness.dark,
+    );
 
-        if (lightDynamic != null && darkDynamic != null) {
-          lightScheme = lightDynamic;
-          darkScheme = darkDynamic;
-        } else {
-          lightScheme = ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            brightness: Brightness.light,
-          );
-          darkScheme = ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            brightness: Brightness.dark,
-          );
-        }
-
-        return MaterialApp(
-          title: '音乐播放器',
-          theme: ThemeData(colorScheme: lightScheme, useMaterial3: true),
-          darkTheme: ThemeData(colorScheme: darkScheme, useMaterial3: true),
-          themeMode: _themeMode,
-          home: InitializerPage(setThemeMode: setThemeMode),
-        );
-      },
+    return MaterialApp(
+      title: '音乐播放器',
+      theme: ThemeData(colorScheme: lightScheme, useMaterial3: true),
+      darkTheme: ThemeData(colorScheme: darkScheme, useMaterial3: true),
+      themeMode: _themeMode,
+      home: InitializerPage(setThemeMode: setThemeMode),
     );
   }
 }

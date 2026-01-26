@@ -9,6 +9,7 @@ import '../services/color_extractor_service.dart';
 import '../services/color_cache_service.dart';
 import '../models/lyrics_api_type.dart';
 import '../utils/lrc_to_qrc_converter.dart';
+import '../utils/tonal_surface_helper.dart';
 import 'artist_detail_page.dart';
 import 'detail_page.dart';
 
@@ -206,11 +207,11 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
     // 初始化tonal surface背景色动画（将primary以6%不透明度混入surface）
     _tonalSurfaceAnimation = ColorTween(
-      begin: _blendPrimaryWithSurface(
+      begin: TonalSurfaceHelper.getTonalSurfaceFromColors(
         defaultColorScheme.primary,
         defaultColorScheme.surface,
       ),
-      end: _blendPrimaryWithSurface(
+      end: TonalSurfaceHelper.getTonalSurfaceFromColors(
         defaultColorScheme.primary,
         defaultColorScheme.surface,
       ),
@@ -511,11 +512,6 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     }
   }
 
-  // 混合primary和surface创建tonal surface效果
-  Color _blendPrimaryWithSurface(Color primary, Color surface) {
-    return Color.alphaBlend(primary.withValues(alpha: 0.06), surface);
-  }
-
   // 启动颜色过渡动画
   void _startColorAnimation() {
     if (_targetCoverColorScheme == null) return;
@@ -578,8 +574,14 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     final targetSurface = _targetCoverColorScheme!.surface;
 
     _tonalSurfaceAnimation = ColorTween(
-      begin: _blendPrimaryWithSurface(currentPrimary, currentSurface),
-      end: _blendPrimaryWithSurface(targetPrimary, targetSurface),
+      begin: TonalSurfaceHelper.getTonalSurfaceFromColors(
+        currentPrimary,
+        currentSurface,
+      ),
+      end: TonalSurfaceHelper.getTonalSurfaceFromColors(
+        targetPrimary,
+        targetSurface,
+      ),
     ).animate(_colorAnimationController);
 
     // 监听动画状态变化
@@ -767,41 +769,27 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                 style = style.copyWith(
                   // 基本翻译样式
                   translationStyle: style.translationStyle.copyWith(
-                    color: isDark
-                        ? Colors.black.withValues(alpha: 0.4)
-                        : onSurfaceVariantColor,
+                    color: onSurfaceVariantColor,
                   ),
                   // 激活状态的翻译样式
-                  translationActiveColor: isDark
-                      ? Colors.black.withValues(alpha: 0.6)
-                      : onSurfaceVariantColor,
+                  translationActiveColor: onSurfaceVariantColor,
                   // 选中状态的翻译样式
-                  selectedTranslationColor: isDark
-                      ? Colors.black.withValues(alpha: 0.4)
-                      : onSurfaceVariantColor,
+                  selectedTranslationColor: onSurfaceVariantColor,
                   // 翻译行间距
                   translationLineGap: 8.0,
                   // 基本文本样式
                   textStyle: style.textStyle.copyWith(
-                    color: isDark
-                        ? Colors.black.withValues(alpha: 0.4)
-                        : onSurfaceVariantColor,
+                    color: onSurfaceVariantColor,
                   ),
                   // 激活状态的文本样式
                   activeStyle: style.activeStyle.copyWith(
-                    color: isDark
-                        ? Colors.black.withValues(alpha: 0.8)
-                        : onSurfaceColor,
+                    color: onSurfaceColor,
                     fontWeight: FontWeight.normal,
                   ),
                   // 选中状态的文本样式
-                  selectedColor: isDark
-                      ? Colors.black.withValues(alpha: 0.4)
-                      : onSurfaceVariantColor,
+                  selectedColor: onSurfaceVariantColor,
                   // 高亮颜色
-                  activeHighlightColor: isDark
-                      ? Colors.black.withValues(alpha: 0.9)
-                      : primaryColor.withValues(alpha: 1),
+                  activeHighlightColor: primaryColor.withValues(alpha: 1),
                 );
 
                 return Stack(
@@ -1152,7 +1140,9 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(50),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withAlpha(50),
                           blurRadius: 10,
                           offset: Offset(0, 4),
                         ),
@@ -1253,7 +1243,9 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withAlpha(30),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withAlpha(30),
                                   blurRadius: 8,
                                   offset: Offset(0, 2),
                                 ),
@@ -1290,7 +1282,9 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withAlpha(30),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withAlpha(30),
                                   blurRadius: 8,
                                   offset: Offset(0, 2),
                                 ),
@@ -1343,7 +1337,9 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withAlpha(50),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withAlpha(50),
                                 blurRadius: 10,
                                 offset: Offset(0, 4),
                               ),

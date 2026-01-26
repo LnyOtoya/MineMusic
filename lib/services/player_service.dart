@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'subsonic_api.dart';
 import 'audio_handler.dart';
 import 'play_history_service.dart';
+import 'color_manager_service.dart';
 import '../models/lyrics_api_type.dart';
 
 class PlayerService extends ChangeNotifier {
@@ -94,6 +95,12 @@ class PlayerService extends ChangeNotifier {
       if (mediaItem != null) {
         _currentSong = mediaItem.extras?['song_data'];
         _totalDuration = mediaItem.duration ?? Duration.zero;
+
+        // 当歌曲切换时，从专辑封面提取颜色方案
+        if (_currentSong != null && _api != null) {
+          _updateColorSchemeFromCurrentSong();
+        }
+
         notifyListeners();
       }
     });
@@ -173,6 +180,38 @@ class PlayerService extends ChangeNotifier {
 
   Future<void> clearHistory() async {
     await _historyService.clearHistory();
+  }
+
+  // 从当前播放歌曲的专辑封面提取颜色方案
+  void _updateColorSchemeFromCurrentSong() {
+    if (_currentSong == null || _api == null) return;
+
+    final coverArt = _currentSong!['coverArt'];
+    if (coverArt == null) return;
+
+    // 获取封面艺术URL
+    final coverArtUrl = _api!.getCoverArtUrl(coverArt);
+
+    // 提取浅色和深色模式的颜色方案
+    _extractColorScheme(coverArt, coverArtUrl, Brightness.light);
+    _extractColorScheme(coverArt, coverArtUrl, Brightness.dark);
+  }
+
+  // 提取颜色方案
+  Future<void> _extractColorScheme(
+    String coverArtId,
+    String coverArtUrl,
+    Brightness brightness,
+  ) async {
+    try {
+      await ColorManagerService().extractColorSchemeFromCover(
+        coverArtId,
+        coverArtUrl,
+        brightness,
+      );
+    } catch (e) {
+      print('提取封面颜色失败: $e');
+    }
   }
 
   @override
