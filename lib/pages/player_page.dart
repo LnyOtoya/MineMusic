@@ -624,10 +624,19 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
         return '艺人';
       case 'random':
         return '随机播放';
+      case 'random_album':
+        return '随机专辑';
       case 'search':
         return '搜索结果';
       case 'recommendation':
+      case 'similar':
         return '推荐';
+      case 'newest':
+        return '最新专辑';
+      case 'history':
+        return '最近常听';
+      case 'song':
+        return '歌曲';
       default:
         return '音乐库';
     }
@@ -819,10 +828,6 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
         _primaryColorAnimation?.value ??
         _coverColorScheme?.primary ??
         Theme.of(context).colorScheme.primary;
-    final onPrimaryColor =
-        _onPrimaryColorAnimation?.value ??
-        _coverColorScheme?.onPrimary ??
-        Theme.of(context).colorScheme.onPrimary;
     final primaryContainerColor =
         _primaryContainerColorAnimation?.value ??
         _coverColorScheme?.primaryContainer ??
@@ -835,24 +840,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 退出按钮
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: primaryColor,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Icon(Icons.arrow_back, color: onPrimaryColor, size: 24),
-              ),
-            ),
-          ),
-
           // 来源和歌名
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -886,17 +875,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           width: double.infinity,
           height: double.infinity,
           constraints: const BoxConstraints(maxWidth: 360, maxHeight: 360),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: primaryColor.withOpacity(0.3),
-                blurRadius: 30,
-                spreadRadius: 5,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
           child: Hero(
             tag: 'album_cover',
             child: ClipRRect(

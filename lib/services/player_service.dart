@@ -104,6 +104,11 @@ class PlayerService extends ChangeNotifier {
         : Duration.zero;
     _currentPosition = await _playbackStateService.getPlaybackPosition();
 
+    // 如果 sourceType 为空，设置一个默认值
+    if (_sourceType.isEmpty) {
+      _sourceType = 'song';
+    }
+
     // 从专辑封面提取颜色方案
     _updateColorSchemeFromCurrentSong();
 
