@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import '../services/player_service.dart';
@@ -38,6 +40,11 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   late Animation<double> _buttonRotation;
   late AnimationController _fontSizeSliderController;
   late Animation<double> _fontSizeSliderAnimation;
+  late AnimationController _breathingAnimationController;
+  late Animation<double> _breathingAnimation;
+  late WaveLinearProgressController _waveController;
+  late AnimationController _transitionAnimationController;
+  late Animation<double> _transitionAnimation;
   bool _isPlaying = false;
   bool _wasPlaying = false;
   bool _isInitialized = false;
@@ -138,6 +145,35 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     );
     _fontSizeSliderAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fontSizeSliderController, curve: Curves.easeOut),
+    );
+
+    // 初始化呼吸动画控制器
+    _breathingAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800), // 1800-2400ms之间
+    );
+    _breathingAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _breathingAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    _breathingAnimationController.repeat(reverse: true);
+
+    // 初始化波浪进度条控制器
+    _waveController = WaveLinearProgressController();
+    _waveController.waveOn();
+
+    // 初始化过渡动画控制器
+    _transitionAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _transitionAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _transitionAnimationController,
+        curve: Curves.easeInOut,
+      ),
     );
 
     // 初始化歌词控制器
@@ -263,6 +299,9 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     _buttonScaleController.dispose();
     _buttonRotationController.dispose();
     _fontSizeSliderController.dispose();
+    _breathingAnimationController.dispose();
+    _waveController.dispose();
+    _transitionAnimationController.dispose();
 
     _pageController.dispose();
     _lyricController.dispose();
@@ -428,6 +467,20 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       _wasPlaying = _isPlaying;
       _isPlaying = newIsPlaying;
 
+      // 触发过渡动画
+      if (_isPlaying) {
+        _transitionAnimationController.forward();
+        // 动画结束后开启波浪动画
+        _transitionAnimationController.addStatusListener((status) {
+          if (status == AnimationStatus.completed) {
+            _waveController.waveOn();
+          }
+        });
+      } else {
+        _waveController.waveOff();
+        _transitionAnimationController.reverse();
+      }
+
       // 触发形状过渡动画
       if (_isPlaying) {
         if (_isInitialized) {
@@ -435,6 +488,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
         } else {
           // 初始化时直接设置为播放状态，不触发动画
           _shapeAnimationController.value = 1.0;
+          _transitionAnimationController.value = 1.0;
         }
       } else {
         if (_isInitialized) {
@@ -442,6 +496,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
         } else {
           // 初始化时直接设置为暂停状态，不触发动画
           _shapeAnimationController.value = 0.0;
+          _transitionAnimationController.value = 0.0;
         }
       }
     }
@@ -459,6 +514,13 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       _currentPosition = safePosition;
       _totalDuration = newTotalDuration;
     });
+
+    // 更新波浪进度条
+    if (_totalDuration.inMilliseconds > 0) {
+      final double progress =
+          _currentPosition.inMilliseconds / _totalDuration.inMilliseconds;
+      _waveController.setProgress(progress);
+    }
 
     // 同步歌词进度
     if (_lrcLyrics.isNotEmpty) {
@@ -1604,32 +1666,18 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
               // 进度条
               Column(
                 children: [
-                  SliderTheme(
-                    data: SliderThemeData(
-                      trackHeight: 8,
-                      thumbShape: const RoundSliderThumbShape(
-                        enabledThumbRadius: 0,
-                      ),
-                      overlayShape: const RoundSliderOverlayShape(
-                        overlayRadius: 0,
-                      ),
-                    ),
-                    child: Slider(
-                      padding: const EdgeInsets.symmetric(horizontal: 0),
-                      value: _currentPosition.inMilliseconds.toDouble().clamp(
-                        0,
-                        _totalDuration.inMilliseconds.toDouble(),
-                      ),
-                      max: _totalDuration.inMilliseconds.toDouble(),
-                      min: 0,
-                      activeColor: primaryColor,
-                      inactiveColor: surfaceVariantColor,
-                      onChanged: (value) {
-                        widget.playerService.seekTo(
-                          Duration(milliseconds: value.toInt()),
-                        );
-                      },
-                    ),
+                  WaveLinearProgressIndicator(
+                    controller: _waveController,
+                    primaryColor: primaryColor,
+                    surfaceVariantColor: surfaceVariantColor,
+                    onTap: (double progress) {
+                      final double newValue =
+                          progress * _totalDuration.inMilliseconds.toDouble();
+                      widget.playerService.seekTo(
+                        Duration(milliseconds: newValue.toInt()),
+                      );
+                    },
+                    transitionAnimation: _transitionAnimation,
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -1751,4 +1799,147 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       ),
     );
   }
+}
+
+class WaveLinearProgressController extends ChangeNotifier {
+  double progress = 0;
+  double phase = 0;
+  late Ticker ticker;
+
+  WaveLinearProgressController() {
+    ticker = Ticker((elapsed) {
+      if (phase < 2 * pi) {
+        phase += pi / 48;
+      } else if (phase >= 2 * pi) {
+        phase = 0;
+      }
+      notifyListeners();
+    });
+  }
+
+  void setProgress(double newProgress) {
+    progress = newProgress;
+    notifyListeners();
+  }
+
+  void waveOn() {
+    if (!ticker.isActive) {
+      ticker.start();
+    }
+  }
+
+  void waveOff() {
+    ticker.stop();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    ticker.dispose();
+  }
+}
+
+class WaveLinearProgressIndicator extends StatelessWidget {
+  const WaveLinearProgressIndicator({
+    super.key,
+    required this.controller,
+    required this.primaryColor,
+    required this.surfaceVariantColor,
+    required this.onTap,
+    this.transitionAnimation,
+  });
+
+  final WaveLinearProgressController controller;
+  final Color primaryColor;
+  final Color surfaceVariantColor;
+  final Function(double) onTap;
+  final Animation<double>? transitionAnimation;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (TapDownDetails details) {
+        final box = context.findRenderObject() as RenderBox;
+        final position = box.globalToLocal(details.globalPosition);
+        final double width = box.size.width;
+        final double progress = position.dx / width;
+        onTap(progress);
+      },
+      child: CustomPaint(
+        size: Size(double.infinity, 40),
+        painter: WaveLinearPainter(
+          controller: controller,
+          primaryColor: primaryColor,
+          surfaceVariantColor: surfaceVariantColor,
+          transitionAnimation: transitionAnimation,
+        ),
+      ),
+    );
+  }
+}
+
+class WaveLinearPainter extends CustomPainter {
+  final WaveLinearProgressController controller;
+  final Color primaryColor;
+  final Color surfaceVariantColor;
+  final Animation<double>? transitionAnimation;
+
+  WaveLinearPainter({
+    required this.controller,
+    required this.primaryColor,
+    required this.surfaceVariantColor,
+    this.transitionAnimation,
+  }) : super(repaint: controller);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    var painter = Paint()..color = primaryColor; //2080E5
+
+    Path path = Path();
+    path.moveTo(0, (size.height / 2));
+    painter.strokeWidth = 4.0;
+
+    ///线条
+    painter.style = PaintingStyle.stroke;
+
+    // 获取过渡动画值，默认为1.0（完全波浪）
+    double transitionValue = transitionAnimation?.value ?? 1.0;
+
+    for (double i = 1; i <= size.width * controller.progress; i++) {
+      // 根据过渡动画值混合直线和波浪
+      double waveAmplitude = 2 * transitionValue;
+      double y =
+          waveAmplitude * sin((2 * pi * i / 24.0) + controller.phase) +
+          (size.height / 2);
+      path.lineTo(i, y);
+    }
+    canvas.drawPath(path, painter);
+
+    ///未完成进度条
+    painter.style = PaintingStyle.fill;
+    painter.color = surfaceVariantColor;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          size.width * controller.progress,
+          (size.height / 2 - 2),
+          size.width * (1 - controller.progress),
+          4.0,
+        ),
+        const Radius.circular(2.0),
+      ),
+      painter,
+    );
+
+    ///滑块
+    painter.color = primaryColor;
+    canvas.drawCircle(
+      Offset(size.width * controller.progress, (size.height / 2)),
+      8.0,
+      painter,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant WaveLinearPainter oldDelegate) => false;
 }

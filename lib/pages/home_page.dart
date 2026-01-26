@@ -166,59 +166,34 @@ class _HomePageState extends State<HomePage>
                 ),
               ),
               const SizedBox(width: 16),
-              Stack(
-                children: [
-                  Container(
+              Material(
+                color: Theme.of(context).colorScheme.secondaryContainer,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(32),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SettingsPage(
+                          api: widget.api,
+                          playerService: widget.playerService,
+                          setThemeMode: widget.setThemeMode ?? (mode) {},
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
                     width: 64,
                     height: 64,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.secondary,
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.person_rounded,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                      size: 36,
                     ),
                   ),
-                  Positioned.fill(
-                    child: Material(
-                      color: Colors.transparent,
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(32),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SettingsPage(
-                                api: widget.api,
-                                playerService: widget.playerService,
-                                setThemeMode: widget.setThemeMode ?? (mode) {},
-                              ),
-                            ),
-                          );
-                        },
-                        child: Icon(
-                          Icons.person_rounded,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          size: 36,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -396,14 +371,22 @@ class _HomePageState extends State<HomePage>
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const Spacer(),
-              IconButton.filled(
+              IconButton.filledTonal(
                 icon: const Icon(Icons.refresh_rounded),
                 onPressed: _refreshRandomAlbums,
                 tooltip: '刷新推荐',
                 style: IconButton.styleFrom(
                   backgroundColor: Theme.of(
                     context,
-                  ).colorScheme.surfaceContainerHighest,
+                  ).colorScheme.secondaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSecondaryContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  minimumSize: const Size(48, 48),
                 ),
               ),
             ],
