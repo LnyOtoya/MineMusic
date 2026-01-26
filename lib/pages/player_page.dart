@@ -897,16 +897,20 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: song['coverArt'] != null
-                ? CachedNetworkImage(
-                    imageUrl: widget.api.getCoverArtUrl(song['coverArt']),
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => _buildDefaultCover(),
-                    errorWidget: (context, url, error) => _buildDefaultCover(),
-                  )
-                : _buildDefaultCover(),
+          child: Hero(
+            tag: 'album_cover',
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: song['coverArt'] != null
+                  ? CachedNetworkImage(
+                      imageUrl: widget.api.getCoverArtUrl(song['coverArt']),
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => _buildDefaultCover(),
+                      errorWidget: (context, url, error) =>
+                          _buildDefaultCover(),
+                    )
+                  : _buildDefaultCover(),
+            ),
           ),
         ),
       ),

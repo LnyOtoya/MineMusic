@@ -33,62 +33,69 @@ class HomePlayerWidget extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               // 圆形封面
-              ClipOval(
-                child: Container(
-                  width: containerSize,
-                  height: containerSize,
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withAlpha(50),
-                        blurRadius: 20,
-                        offset: Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: coverUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: coverUrl!,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: Theme.of(context).colorScheme.surfaceVariant,
-                            child: Center(
-                              child: Icon(
-                                Icons.music_note_outlined,
-                                size: containerSize * 0.3,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Theme.of(context).colorScheme.surfaceVariant,
-                            child: Center(
-                              child: Icon(
-                                Icons.music_note_outlined,
-                                size: containerSize * 0.3,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        )
-                      : Container(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                          child: Center(
-                            child: Icon(
-                              Icons.music_note_outlined,
-                              size: containerSize * 0.3,
+              Hero(
+                tag: 'album_cover',
+                child: ClipOval(
+                  child: Container(
+                    width: containerSize,
+                    height: containerSize,
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withAlpha(50),
+                          blurRadius: 20,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: coverUrl != null
+                        ? CachedNetworkImage(
+                            imageUrl: coverUrl!,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
                               color: Theme.of(
                                 context,
-                              ).colorScheme.onSurfaceVariant,
+                              ).colorScheme.surfaceVariant,
+                              child: Center(
+                                child: Icon(
+                                  Icons.music_note_outlined,
+                                  size: containerSize * 0.3,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceVariant,
+                              child: Center(
+                                child: Icon(
+                                  Icons.music_note_outlined,
+                                  size: containerSize * 0.3,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Container(
+                            color: Theme.of(context).colorScheme.surfaceVariant,
+                            child: Center(
+                              child: Icon(
+                                Icons.music_note_outlined,
+                                size: containerSize * 0.3,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
-                        ),
+                  ),
                 ),
               ),
 
