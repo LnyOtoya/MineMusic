@@ -77,6 +77,11 @@ class _HomePageState extends State<HomePage>
         });
       }
     }
+
+    // 播放状态改变时也要更新UI（用于更新播放/暂停按钮）
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   //构建ui (核心方法)

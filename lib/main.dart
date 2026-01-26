@@ -312,12 +312,14 @@ class _MusicHomePageState extends State<MusicHomePage> {
             },
             children: _pages,
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: kBottomNavigationBarHeight - 60,
-            child: MiniPlayer(playerService: playerService, api: widget.api),
-          ),
+          // 只在非主页页面显示 MiniPlayer
+          if (_selectedIndex != 0)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: kBottomNavigationBarHeight - 60,
+              child: MiniPlayer(playerService: playerService, api: widget.api),
+            ),
         ],
       ),
 
