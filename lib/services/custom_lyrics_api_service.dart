@@ -134,7 +134,7 @@ class CustomLyricsApiService {
     if (apis.isEmpty) {
       final defaultApi = CustomLyricsApiConfig(
         name: '我的自建API',
-        baseUrl: 'http://192.168.31.215:4555',
+        baseUrl: 'http://192.168.2.3:4555',
         searchEndpoint: '/search/search_by_type',
         lyricEndpoint: '/lyric/get_lyric',
         searchMethod: 'GET',
