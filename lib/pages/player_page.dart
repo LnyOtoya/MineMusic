@@ -5,6 +5,8 @@ import 'package:flutter_lyric/flutter_lyric.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
 import '../services/lyrics_api.dart';
+import '../services/color_extractor_service.dart';
+import '../services/color_cache_service.dart';
 import '../models/lyrics_api_type.dart';
 import '../utils/lrc_to_qrc_converter.dart';
 import 'artist_detail_page.dart';
@@ -50,6 +52,18 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   int _currentPage = 0;
   String? _currentSongId;
   Map<String, String?> _artistAvatarCache = {}; // 缓存歌手头像URL
+  ColorScheme? _coverColorScheme; // 提取的封面颜色方案
+  ColorScheme? _targetCoverColorScheme; // 目标封面颜色方案
+  bool _isExtractingColors = false; // 颜色提取加载状态
+  late AnimationController _colorAnimationController; // 颜色动画控制器
+  Animation<Color?>? _primaryColorAnimation; // 主色动画
+  Animation<Color?>? _onPrimaryColorAnimation; // 主色文本动画
+  Animation<Color?>? _onSurfaceColorAnimation; // 表面文本动画
+  Animation<Color?>? _onSurfaceVariantColorAnimation; // 表面变体文本动画
+  Animation<Color?>? _primaryContainerColorAnimation; // 主容器色动画
+  Animation<Color?>? _onPrimaryContainerColorAnimation; // 主容器文本动画
+  Animation<Color?>? _surfaceVariantColorAnimation; // 表面变体色动画
+  Animation<Color?>? _tonalSurfaceAnimation; // tonal surface背景色动画
 
   bool _showStyleToolbar = false;
   bool _showFontSizeSlider = false;
@@ -131,6 +145,12 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     _lyricsEnabled = PlayerService.lyricsEnabledNotifier.value;
     _currentLyricsApiType = PlayerService.lyricsApiTypeNotifier.value;
 
+    // 初始化颜色动画控制器
+    _colorAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
     // 监听歌词设置变化
     PlayerService.lyricsEnabledNotifier.addListener(_onLyricsSettingsChanged);
     PlayerService.lyricsApiTypeNotifier.addListener(_onLyricsSettingsChanged);
@@ -146,6 +166,55 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    // 初始化颜色动画变量（在 initState 之后调用，可以安全访问 Theme）
+    final defaultColorScheme = Theme.of(context).colorScheme;
+    _primaryColorAnimation = ColorTween(
+      begin: defaultColorScheme.primary,
+      end: defaultColorScheme.primary,
+    ).animate(_colorAnimationController);
+
+    _onPrimaryColorAnimation = ColorTween(
+      begin: defaultColorScheme.onPrimary,
+      end: defaultColorScheme.onPrimary,
+    ).animate(_colorAnimationController);
+
+    _onSurfaceColorAnimation = ColorTween(
+      begin: defaultColorScheme.onSurface,
+      end: defaultColorScheme.onSurface,
+    ).animate(_colorAnimationController);
+
+    _onSurfaceVariantColorAnimation = ColorTween(
+      begin: defaultColorScheme.onSurfaceVariant,
+      end: defaultColorScheme.onSurfaceVariant,
+    ).animate(_colorAnimationController);
+
+    _primaryContainerColorAnimation = ColorTween(
+      begin: defaultColorScheme.primaryContainer,
+      end: defaultColorScheme.primaryContainer,
+    ).animate(_colorAnimationController);
+
+    _onPrimaryContainerColorAnimation = ColorTween(
+      begin: defaultColorScheme.onPrimaryContainer,
+      end: defaultColorScheme.onPrimaryContainer,
+    ).animate(_colorAnimationController);
+
+    _surfaceVariantColorAnimation = ColorTween(
+      begin: defaultColorScheme.surfaceVariant,
+      end: defaultColorScheme.surfaceVariant,
+    ).animate(_colorAnimationController);
+
+    // 初始化tonal surface背景色动画（将primary以6%不透明度混入surface）
+    _tonalSurfaceAnimation = ColorTween(
+      begin: _blendPrimaryWithSurface(
+        defaultColorScheme.primary,
+        defaultColorScheme.surface,
+      ),
+      end: _blendPrimaryWithSurface(
+        defaultColorScheme.primary,
+        defaultColorScheme.surface,
+      ),
+    ).animate(_colorAnimationController);
 
     // 初始化歌词样式通知器（在 initState 之后调用，可以安全访问 Theme）
     _lyricStyleNotifier ??= ValueNotifier(
@@ -194,7 +263,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
     _pageController.dispose();
     _lyricController.dispose();
-
+    _colorAnimationController.dispose();
     PlayerService.lyricsEnabledNotifier.removeListener(
       _onLyricsSettingsChanged,
     );
@@ -334,6 +403,11 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       // 重新加载歌词
       _loadLyrics();
 
+      // 提取封面颜色
+      if (currentSong != null && currentSong!['coverArt'] != null) {
+        _extractCoverColors(currentSong!);
+      }
+
       // 预加载歌手头像
       if (currentSong != null) {
         final artistName = currentSong['artist'] as String?;
@@ -404,6 +478,125 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     } catch (e) {
       print('❌ 预加载歌手头像失败: $e');
     }
+  }
+
+  // 提取封面颜色
+  Future<void> _extractCoverColors(Map<String, dynamic> song) async {
+    final coverArt = song['coverArt'];
+    if (coverArt == null) return;
+
+    setState(() => _isExtractingColors = true);
+
+    try {
+      final coverArtUrl = widget.api.getCoverArtUrl(coverArt);
+      final brightness = MediaQuery.of(context).platformBrightness;
+
+      final colorScheme = await ColorCacheService.getColorScheme(
+        coverArt,
+        coverArtUrl,
+        brightness,
+      );
+
+      if (colorScheme != null && mounted) {
+        _targetCoverColorScheme = colorScheme;
+        _startColorAnimation();
+        print('✅ 颜色提取完成并启动动画');
+      }
+    } catch (e) {
+      print('❌ 提取封面颜色失败: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isExtractingColors = false);
+      }
+    }
+  }
+
+  // 混合primary和surface创建tonal surface效果
+  Color _blendPrimaryWithSurface(Color primary, Color surface) {
+    return Color.alphaBlend(primary.withValues(alpha: 0.06), surface);
+  }
+
+  // 启动颜色过渡动画
+  void _startColorAnimation() {
+    if (_targetCoverColorScheme == null) return;
+
+    // 创建颜色动画
+    _primaryColorAnimation = ColorTween(
+      begin:
+          _coverColorScheme?.primary ?? Theme.of(context).colorScheme.primary,
+      end: _targetCoverColorScheme!.primary,
+    ).animate(_colorAnimationController);
+
+    _onPrimaryColorAnimation = ColorTween(
+      begin:
+          _coverColorScheme?.onPrimary ??
+          Theme.of(context).colorScheme.onPrimary,
+      end: _targetCoverColorScheme!.onPrimary,
+    ).animate(_colorAnimationController);
+
+    _onSurfaceColorAnimation = ColorTween(
+      begin:
+          _coverColorScheme?.onSurface ??
+          Theme.of(context).colorScheme.onSurface,
+      end: _targetCoverColorScheme!.onSurface,
+    ).animate(_colorAnimationController);
+
+    _onSurfaceVariantColorAnimation = ColorTween(
+      begin:
+          _coverColorScheme?.onSurfaceVariant ??
+          Theme.of(context).colorScheme.onSurfaceVariant,
+      end: _targetCoverColorScheme!.onSurfaceVariant,
+    ).animate(_colorAnimationController);
+
+    _primaryContainerColorAnimation = ColorTween(
+      begin:
+          _coverColorScheme?.primaryContainer ??
+          Theme.of(context).colorScheme.primaryContainer,
+      end: _targetCoverColorScheme!.primaryContainer,
+    ).animate(_colorAnimationController);
+
+    _onPrimaryContainerColorAnimation = ColorTween(
+      begin:
+          _coverColorScheme?.onPrimaryContainer ??
+          Theme.of(context).colorScheme.onPrimaryContainer,
+      end: _targetCoverColorScheme!.onPrimaryContainer,
+    ).animate(_colorAnimationController);
+
+    _surfaceVariantColorAnimation = ColorTween(
+      begin:
+          _coverColorScheme?.surfaceVariant ??
+          Theme.of(context).colorScheme.surfaceVariant,
+      end: _targetCoverColorScheme!.surfaceVariant,
+    ).animate(_colorAnimationController);
+
+    // 创建tonal surface背景色动画
+    final currentPrimary =
+        _coverColorScheme?.primary ?? Theme.of(context).colorScheme.primary;
+    final currentSurface =
+        _coverColorScheme?.surface ?? Theme.of(context).colorScheme.surface;
+    final targetPrimary = _targetCoverColorScheme!.primary;
+    final targetSurface = _targetCoverColorScheme!.surface;
+
+    _tonalSurfaceAnimation = ColorTween(
+      begin: _blendPrimaryWithSurface(currentPrimary, currentSurface),
+      end: _blendPrimaryWithSurface(targetPrimary, targetSurface),
+    ).animate(_colorAnimationController);
+
+    // 监听动画状态变化
+    _colorAnimationController.addListener(() {
+      if (mounted) setState(() {});
+    });
+
+    _colorAnimationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        setState(() {
+          _coverColorScheme = _targetCoverColorScheme;
+        });
+      }
+    });
+
+    // 启动动画
+    _colorAnimationController.forward(from: 0);
   }
 
   // 格式化时长显示
@@ -477,8 +670,10 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     }
 
     return Scaffold(
-      // 保留主题背景色设置
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      // 使用tonal surface作为背景色（Material 3设计：primary以6%不透明度混入surface）
+      backgroundColor:
+          _tonalSurfaceAnimation?.value ??
+          Theme.of(context).colorScheme.surface,
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) => setState(() => _currentPage = index),
@@ -507,6 +702,19 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
   // 构建歌词页面
   Widget _buildLyricsPage() {
+    final primaryColor =
+        _primaryColorAnimation?.value ??
+        _coverColorScheme?.primary ??
+        Theme.of(context).colorScheme.primary;
+    final onSurfaceColor =
+        _onSurfaceColorAnimation?.value ??
+        _coverColorScheme?.onSurface ??
+        Theme.of(context).colorScheme.onSurface;
+    final onSurfaceVariantColor =
+        _onSurfaceVariantColorAnimation?.value ??
+        _coverColorScheme?.onSurfaceVariant ??
+        Theme.of(context).colorScheme.onSurfaceVariant;
+
     if (!_lyricsEnabled) {
       return Scaffold(
         body: Center(
@@ -516,24 +724,20 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
               Icon(
                 Icons.lyrics_rounded,
                 size: 64,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                color: onSurfaceVariantColor.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               Text(
                 '歌词功能已关闭',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: onSurfaceVariantColor),
               ),
               const SizedBox(height: 8),
               Text(
                 '请在设置中启用歌词',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  color: onSurfaceVariantColor.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -544,9 +748,14 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
     return Scaffold(
       body: _isLoadingLyrics
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: primaryColor))
           : _lrcLyrics.isEmpty
-          ? Center(child: Text('未找到歌词'))
+          ? Center(
+              child: Text(
+                '未找到歌词',
+                style: TextStyle(color: onSurfaceVariantColor),
+              ),
+            )
           : ValueListenableBuilder(
               valueListenable: _lyricStyleNotifier!,
               builder: (context, style, child) {
@@ -560,41 +769,39 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                   translationStyle: style.translationStyle.copyWith(
                     color: isDark
                         ? Colors.black.withValues(alpha: 0.4)
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                        : onSurfaceVariantColor,
                   ),
                   // 激活状态的翻译样式
                   translationActiveColor: isDark
                       ? Colors.black.withValues(alpha: 0.6)
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                      : onSurfaceVariantColor,
                   // 选中状态的翻译样式
                   selectedTranslationColor: isDark
                       ? Colors.black.withValues(alpha: 0.4)
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                      : onSurfaceVariantColor,
                   // 翻译行间距
                   translationLineGap: 8.0,
                   // 基本文本样式
                   textStyle: style.textStyle.copyWith(
                     color: isDark
                         ? Colors.black.withValues(alpha: 0.4)
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                        : onSurfaceVariantColor,
                   ),
                   // 激活状态的文本样式
                   activeStyle: style.activeStyle.copyWith(
                     color: isDark
                         ? Colors.black.withValues(alpha: 0.8)
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                        : onSurfaceColor,
                     fontWeight: FontWeight.normal,
                   ),
                   // 选中状态的文本样式
                   selectedColor: isDark
                       ? Colors.black.withValues(alpha: 0.4)
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                      : onSurfaceVariantColor,
                   // 高亮颜色
                   activeHighlightColor: isDark
                       ? Colors.black.withValues(alpha: 0.9)
-                      : Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 1),
+                      : primaryColor.withValues(alpha: 1),
                 );
 
                 return Stack(
@@ -620,6 +827,23 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
   // 顶部区域
   Widget _buildTopBar(Map<String, dynamic> song) {
+    final primaryColor =
+        _primaryColorAnimation?.value ??
+        _coverColorScheme?.primary ??
+        Theme.of(context).colorScheme.primary;
+    final onPrimaryColor =
+        _onPrimaryColorAnimation?.value ??
+        _coverColorScheme?.onPrimary ??
+        Theme.of(context).colorScheme.onPrimary;
+    final primaryContainerColor =
+        _primaryContainerColorAnimation?.value ??
+        _coverColorScheme?.primaryContainer ??
+        Theme.of(context).colorScheme.primaryContainer;
+    final onPrimaryContainerColor =
+        _onPrimaryContainerColorAnimation?.value ??
+        _coverColorScheme?.onPrimaryContainer ??
+        Theme.of(context).colorScheme.onPrimaryContainer;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -632,15 +856,11 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
+                color: primaryColor,
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: Icon(
-                  Icons.arrow_back,
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  size: 24,
-                ),
+                child: Icon(Icons.arrow_back, color: onPrimaryColor, size: 24),
               ),
             ),
           ),
@@ -649,14 +869,14 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
+              color: primaryContainerColor,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               _getSourceText(),
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: onPrimaryContainerColor),
             ),
           ),
         ],
@@ -666,6 +886,11 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
   // 专辑封面区域
   Widget _buildAlbumCover(Map<String, dynamic> song) {
+    final primaryColor =
+        _primaryColorAnimation?.value ??
+        _coverColorScheme?.primary ??
+        Theme.of(context).colorScheme.primary;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(32, 0, 32, 16),
@@ -673,7 +898,17 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           width: double.infinity,
           height: double.infinity,
           constraints: const BoxConstraints(maxWidth: 360, maxHeight: 360),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(24)),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: primaryColor.withOpacity(0.3),
+                blurRadius: 30,
+                spreadRadius: 5,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: song['coverArt'] != null
@@ -1247,6 +1482,35 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
   // 底部控制区域
   Widget _buildControlPanel(Map<String, dynamic> song) {
+    final primaryColor =
+        _primaryColorAnimation?.value ??
+        _coverColorScheme?.primary ??
+        Theme.of(context).colorScheme.primary;
+    final onPrimaryColor =
+        _onPrimaryColorAnimation?.value ??
+        _coverColorScheme?.onPrimary ??
+        Theme.of(context).colorScheme.onPrimary;
+    final onSurfaceColor =
+        _onSurfaceColorAnimation?.value ??
+        _coverColorScheme?.onSurface ??
+        Theme.of(context).colorScheme.onSurface;
+    final onSurfaceVariantColor =
+        _onSurfaceVariantColorAnimation?.value ??
+        _coverColorScheme?.onSurfaceVariant ??
+        Theme.of(context).colorScheme.onSurfaceVariant;
+    final primaryContainerColor =
+        _primaryContainerColorAnimation?.value ??
+        _coverColorScheme?.primaryContainer ??
+        Theme.of(context).colorScheme.primaryContainer;
+    final onPrimaryContainerColor =
+        _onPrimaryContainerColorAnimation?.value ??
+        _coverColorScheme?.onPrimaryContainer ??
+        Theme.of(context).colorScheme.onPrimaryContainer;
+    final surfaceVariantColor =
+        _surfaceVariantColorAnimation?.value ??
+        _coverColorScheme?.surfaceVariant ??
+        Theme.of(context).colorScheme.surfaceVariant;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 48),
       // decoration: BoxDecoration(
@@ -1296,7 +1560,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                           song['title'] ?? '未知歌曲',
                           style: Theme.of(context).textTheme.headlineMedium
                               ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
+                                color: onSurfaceColor,
                                 decoration: TextDecoration.none,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -1335,9 +1599,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                           song['artist'] ?? '未知艺术家',
                           style: Theme.of(context).textTheme.bodyLarge
                               ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                                color: onSurfaceVariantColor,
                                 decoration: TextDecoration.none,
                               ),
                           overflow: TextOverflow.ellipsis,
@@ -1369,10 +1631,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                       ),
                       max: _totalDuration.inMilliseconds.toDouble(),
                       min: 0,
-                      activeColor: Theme.of(context).colorScheme.primary,
-                      inactiveColor: Theme.of(
-                        context,
-                      ).colorScheme.surfaceVariant,
+                      activeColor: primaryColor,
+                      inactiveColor: surfaceVariantColor,
                       onChanged: (value) {
                         widget.playerService.seekTo(
                           Duration(milliseconds: value.toInt()),
@@ -1388,20 +1648,12 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                         Text(
                           _formatDuration(_currentPosition),
                           style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
+                              ?.copyWith(color: onSurfaceVariantColor),
                         ),
                         Text(
                           _formatDuration(_totalDuration),
                           style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
+                              ?.copyWith(color: onSurfaceVariantColor),
                         ),
                       ],
                     ),
@@ -1423,6 +1675,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                   onPressed: () => widget.playerService.previousSong(),
                   isPlaying: _isPlaying,
                   shapeAnimation: _shapeAnimation,
+                  primaryContainerColor: primaryContainerColor,
+                  onPrimaryContainerColor: onPrimaryContainerColor,
                 ),
 
                 // 播放/暂停
@@ -1447,20 +1701,18 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                           width: width,
                           height: 64,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: primaryColor,
                             borderRadius: BorderRadius.circular(borderRadius),
                             boxShadow: [
                               BoxShadow(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withOpacity(0.2),
+                                color: primaryColor.withOpacity(0.2),
                                 blurRadius: 10,
                               ),
                             ],
                           ),
                           child: Icon(
                             _isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: Theme.of(context).colorScheme.onPrimary,
+                            color: onPrimaryColor,
                             size: 32,
                           ),
                         ),
@@ -1475,6 +1727,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                   onPressed: () => widget.playerService.nextSong(),
                   isPlaying: _isPlaying,
                   shapeAnimation: _shapeAnimation,
+                  primaryContainerColor: primaryContainerColor,
+                  onPrimaryContainerColor: onPrimaryContainerColor,
                 ),
               ],
             ),
@@ -1489,6 +1743,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     required VoidCallback onPressed,
     required bool isPlaying,
     required Animation<double> shapeAnimation,
+    required Color primaryContainerColor,
+    required Color onPrimaryContainerColor,
   }) {
     return GestureDetector(
       onTapDown: (_) => _playButtonController.forward(),
@@ -1508,16 +1764,10 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
               width: width,
               height: 64,
               decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primaryContainer.withOpacity(0.5),
+                color: primaryContainerColor.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(borderRadius),
               ),
-              child: Icon(
-                icon,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                size: 28,
-              ),
+              child: Icon(icon, color: onPrimaryContainerColor, size: 28),
             ),
           );
         },
