@@ -181,6 +181,59 @@ class MyAudioHandler extends BaseAudioHandler {
     }
   }
 
+  // 加载指定歌曲但不自动播放
+  Future<void> loadSong(
+    Map<String, dynamic> song, {
+    List<Map<String, dynamic>>? playlist,
+  }) async {
+    try {
+      List<Map<String, dynamic>> songsToPlay;
+
+      print('MyAudioHandler.loadSong: 播放列表包含 ${playlist?.length ?? 0} 首歌曲');
+
+      if (playlist != null) {
+        songsToPlay = playlist;
+        print(
+          'MyAudioHandler.loadSong: 使用传入的播放列表，包含 ${songsToPlay.length} 首歌曲',
+        );
+      } else {
+        songsToPlay = [song];
+        print('MyAudioHandler.loadSong: 使用默认播放列表，包含 1 首歌曲');
+      }
+
+      // 转换为 MediaItem 和 AudioSource
+      _mediaItems = songsToPlay.map(_songToMediaItem).toList();
+      print(
+        'MyAudioHandler.loadSong: 转换为 MediaItem，包含 ${_mediaItems.length} 首歌曲',
+      );
+
+      final audioSources = songsToPlay.map((song) {
+        final playUrl = _api.getSongPlayUrl(song['id']!);
+        return AudioSource.uri(Uri.parse(playUrl), tag: _songToMediaItem(song));
+      }).toList();
+      print(
+        'MyAudioHandler.loadSong: 转换为 AudioSource，包含 ${audioSources.length} 首歌曲',
+      );
+
+      // 设置播放列表
+      await _player.setAudioSource(
+        ConcatenatingAudioSource(children: audioSources),
+        initialIndex: songsToPlay.indexWhere((s) => s['id'] == song['id']),
+      );
+      print('MyAudioHandler.loadSong: 设置播放列表完成');
+
+      // 更新队列
+      queue.value = _mediaItems;
+      print('MyAudioHandler.loadSong: 更新队列完成，包含 ${_mediaItems.length} 首歌曲');
+
+      // 确保处于暂停状态
+      await _player.pause();
+      print('MyAudioHandler.loadSong: 确保处于暂停状态');
+    } catch (e) {
+      print('加载歌曲失败: $e');
+    }
+  }
+
   // 添加歌曲到播放列表
   Future<void> addToQueue(List<Map<String, dynamic>> songs) async {
     final mediaItems = songs.map(_songToMediaItem).toList();

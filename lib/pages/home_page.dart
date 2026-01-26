@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import '../models/lyrics_api_type.dart';
+import '../components/home_player_widget.dart';
 import 'random_songs_page.dart';
 import 'newest_albums_page.dart';
 import 'similar_songs_page.dart';
@@ -88,7 +89,21 @@ class _HomePageState extends State<HomePage>
 
         _buildWelcomeSection(),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 32),
+
+        // Home Player Widget
+        HomePlayerWidget(
+          coverUrl: widget.playerService.currentSong?['coverArt'] != null
+              ? widget.api.getCoverArtUrl(
+                  widget.playerService.currentSong?['coverArt'],
+                )
+              : null,
+          isPlaying: widget.playerService.isPlaying,
+          onPlayPause: widget.playerService.togglePlayPause,
+          onNext: widget.playerService.nextSong,
+        ),
+
+        const SizedBox(height: 48),
         _buildQuickAccess(),
 
         const SizedBox(height: 24),

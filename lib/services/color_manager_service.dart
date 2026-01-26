@@ -1,12 +1,16 @@
 import 'dart:ui';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/subsonic_api.dart';
+import 'playback_state_service.dart';
 
 class ColorManagerService {
   static final ColorManagerService _instance = ColorManagerService._private();
   factory ColorManagerService() => _instance;
 
-  ColorManagerService._private();
+  ColorManagerService._private() {
+    _restoreColorSchemes();
+  }
 
   // 当前颜色方案（分别存储浅色和深色模式）
   ColorScheme? _lightColorScheme;
@@ -41,6 +45,9 @@ class ColorManagerService {
         _darkColorScheme = tonalColorScheme;
       }
 
+      // 保存颜色方案到本地存储
+      await _saveColorScheme(tonalColorScheme, brightness);
+
       _notifyListeners(tonalColorScheme);
 
       return tonalColorScheme;
@@ -58,6 +65,117 @@ class ColorManagerService {
       _notifyListeners(defaultColorScheme);
       return defaultColorScheme;
     }
+  }
+
+  // 保存颜色方案到本地存储
+  Future<void> _saveColorScheme(
+    ColorScheme colorScheme,
+    Brightness brightness,
+  ) async {
+    try {
+      final colorSchemeJson = _colorSchemeToJson(colorScheme);
+      final isDark = brightness == Brightness.dark;
+      await PlaybackStateService().saveColorScheme(colorSchemeJson, isDark);
+    } catch (e) {
+      print('保存颜色方案失败: $e');
+    }
+  }
+
+  // 从本地存储恢复颜色方案
+  Future<void> _restoreColorSchemes() async {
+    try {
+      final lightColorSchemeJson = await PlaybackStateService().getColorScheme(
+        false,
+      );
+      final darkColorSchemeJson = await PlaybackStateService().getColorScheme(
+        true,
+      );
+
+      if (lightColorSchemeJson != null) {
+        _lightColorScheme = _jsonToColorScheme(lightColorSchemeJson!);
+      }
+      if (darkColorSchemeJson != null) {
+        _darkColorScheme = _jsonToColorScheme(darkColorSchemeJson!);
+      }
+    } catch (e) {
+      print('恢复颜色方案失败: $e');
+    }
+  }
+
+  // 将 ColorScheme 转换为 JSON
+  String _colorSchemeToJson(ColorScheme colorScheme) {
+    final colorMap = {
+      'primary': colorScheme.primary.value,
+      'onPrimary': colorScheme.onPrimary.value,
+      'primaryContainer': colorScheme.primaryContainer.value,
+      'onPrimaryContainer': colorScheme.onPrimaryContainer.value,
+      'secondary': colorScheme.secondary.value,
+      'onSecondary': colorScheme.onSecondary.value,
+      'secondaryContainer': colorScheme.secondaryContainer.value,
+      'onSecondaryContainer': colorScheme.onSecondaryContainer.value,
+      'tertiary': colorScheme.tertiary.value,
+      'onTertiary': colorScheme.onTertiary.value,
+      'tertiaryContainer': colorScheme.tertiaryContainer.value,
+      'onTertiaryContainer': colorScheme.onTertiaryContainer.value,
+      'error': colorScheme.error.value,
+      'onError': colorScheme.onError.value,
+      'errorContainer': colorScheme.errorContainer.value,
+      'onErrorContainer': colorScheme.onErrorContainer.value,
+      'background': colorScheme.background.value,
+      'onBackground': colorScheme.onBackground.value,
+      'surface': colorScheme.surface.value,
+      'onSurface': colorScheme.onSurface.value,
+      'surfaceVariant': colorScheme.surfaceVariant.value,
+      'onSurfaceVariant': colorScheme.onSurfaceVariant.value,
+      'outline': colorScheme.outline.value,
+      'outlineVariant': colorScheme.outlineVariant.value,
+      'shadow': colorScheme.shadow.value,
+      'scrim': colorScheme.scrim.value,
+      'inverseSurface': colorScheme.inverseSurface.value,
+      'onInverseSurface': colorScheme.onInverseSurface.value,
+      'inversePrimary': colorScheme.inversePrimary.value,
+      'brightness': colorScheme.brightness.index,
+    };
+    return jsonEncode(colorMap);
+  }
+
+  // 从 JSON 恢复 ColorScheme
+  ColorScheme _jsonToColorScheme(String json) {
+    final colorMap = jsonDecode(json) as Map<String, dynamic>;
+    final brightness = Brightness.values[colorMap['brightness'] as int];
+
+    return ColorScheme(
+      primary: Color(colorMap['primary'] as int),
+      onPrimary: Color(colorMap['onPrimary'] as int),
+      primaryContainer: Color(colorMap['primaryContainer'] as int),
+      onPrimaryContainer: Color(colorMap['onPrimaryContainer'] as int),
+      secondary: Color(colorMap['secondary'] as int),
+      onSecondary: Color(colorMap['onSecondary'] as int),
+      secondaryContainer: Color(colorMap['secondaryContainer'] as int),
+      onSecondaryContainer: Color(colorMap['onSecondaryContainer'] as int),
+      tertiary: Color(colorMap['tertiary'] as int),
+      onTertiary: Color(colorMap['onTertiary'] as int),
+      tertiaryContainer: Color(colorMap['tertiaryContainer'] as int),
+      onTertiaryContainer: Color(colorMap['onTertiaryContainer'] as int),
+      error: Color(colorMap['error'] as int),
+      onError: Color(colorMap['onError'] as int),
+      errorContainer: Color(colorMap['errorContainer'] as int),
+      onErrorContainer: Color(colorMap['onErrorContainer'] as int),
+      background: Color(colorMap['background'] as int),
+      onBackground: Color(colorMap['onBackground'] as int),
+      surface: Color(colorMap['surface'] as int),
+      onSurface: Color(colorMap['onSurface'] as int),
+      surfaceVariant: Color(colorMap['surfaceVariant'] as int),
+      onSurfaceVariant: Color(colorMap['onSurfaceVariant'] as int),
+      outline: Color(colorMap['outline'] as int),
+      outlineVariant: Color(colorMap['outlineVariant'] as int),
+      shadow: Color(colorMap['shadow'] as int),
+      scrim: Color(colorMap['scrim'] as int),
+      inverseSurface: Color(colorMap['inverseSurface'] as int),
+      onInverseSurface: Color(colorMap['onInverseSurface'] as int),
+      inversePrimary: Color(colorMap['inversePrimary'] as int),
+      brightness: brightness,
+    );
   }
 
   // 创建包含 tonal surface 的颜色方案

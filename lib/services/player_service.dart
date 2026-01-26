@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'subsonic_api.dart';
 import 'audio_handler.dart';
 import 'play_history_service.dart';
+import 'playback_state_service.dart';
 import 'color_manager_service.dart';
 import '../models/lyrics_api_type.dart';
 
@@ -11,6 +12,7 @@ class PlayerService extends ChangeNotifier {
   late MyAudioHandler _audioHandler;
   final SubsonicApi? _api;
   final PlayHistoryService _historyService = PlayHistoryService();
+  final PlaybackStateService _playbackStateService = PlaybackStateService();
 
   // 歌词API类型
   static final ValueNotifier<LyricsApiType> lyricsApiTypeNotifier =
@@ -38,8 +40,13 @@ class PlayerService extends ChangeNotifier {
   PlayHistoryService get historyService => _historyService;
 
   PlayerService({SubsonicApi? api}) : _api = api {
-    _initAudioService();
-    _loadLyricsSettings();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _initAudioService();
+    await _loadLyricsSettings();
+    await _loadPlaybackState();
   }
 
   Future<void> _loadLyricsSettings() async {
@@ -53,6 +60,54 @@ class PlayerService extends ChangeNotifier {
       );
     }
     lyricsEnabledNotifier.value = savedLyricsEnabled;
+  }
+
+  Future<void> _loadPlaybackState() async {
+    // 恢复当前歌曲和播放列表
+    final savedSong = await _playbackStateService.getCurrentSong();
+    final savedPlaylist = await _playbackStateService.getPlaylist();
+    print('已获取保存的歌曲: ${savedSong != null}');
+    print(
+      '已获取保存的播放列表: ${savedPlaylist != null}, 包含 ${savedPlaylist?.length ?? 0} 首歌曲',
+    );
+    if (savedSong != null && _api != null) {
+      // 加载歌曲但不自动播放
+      await _loadSongWithoutPlaying(savedSong, playlist: savedPlaylist);
+    }
+  }
+
+  Future<void> _loadSongWithoutPlaying(
+    Map<String, dynamic> song, {
+    List<Map<String, dynamic>>? playlist,
+  }) async {
+    // 检查 audioHandler 是否初始化完成
+    if (_audioHandler == null) {
+      print('音频处理程序未初始化，无法加载歌曲');
+      return;
+    }
+
+    print('正在加载歌曲: ${song['title']}, 播放列表包含 ${playlist?.length ?? 0} 首歌曲');
+
+    // 将歌曲添加到音频处理程序的队列中
+    await _audioHandler.loadSong(song, playlist: playlist);
+
+    // 恢复播放进度
+    final savedPosition = await _playbackStateService.getPlaybackPosition();
+    if (savedPosition > Duration.zero) {
+      await _audioHandler.seek(savedPosition);
+    }
+
+    // 更新当前歌曲信息
+    _currentSong = song;
+    _totalDuration = song['duration'] != null
+        ? Duration(seconds: int.tryParse(song['duration'].toString()) ?? 0)
+        : Duration.zero;
+    _currentPosition = await _playbackStateService.getPlaybackPosition();
+
+    // 从专辑封面提取颜色方案
+    _updateColorSchemeFromCurrentSong();
+
+    notifyListeners();
   }
 
   static Future<void> setLyricsApiType(LyricsApiType type) async {
@@ -87,6 +142,12 @@ class PlayerService extends ChangeNotifier {
     _audioHandler.playbackState.listen((state) {
       _isPlaying = state.playing;
       _currentPosition = state.position;
+
+      // 保存播放进度
+      if (_currentSong != null) {
+        _playbackStateService.savePlaybackPosition(_currentPosition);
+      }
+
       notifyListeners();
     });
 
@@ -95,6 +156,9 @@ class PlayerService extends ChangeNotifier {
       if (mediaItem != null) {
         _currentSong = mediaItem.extras?['song_data'];
         _totalDuration = mediaItem.duration ?? Duration.zero;
+
+        // 保存当前歌曲
+        _playbackStateService.saveCurrentSong(_currentSong);
 
         // 当歌曲切换时，从专辑封面提取颜色方案
         if (_currentSong != null && _api != null) {
@@ -112,6 +176,8 @@ class PlayerService extends ChangeNotifier {
             .where((item) => item.extras?['song_data'] != null)
             .map((item) => item.extras!['song_data'] as Map<String, dynamic>)
             .toList();
+        // 保存播放列表
+        _playbackStateService.savePlaylist(_currentPlaylist);
         notifyListeners();
       }
     });
@@ -125,6 +191,18 @@ class PlayerService extends ChangeNotifier {
     _sourceType = sourceType;
     await _historyService.addToHistory(song);
     await _audioHandler.playSong(song, playlist: playlist);
+
+    // 保存播放列表
+    if (playlist != null && playlist.isNotEmpty) {
+      await _playbackStateService.savePlaylist(playlist);
+      print('已保存完整播放列表，包含 ${playlist.length} 首歌曲');
+    }
+
+    // 恢复播放进度
+    final savedPosition = await _playbackStateService.getPlaybackPosition();
+    if (savedPosition > Duration.zero) {
+      await seekTo(savedPosition);
+    }
   }
 
   Future<void> pause() async {
