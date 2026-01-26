@@ -6,6 +6,7 @@ class HomePlayerWidget extends StatelessWidget {
   final bool isPlaying;
   final VoidCallback? onPlayPause;
   final VoidCallback? onNext;
+  final VoidCallback? onTap;
 
   const HomePlayerWidget({
     super.key,
@@ -13,6 +14,7 @@ class HomePlayerWidget extends StatelessWidget {
     this.isPlaying = false,
     this.onPlayPause,
     this.onNext,
+    this.onTap,
   });
 
   @override
@@ -24,139 +26,145 @@ class HomePlayerWidget extends StatelessWidget {
       child: SizedBox(
         width: containerSize,
         height: containerSize,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // 圆形封面
-            ClipOval(
-              child: Container(
-                width: containerSize,
-                height: containerSize,
-                decoration: BoxDecoration(
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withAlpha(50),
-                      blurRadius: 20,
-                      offset: Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: coverUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: coverUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                          child: Center(
-                            child: Icon(
-                              Icons.music_note_outlined,
-                              size: containerSize * 0.3,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                          child: Center(
-                            child: Icon(
-                              Icons.music_note_outlined,
-                              size: containerSize * 0.3,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        color: Theme.of(context).colorScheme.surfaceVariant,
-                        child: Center(
-                          child: Icon(
-                            Icons.music_note_outlined,
-                            size: containerSize * 0.3,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(containerSize / 2),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // 圆形封面
+              ClipOval(
+                child: Container(
+                  width: containerSize,
+                  height: containerSize,
+                  decoration: BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha(50),
+                        blurRadius: 20,
+                        offset: Offset(0, 10),
                       ),
-              ),
-            ),
-
-            // 左下角播放/暂停按钮
-            Positioned(
-              bottom: -10,
-              left: -10,
-              child: Container(
-                width: containerSize * 0.3,
-                height: containerSize * 0.3,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Theme.of(context).colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withAlpha(30),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: coverUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: coverUrl!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: Theme.of(context).colorScheme.surfaceVariant,
+                            child: Center(
+                              child: Icon(
+                                Icons.music_note_outlined,
+                                size: containerSize * 0.3,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: Theme.of(context).colorScheme.surfaceVariant,
+                            child: Center(
+                              child: Icon(
+                                Icons.music_note_outlined,
+                                size: containerSize * 0.3,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          child: Center(
+                            child: Icon(
+                              Icons.music_note_outlined,
+                              size: containerSize * 0.3,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
                 ),
-                child: FloatingActionButton(
-                  onPressed: onPlayPause,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
+              ),
+
+              // 左下角播放/暂停按钮
+              Positioned(
+                bottom: -10,
+                left: -10,
+                child: Container(
+                  width: containerSize * 0.3,
+                  height: containerSize * 0.3,
+                  decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
+                    color: Theme.of(context).colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha(30),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  child: Icon(
-                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    size: containerSize * 0.15,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ),
-            ),
-
-            // 右上角下一曲按钮
-            Positioned(
-              top: -10,
-              right: -10,
-              child: Container(
-                width: containerSize * 0.25,
-                height: containerSize * 0.25,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withAlpha(30),
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
+                  child: FloatingActionButton(
+                    onPressed: onPlayPause,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  ],
-                ),
-                child: FloatingActionButton(
-                  onPressed: onNext,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  shape: const CircleBorder(),
-                  child: Icon(
-                    Icons.skip_next_rounded,
-                    size: containerSize * 0.12,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    child: Icon(
+                      isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      size: containerSize * 0.15,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+
+              // 右上角下一曲按钮
+              Positioned(
+                top: -10,
+                right: -10,
+                child: Container(
+                  width: containerSize * 0.25,
+                  height: containerSize * 0.25,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Theme.of(context).colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha(30),
+                        blurRadius: 8,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: FloatingActionButton(
+                    onPressed: onNext,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    shape: const CircleBorder(),
+                    child: Icon(
+                      Icons.skip_next_rounded,
+                      size: containerSize * 0.12,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

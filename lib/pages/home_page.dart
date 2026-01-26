@@ -10,6 +10,7 @@ import 'similar_songs_page.dart';
 import 'detail_page.dart';
 import 'settings_page.dart';
 import 'search_page.dart';
+import 'player_page.dart';
 
 //有状态组件statefulWidget,接受api实例和播放器服务
 class HomePage extends StatefulWidget {
@@ -101,6 +102,17 @@ class _HomePageState extends State<HomePage>
           isPlaying: widget.playerService.isPlaying,
           onPlayPause: widget.playerService.togglePlayPause,
           onNext: widget.playerService.nextSong,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PlayerPage(
+                  playerService: widget.playerService,
+                  api: widget.api,
+                ),
+              ),
+            );
+          },
         ),
 
         const SizedBox(height: 48),
