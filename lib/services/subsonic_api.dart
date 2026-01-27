@@ -1218,6 +1218,55 @@ class SubsonicApi {
     }
   }
 
+  // 发送 Now Playing 通知
+  Future<void> notifyNowPlaying(String songId) async {
+    await _scrobble(songId, submission: false);
+  }
+
+  // 提交 Scrobble
+  Future<void> submitScrobble(String songId) async {
+    await _scrobble(songId, submission: true);
+  }
+
+  // 内部 scrobble 方法
+  Future<void> _scrobble(String songId, {required bool submission}) async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/scrobble');
+
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MyMusicPlayer',
+        'f': 'xml',
+        'id': songId,
+        'submission': submission ? 'true' : 'false',
+      };
+
+      // 在 Navidrome + Last.fm 场景下，不传递 time 参数
+      // 让 Navidrome 自己处理时间戳，避免格式问题
+
+      final urlWithParams = url.replace(queryParameters: params);
+      print(
+        '📡 ${submission ? 'Scrobble 提交' : 'Now Playing 通知'} URL: $urlWithParams',
+      );
+
+      final response = await http.get(urlWithParams);
+      print(
+        '📡 ${submission ? 'Scrobble 提交' : 'Now Playing 通知'} 响应状态: ${response.statusCode}',
+      );
+
+      if (response.statusCode != 200) {
+        print(
+          '${submission ? 'Scrobble 提交' : 'Now Playing 通知'} 失败: ${response.statusCode}',
+        );
+        print('📄 响应内容: ${response.body}');
+      }
+    } catch (e) {
+      print('${submission ? 'Scrobble 提交' : 'Now Playing 通知'} 失败: $e');
+    }
+  }
+
   //获取指定年份范围内的歌曲
   Future<List<Map<String, dynamic>>> getSongsByYearRange(
     int startYear,
