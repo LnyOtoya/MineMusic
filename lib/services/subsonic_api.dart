@@ -915,7 +915,7 @@ class SubsonicApi {
         'v': '1.16.0',
         'c': 'MyMusicPlayer',
         'f': 'xml',
-        'type': 'recent', // 按最近添加排序
+        'type': 'newest', // 按最新排序
         'size': size.toString(),
       };
       final urlWithParams = url.replace(queryParameters: params);
