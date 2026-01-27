@@ -194,6 +194,16 @@ class PlayerService extends ChangeNotifier {
     List<Map<String, dynamic>>? playlist,
   }) async {
     _sourceType = sourceType;
+    
+    // 检查当前是否已经在播放同一首歌
+    if (_currentSong != null && _currentSong!['id'] == song['id']) {
+      // 如果已经在播放同一首歌，只需要恢复播放即可
+      if (!_isPlaying) {
+        await resume();
+      }
+      return;
+    }
+    
     await _historyService.addToHistory(song);
     await _audioHandler.playSong(song, playlist: playlist);
 

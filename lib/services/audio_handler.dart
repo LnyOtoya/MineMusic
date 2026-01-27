@@ -11,6 +11,7 @@ class MyAudioHandler extends BaseAudioHandler {
   List<MediaItem> _mediaItems = [];
   int _currentIndex = -1;
   ConcatenatingAudioSource _playlist = ConcatenatingAudioSource(children: []);
+  String? _currentSongId; // 添加当前歌曲ID跟踪
 
   MyAudioHandler(this._api) {
     // 设置监听器
@@ -19,6 +20,13 @@ class MyAudioHandler extends BaseAudioHandler {
     _player.durationStream.listen(_updateDuration);
     _player.currentIndexStream.listen(_updateCurrentIndex);
     _player.sequenceStateStream.listen(_updateSequenceState);
+  }
+
+  // 检查是否已经加载了指定歌曲
+  bool isSongLoaded(String songId) {
+    return _currentSongId == songId &&
+        _player.playerState != null &&
+        _player.playerState!.processingState != ProcessingState.idle;
   }
 
   // 将歌曲信息转换为 MediaItem
@@ -149,6 +157,15 @@ class MyAudioHandler extends BaseAudioHandler {
     List<Map<String, dynamic>>? playlist,
   }) async {
     try {
+      // 检查是否已经加载了同一首歌
+      if (isSongLoaded(song['id'])) {
+        // 如果已经加载，只需要播放即可
+        if (!_player.playing) {
+          await _player.play();
+        }
+        return;
+      }
+
       List<Map<String, dynamic>> songsToPlay;
 
       if (playlist != null) {
@@ -171,6 +188,9 @@ class MyAudioHandler extends BaseAudioHandler {
         initialIndex: songsToPlay.indexWhere((s) => s['id'] == song['id']),
       );
 
+      // 更新当前歌曲ID
+      _currentSongId = song['id'];
+
       // 更新队列
       queue.add(_mediaItems);
 
@@ -187,6 +207,15 @@ class MyAudioHandler extends BaseAudioHandler {
     List<Map<String, dynamic>>? playlist,
   }) async {
     try {
+      // 检查是否已经加载了同一首歌
+      if (isSongLoaded(song['id'])) {
+        // 如果已经加载，只需要确保暂停即可
+        if (_player.playing) {
+          await _player.pause();
+        }
+        return;
+      }
+
       List<Map<String, dynamic>> songsToPlay;
 
       print('MyAudioHandler.loadSong: 播放列表包含 ${playlist?.length ?? 0} 首歌曲');
@@ -221,6 +250,9 @@ class MyAudioHandler extends BaseAudioHandler {
         initialIndex: songsToPlay.indexWhere((s) => s['id'] == song['id']),
       );
       print('MyAudioHandler.loadSong: 设置播放列表完成');
+
+      // 更新当前歌曲ID
+      _currentSongId = song['id'];
 
       // 更新队列
       queue.value = _mediaItems;
