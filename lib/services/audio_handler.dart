@@ -37,6 +37,7 @@ class MyAudioHandler extends BaseAudioHandler {
     if (state.playing) {
       // 检查是否需要发送 Now Playing 通知
       // 当歌曲开始播放且播放位置接近开始时发送
+      // 注意：自动切歌时已经在 _updateSequenceState 中发送了 Now Playing
       if (_playStartTime == null || _player.position < Duration(seconds: 3)) {
         // 确保只发送一次 Now Playing 通知
         if (_playStartTime == null) {
@@ -69,6 +70,7 @@ class MyAudioHandler extends BaseAudioHandler {
       if (hasNext) {
         // 有下一首，自动切歌（由 just_audio 处理）
         print('🎵 自动切到下一首');
+        // 注意：自动切歌时的 Now Playing 会在 _updateSequenceState 中处理
       } else {
         // 没有下一首，调用 pause 停止播放
         print('🎵 播放列表结束，停止播放');
@@ -214,10 +216,21 @@ class MyAudioHandler extends BaseAudioHandler {
 
       // 检测歌曲变化，更新当前歌曲ID并重置scrobble状态
       if (_currentSongId != currentMediaItem.id) {
+        print('🎵 检测到歌曲变化：');
+        print('   旧歌曲：$_currentSongId');
+        print('   新歌曲：${currentMediaItem.id} - ${currentMediaItem.title}');
+
+        // 重置播放状态
         _currentSongId = currentMediaItem.id;
         _isScrobbled = false;
-        _playStartTime = null;
-        print('🎵 歌曲切换：${currentMediaItem.title} (${currentMediaItem.id})');
+        _playStartTime = DateTime.now();
+
+        // 强制触发 Now Playing 通知
+        print('📢 自动切歌，发送 Now Playing：${currentMediaItem.title}');
+        _api.notifyNowPlaying(_currentSongId!);
+
+        // 记录状态
+        print('🎵 播放状态重置完成，等待播放开始');
       }
     }
   }
