@@ -185,7 +185,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
     // 初始化颜色动画控制器
     _colorAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 1200), // 增加动画时长
       vsync: this,
     );
 
@@ -590,54 +590,60 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   void _startColorAnimation() {
     if (_targetCoverColorScheme == null) return;
 
+    // 创建动画曲线
+    final curvedAnimation = CurvedAnimation(
+      parent: _colorAnimationController,
+      curve: Curves.easeInOutCubic, // 使用更自然的缓动曲线
+    );
+
     // 创建颜色动画
     _primaryColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.primary ?? Theme.of(context).colorScheme.primary,
       end: _targetCoverColorScheme!.primary,
-    ).animate(_colorAnimationController);
+    ).animate(curvedAnimation);
 
     _onPrimaryColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.onPrimary ??
           Theme.of(context).colorScheme.onPrimary,
       end: _targetCoverColorScheme!.onPrimary,
-    ).animate(_colorAnimationController);
+    ).animate(curvedAnimation);
 
     _onSurfaceColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.onSurface ??
           Theme.of(context).colorScheme.onSurface,
       end: _targetCoverColorScheme!.onSurface,
-    ).animate(_colorAnimationController);
+    ).animate(curvedAnimation);
 
     _onSurfaceVariantColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.onSurfaceVariant ??
           Theme.of(context).colorScheme.onSurfaceVariant,
       end: _targetCoverColorScheme!.onSurfaceVariant,
-    ).animate(_colorAnimationController);
+    ).animate(curvedAnimation);
 
     _primaryContainerColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.primaryContainer ??
           Theme.of(context).colorScheme.primaryContainer,
       end: _targetCoverColorScheme!.primaryContainer,
-    ).animate(_colorAnimationController);
+    ).animate(curvedAnimation);
 
     _onPrimaryContainerColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.onPrimaryContainer ??
           Theme.of(context).colorScheme.onPrimaryContainer,
       end: _targetCoverColorScheme!.onPrimaryContainer,
-    ).animate(_colorAnimationController);
+    ).animate(curvedAnimation);
 
     _surfaceVariantColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.surfaceVariant ??
           Theme.of(context).colorScheme.surfaceVariant,
       end: _targetCoverColorScheme!.surfaceVariant,
-    ).animate(_colorAnimationController);
+    ).animate(curvedAnimation);
 
     // 创建tonal surface背景色动画
     final currentPrimary =
@@ -656,7 +662,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
         targetPrimary,
         targetSurface,
       ),
-    ).animate(_colorAnimationController);
+    ).animate(curvedAnimation);
 
     // 监听动画状态变化
     _colorAnimationController.addListener(() {
