@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/subsonic_api.dart';
@@ -13,40 +14,25 @@ import 'pages/playlists_page.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'models/lyrics_api_type.dart';
 import 'utils/tonal_surface_helper.dart';
-// import 'package:just_audio_background/just_audio_background.dart';
-// import 'package:audio_session/audio_session.dart';  // 新增
-
-//应用入口
-// void main() {
-//   runApp(const MyApp());
-// }
-
-// Future<void> main() async {
-//   // 初始化后台播放服务
-//   await JustAudioBackground.init(
-//     androidNotificationChannelId: 'com.example.minemusic.channel.audio',
-//     androidNotificationChannelName: 'MineMusic',
-//     // 播放时通知常驻
-//     androidNotificationOngoing: true,
-//     androidStopForegroundOnPause: true,
-//     // 可选：设置通知图标（需在mipmap中添加）
-//     androidNotificationIcon: 'mipmap/ic_launcher',
-//     androidNotificationClickStartsActivity: true,
-//     androidResumeOnClick: true,
-//   );
-
-//   // 配置音频会话（确保后台播放时音频焦点）
-//   final session = await AudioSession.instance;
-//   await session.configure(const AudioSessionConfiguration.music());
-
-//   runApp(const MyApp());
-// }
+import 'desktop/main.dart' as desktop;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 不再需要 JustAudioBackground 初始化
-  runApp(const MyApp());
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    runApp(const DesktopAppWrapper());
+  } else {
+    runApp(const MyApp());
+  }
+}
+
+class DesktopAppWrapper extends StatelessWidget {
+  const DesktopAppWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const desktop.DesktopApp();
+  }
 }
 
 class MyApp extends StatefulWidget {

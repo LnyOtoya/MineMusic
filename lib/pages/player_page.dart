@@ -197,7 +197,18 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
     // 监听播放状态变化
     widget.playerService.addListener(_updatePlayerState);
-    _updatePlayerState(); // 初始状态更新
+
+    // 初始化基本状态但不调用 _updatePlayerState（避免在 initState 中使用 context）
+    final currentSong = widget.playerService.currentSong;
+    final isPlaying = widget.playerService.isPlaying;
+    final position = widget.playerService.currentPosition;
+    final totalDuration = widget.playerService.totalDuration;
+
+    _currentSongId = currentSong?['id'];
+    _isPlaying = isPlaying;
+    _currentPosition = position ?? Duration.zero;
+    _totalDuration = totalDuration;
+
     _isInitialized = true; // 初始化完成
 
     // 加载当前歌曲歌词
@@ -246,6 +257,11 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       begin: defaultColorScheme.primaryContainer,
       end: defaultColorScheme.primaryContainer,
     ).animate(_colorAnimationController);
+
+    // 初始化完成后使用全局颜色方案
+    if (_isInitialized) {
+      _useGlobalColorScheme();
+    }
 
     _onPrimaryContainerColorAnimation = ColorTween(
       begin: defaultColorScheme.onPrimaryContainer,
@@ -617,9 +633,6 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
       // 重新加载歌词
       _loadLyrics();
-
-      // 使用全局颜色方案
-      _useGlobalColorScheme();
 
       // 预加载歌手头像
       if (currentSong != null) {

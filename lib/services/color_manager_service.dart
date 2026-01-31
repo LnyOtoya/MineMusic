@@ -240,13 +240,6 @@ class ColorManagerService {
   // 添加颜色变化监听器
   void addListener(Function(ColorScheme) listener) {
     _listeners.add(listener);
-    // 立即通知新监听器当前颜色方案（两个模式都通知）
-    if (_lightColorScheme != null) {
-      listener(_lightColorScheme!);
-    }
-    if (_darkColorScheme != null) {
-      listener(_darkColorScheme!);
-    }
   }
 
   // 移除颜色变化监听器
