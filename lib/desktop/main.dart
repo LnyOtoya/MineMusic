@@ -14,6 +14,7 @@ import 'pages/desktop_playlists_page.dart';
 import '../pages/settings_page.dart';
 import 'components/desktop_sidebar.dart';
 import 'components/desktop_player_bar.dart';
+import 'components/desktop_right_panel.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import '../utils/tonal_surface_helper.dart';
 
@@ -427,6 +428,10 @@ class _DesktopMainPageState extends State<DesktopMainPage> {
                   setThemeMode: widget.setThemeMode,
                 ),
                 Expanded(child: _pages[_selectedIndex]),
+                DesktopRightPanel(
+                  api: widget.api,
+                  playerService: playerService,
+                ),
               ],
             ),
           ),

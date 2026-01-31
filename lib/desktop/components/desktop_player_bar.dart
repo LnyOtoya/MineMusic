@@ -128,15 +128,29 @@ class _DesktopPlayerBarState extends State<DesktopPlayerBar> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
+          // Left: Song info
           _buildSongInfo(currentSong),
-          const SizedBox(width: 32),
-          _buildPlaybackControls(),
-          const SizedBox(width: 32),
-          _buildVolumeControls(),
-          const SizedBox(width: 32),
-          _buildTimeDisplay(currentPosition, totalDuration),
-          const SizedBox(width: 16),
-          _buildExtraControls(),
+
+          // Center: Playback controls and time display
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildPlaybackControls(),
+                const SizedBox(width: 24),
+                _buildTimeDisplay(currentPosition, totalDuration),
+              ],
+            ),
+          ),
+
+          // Right: Volume controls and fullscreen button
+          Row(
+            children: [
+              _buildVolumeControls(),
+              const SizedBox(width: 16),
+              _buildExtraControls(),
+            ],
+          ),
         ],
       ),
     );
@@ -313,163 +327,23 @@ class _DesktopPlayerBarState extends State<DesktopPlayerBar> {
   }
 
   Widget _buildExtraControls() {
-    return Row(
-      children: [
-        IconButton(
-          icon: Icon(
-            Icons.queue_music_rounded,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            size: 20,
-          ),
-          onPressed: () {
-            _showPlaylistBottomSheet();
-          },
-        ),
-        IconButton(
-          icon: Icon(
-            Icons.open_in_full_rounded,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            size: 20,
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PlayerPage(
-                  playerService: widget.playerService,
-                  api: widget.api,
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  void _showPlaylistBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      '播放列表',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${widget.playerService.playlist.length} 首歌曲',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: widget.playerService.playlist.length,
-                  itemBuilder: (context, index) {
-                    final song = widget.playerService.playlist[index];
-                    final isCurrentSong =
-                        widget.playerService.currentSong?['id'] == song['id'];
-
-                    return ListTile(
-                      leading: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: song['coverArt'] != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: CachedNetworkImage(
-                                  imageUrl: widget.api.getCoverArtUrl(
-                                    song['coverArt'],
-                                  ),
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Icon(
-                                Icons.music_note_rounded,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                      ),
-                      title: Text(
-                        song['title'] ?? '未知歌曲',
-                        style: TextStyle(
-                          fontWeight: isCurrentSong
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isCurrentSong
-                              ? Theme.of(context).colorScheme.primary
-                              : null,
-                        ),
-                      ),
-                      subtitle: Text(
-                        song['artist'] ?? '未知艺术家',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      trailing: isCurrentSong
-                          ? Icon(
-                              Icons.equalizer_rounded,
-                              color: Theme.of(context).colorScheme.primary,
-                              size: 20,
-                            )
-                          : null,
-                      onTap: () {
-                        widget.playerService.playSongAt(index);
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+    return IconButton(
+      icon: Icon(
+        Icons.open_in_full_rounded,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        size: 20,
       ),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PlayerPage(
+              playerService: widget.playerService,
+              api: widget.api,
+            ),
+          ),
+        );
+      },
     );
   }
 }
