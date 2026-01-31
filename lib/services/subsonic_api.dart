@@ -498,7 +498,6 @@ class SubsonicApi {
         'c': 'MyMusicPlayer',
         'f': 'xml',
         'name': name,
-        if (comment != null && comment.isNotEmpty) 'comment': comment,
         if (songIds.isNotEmpty) 'songId': songIds.join(','),
       };
 
@@ -507,6 +506,25 @@ class SubsonicApi {
 
       if (response.statusCode == 200) {
         print('✅ 播放列表 "$name" 创建成功');
+        
+        // 如果提供了注释，创建后立即更新注释
+        if (comment != null && comment.isNotEmpty) {
+          // 获取刚创建的歌单ID
+          final playlists = await getPlaylists();
+          // 找到同名的最新歌单（假设最新创建的在最后）
+          if (playlists.isNotEmpty) {
+            // 按名称过滤并获取最新的
+            final namedPlaylists = playlists.where((p) => p['name'] == name).toList();
+            if (namedPlaylists.isNotEmpty) {
+              final newPlaylist = namedPlaylists.last;
+              if (newPlaylist['id'] != null) {
+                print('🔄 更新歌单注释');
+                await updatePlaylist(newPlaylist['id'], comment: comment);
+              }
+            }
+          }
+        }
+        
         return true;
       } else {
         print('❌ 播放列表创建失败: ${response.statusCode}');
