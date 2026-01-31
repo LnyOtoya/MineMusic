@@ -310,6 +310,15 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     });
   }
 
+  // 计算颜色的亮度（0-1，值越大越亮）
+  double _getColorBrightness(Color color) {
+    // 使用相对亮度公式：0.299*R + 0.587*G + 0.114*B
+    final r = color.red / 255.0;
+    final g = color.green / 255.0;
+    final b = color.blue / 255.0;
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+
   void _onLyricsSettingsChanged() {
     setState(() {
       _lyricsEnabled = PlayerService.lyricsEnabledNotifier.value;
@@ -627,48 +636,63 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     // 获取当前主题颜色方案
     final currentThemeColorScheme = Theme.of(context).colorScheme;
 
+    // 检查提取的颜色是否比主题颜色更暗（通过亮度比较）
+    final isDarkTheme = currentThemeColorScheme.brightness == Brightness.dark;
+    final targetSurfaceBrightness = _getColorBrightness(
+      _targetCoverColorScheme!.surface,
+    );
+    final themeSurfaceBrightness = _getColorBrightness(
+      currentThemeColorScheme.surface,
+    );
+
+    // 如果是深色主题，且提取的颜色比主题颜色更暗，使用主题颜色作为目标
+    final effectiveTargetColorScheme =
+        isDarkTheme && targetSurfaceBrightness < themeSurfaceBrightness
+        ? currentThemeColorScheme
+        : _targetCoverColorScheme!;
+
     // 创建颜色动画
     _primaryColorAnimation = ColorTween(
       begin: _coverColorScheme?.primary ?? currentThemeColorScheme.primary,
-      end: _targetCoverColorScheme!.primary,
+      end: effectiveTargetColorScheme.primary,
     ).animate(curvedAnimation);
 
     _onPrimaryColorAnimation = ColorTween(
       begin: _coverColorScheme?.onPrimary ?? currentThemeColorScheme.onPrimary,
-      end: _targetCoverColorScheme!.onPrimary,
+      end: effectiveTargetColorScheme.onPrimary,
     ).animate(curvedAnimation);
 
     _onSurfaceColorAnimation = ColorTween(
       begin: _coverColorScheme?.onSurface ?? currentThemeColorScheme.onSurface,
-      end: _targetCoverColorScheme!.onSurface,
+      end: effectiveTargetColorScheme.onSurface,
     ).animate(curvedAnimation);
 
     _onSurfaceVariantColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.onSurfaceVariant ??
           currentThemeColorScheme.onSurfaceVariant,
-      end: _targetCoverColorScheme!.onSurfaceVariant,
+      end: effectiveTargetColorScheme.onSurfaceVariant,
     ).animate(curvedAnimation);
 
     _primaryContainerColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.primaryContainer ??
           currentThemeColorScheme.primaryContainer,
-      end: _targetCoverColorScheme!.primaryContainer,
+      end: effectiveTargetColorScheme.primaryContainer,
     ).animate(curvedAnimation);
 
     _onPrimaryContainerColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.onPrimaryContainer ??
           currentThemeColorScheme.onPrimaryContainer,
-      end: _targetCoverColorScheme!.onPrimaryContainer,
+      end: effectiveTargetColorScheme.onPrimaryContainer,
     ).animate(curvedAnimation);
 
     _surfaceVariantColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.surfaceVariant ??
           currentThemeColorScheme.surfaceVariant,
-      end: _targetCoverColorScheme!.surfaceVariant,
+      end: effectiveTargetColorScheme.surfaceVariant,
     ).animate(curvedAnimation);
 
     // 创建tonal surface背景色动画
@@ -676,8 +700,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
         _coverColorScheme?.primary ?? currentThemeColorScheme.primary;
     final currentSurface =
         _coverColorScheme?.surface ?? currentThemeColorScheme.surface;
-    final targetPrimary = _targetCoverColorScheme!.primary;
-    final targetSurface = _targetCoverColorScheme!.surface;
+    final targetPrimary = effectiveTargetColorScheme.primary;
+    final targetSurface = effectiveTargetColorScheme.surface;
 
     _tonalSurfaceAnimation = ColorTween(
       begin: TonalSurfaceHelper.getTonalSurfaceFromColors(
