@@ -7,8 +7,7 @@ import 'package:flutter_lyric/flutter_lyric.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
 import '../services/lyrics_api.dart';
-import '../services/color_extractor_service.dart';
-import '../services/color_cache_service.dart';
+import '../services/color_manager_service.dart';
 import '../models/lyrics_api_type.dart';
 import '../utils/lrc_to_qrc_converter.dart';
 import '../utils/tonal_surface_helper.dart';
@@ -189,6 +188,9 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       vsync: this,
     );
 
+    // 监听全局颜色变化
+    ColorManagerService().addListener(_onGlobalColorChanged);
+
     // 监听歌词设置变化
     PlayerService.lyricsEnabledNotifier.addListener(_onLyricsSettingsChanged);
     PlayerService.lyricsApiTypeNotifier.addListener(_onLyricsSettingsChanged);
@@ -319,6 +321,137 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     return 0.299 * r + 0.587 * g + 0.114 * b;
   }
 
+  // 调整颜色方案的亮度，使其达到目标亮度
+  ColorScheme _adjustColorSchemeBrightness(
+    ColorScheme colorScheme,
+    double targetBrightness,
+  ) {
+    // 计算当前 surface 颜色的亮度
+    final currentBrightness = _getColorBrightness(colorScheme.surface);
+
+    // 如果当前亮度已经大于等于目标亮度，不需要调整
+    if (currentBrightness >= targetBrightness) {
+      return colorScheme;
+    }
+
+    // 计算亮度调整比例
+    final brightnessRatio = targetBrightness / currentBrightness;
+
+    // 调整所有颜色
+    return ColorScheme(
+      brightness: colorScheme.brightness,
+      primary: _adjustColorBrightness(colorScheme.primary, brightnessRatio),
+      onPrimary: _adjustColorBrightness(colorScheme.onPrimary, brightnessRatio),
+      primaryContainer: _adjustColorBrightness(
+        colorScheme.primaryContainer,
+        brightnessRatio,
+      ),
+      onPrimaryContainer: _adjustColorBrightness(
+        colorScheme.onPrimaryContainer,
+        brightnessRatio,
+      ),
+      secondary: _adjustColorBrightness(colorScheme.secondary, brightnessRatio),
+      onSecondary: _adjustColorBrightness(
+        colorScheme.onSecondary,
+        brightnessRatio,
+      ),
+      secondaryContainer: _adjustColorBrightness(
+        colorScheme.secondaryContainer,
+        brightnessRatio,
+      ),
+      onSecondaryContainer: _adjustColorBrightness(
+        colorScheme.onSecondaryContainer,
+        brightnessRatio,
+      ),
+      tertiary: _adjustColorBrightness(colorScheme.tertiary, brightnessRatio),
+      onTertiary: _adjustColorBrightness(
+        colorScheme.onTertiary,
+        brightnessRatio,
+      ),
+      tertiaryContainer: _adjustColorBrightness(
+        colorScheme.tertiaryContainer,
+        brightnessRatio,
+      ),
+      onTertiaryContainer: _adjustColorBrightness(
+        colorScheme.onTertiaryContainer,
+        brightnessRatio,
+      ),
+      error: _adjustColorBrightness(colorScheme.error, brightnessRatio),
+      onError: _adjustColorBrightness(colorScheme.onError, brightnessRatio),
+      errorContainer: _adjustColorBrightness(
+        colorScheme.errorContainer,
+        brightnessRatio,
+      ),
+      onErrorContainer: _adjustColorBrightness(
+        colorScheme.onErrorContainer,
+        brightnessRatio,
+      ),
+      background: _adjustColorBrightness(
+        colorScheme.background,
+        brightnessRatio,
+      ),
+      onBackground: _adjustColorBrightness(
+        colorScheme.onBackground,
+        brightnessRatio,
+      ),
+      surface: _adjustColorBrightness(colorScheme.surface, brightnessRatio),
+      onSurface: _adjustColorBrightness(colorScheme.onSurface, brightnessRatio),
+      surfaceVariant: _adjustColorBrightness(
+        colorScheme.surfaceVariant,
+        brightnessRatio,
+      ),
+      onSurfaceVariant: _adjustColorBrightness(
+        colorScheme.onSurfaceVariant,
+        brightnessRatio,
+      ),
+      outline: _adjustColorBrightness(colorScheme.outline, brightnessRatio),
+      outlineVariant: _adjustColorBrightness(
+        colorScheme.outlineVariant,
+        brightnessRatio,
+      ),
+      shadow: _adjustColorBrightness(colorScheme.shadow, brightnessRatio),
+      scrim: _adjustColorBrightness(colorScheme.scrim, brightnessRatio),
+      inverseSurface: _adjustColorBrightness(
+        colorScheme.inverseSurface,
+        brightnessRatio,
+      ),
+      onInverseSurface: _adjustColorBrightness(
+        colorScheme.onInverseSurface,
+        brightnessRatio,
+      ),
+      inversePrimary: _adjustColorBrightness(
+        colorScheme.inversePrimary,
+        brightnessRatio,
+      ),
+    );
+  }
+
+  // 调整单个颜色的亮度
+  Color _adjustColorBrightness(Color color, double ratio) {
+    // 限制比例在合理范围内（避免过度调整）
+    final clampedRatio = ratio.clamp(1.0, 1.5);
+
+    // 调整 RGB 值
+    final r = (color.red * clampedRatio).clamp(0, 255).toInt();
+    final g = (color.green * clampedRatio).clamp(0, 255).toInt();
+    final b = (color.blue * clampedRatio).clamp(0, 255).toInt();
+
+    return Color.fromARGB(color.alpha, r, g, b);
+  }
+
+  // 全局颜色变化监听
+  void _onGlobalColorChanged(ColorScheme colorScheme) {
+    if (!mounted) return;
+
+    // 检查当前亮度模式是否与变化的颜色方案匹配
+    final currentBrightness = Theme.of(context).brightness;
+    if (colorScheme.brightness == currentBrightness) {
+      _targetCoverColorScheme = colorScheme;
+      _startColorAnimation();
+      print('✅ 全局颜色变化，更新播放页颜色');
+    }
+  }
+
   void _onLyricsSettingsChanged() {
     setState(() {
       _lyricsEnabled = PlayerService.lyricsEnabledNotifier.value;
@@ -343,6 +476,9 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     _pageController.dispose();
     _lyricController.dispose();
     _colorAnimationController.dispose();
+
+    // 移除监听器
+    ColorManagerService().removeListener(_onGlobalColorChanged);
     PlayerService.lyricsEnabledNotifier.removeListener(
       _onLyricsSettingsChanged,
     );
@@ -482,10 +618,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       // 重新加载歌词
       _loadLyrics();
 
-      // 提取封面颜色
-      if (currentSong != null && currentSong!['coverArt'] != null) {
-        _extractCoverColors(currentSong!);
-      }
+      // 使用全局颜色方案
+      _useGlobalColorScheme();
 
       // 预加载歌手头像
       if (currentSong != null) {
@@ -592,34 +726,17 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     }
   }
 
-  // 提取封面颜色
-  Future<void> _extractCoverColors(Map<String, dynamic> song) async {
-    final coverArt = song['coverArt'];
-    if (coverArt == null) return;
+  // 使用全局颜色方案
+  void _useGlobalColorScheme() {
+    final brightness = Theme.of(context).brightness;
+    final globalColorScheme = ColorManagerService().getCurrentColorScheme(
+      brightness,
+    );
 
-    setState(() => _isExtractingColors = true);
-
-    try {
-      final coverArtUrl = widget.api.getCoverArtUrl(coverArt);
-      final brightness = Theme.of(context).brightness; // 使用应用主题亮度而不是系统亮度
-
-      final colorScheme = await ColorCacheService.getColorScheme(
-        coverArt,
-        coverArtUrl,
-        brightness,
-      );
-
-      if (colorScheme != null && mounted) {
-        _targetCoverColorScheme = colorScheme;
-        _startColorAnimation();
-        print('✅ 颜色提取完成并启动动画');
-      }
-    } catch (e) {
-      print('❌ 提取封面颜色失败: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isExtractingColors = false);
-      }
+    if (globalColorScheme != null && mounted) {
+      _targetCoverColorScheme = globalColorScheme;
+      _startColorAnimation();
+      print('✅ 使用全局颜色方案并启动动画');
     }
   }
 
@@ -645,11 +762,15 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       currentThemeColorScheme.surface,
     );
 
-    // 如果是深色主题，且提取的颜色比主题颜色更暗，使用主题颜色作为目标
-    final effectiveTargetColorScheme =
-        isDarkTheme && targetSurfaceBrightness < themeSurfaceBrightness
-        ? currentThemeColorScheme
-        : _targetCoverColorScheme!;
+    // 如果是深色主题，且提取的颜色比主题颜色更暗，调整提取颜色的亮度
+    ColorScheme effectiveTargetColorScheme = _targetCoverColorScheme!;
+    if (isDarkTheme && targetSurfaceBrightness < themeSurfaceBrightness) {
+      // 调整提取的颜色，使其亮度至少与主题颜色相同
+      effectiveTargetColorScheme = _adjustColorSchemeBrightness(
+        _targetCoverColorScheme!,
+        themeSurfaceBrightness,
+      );
+    }
 
     // 创建颜色动画
     _primaryColorAnimation = ColorTween(
