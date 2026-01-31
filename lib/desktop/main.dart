@@ -11,6 +11,7 @@ import 'pages/desktop_login_page.dart';
 import 'pages/desktop_search_page.dart';
 import 'pages/desktop_library_page.dart';
 import 'pages/desktop_playlists_page.dart';
+import '../pages/settings_page.dart';
 import 'components/desktop_sidebar.dart';
 import 'components/desktop_player_bar.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -235,23 +236,203 @@ class _DesktopMainPageState extends State<DesktopMainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(
+      body: Column(
         children: [
-          DesktopSidebar(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _onDestinationSelected,
-            api: widget.api,
-            playerService: playerService,
-            setThemeMode: widget.setThemeMode,
+          // Top Bar (across entire app)
+          Container(
+            height: 60,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  // Left: Logo and Player name
+                  Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          Icons.music_note_rounded,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'MineMusic',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
+                            ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(width: 48),
+
+                  // Center: Home button and search box
+                  Expanded(
+                    child: Row(
+                      children: [
+                        // Home button
+                        Container(
+                          margin: const EdgeInsets.only(right: 12),
+                          child: TextButton.icon(
+                            onPressed: () => _onDestinationSelected(0),
+                            icon: Icon(
+                              Icons.home_rounded,
+                              size: 18,
+                              color: _selectedIndex == 0
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                            ),
+                            label: Text(
+                              '主页',
+                              style: TextStyle(
+                                color: _selectedIndex == 0
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              backgroundColor: _selectedIndex == 0
+                                  ? Theme.of(context)
+                                        .colorScheme
+                                        .primaryContainer
+                                        .withOpacity(0.3)
+                                  : Colors.transparent,
+                            ),
+                          ),
+                        ),
+
+                        // Search box (shorter width)
+                        Container(
+                          width: 400,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
+                              width: 1,
+                            ),
+                          ),
+                          child: TextField(
+                            onSubmitted: (value) {
+                              if (value.isNotEmpty) {
+                                _onDestinationSelected(1);
+                                // TODO: Pass search query to search page
+                              }
+                            },
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(
+                                Icons.search_rounded,
+                                size: 18,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                              hintText: '搜索音乐、艺术家、专辑...',
+                              hintStyle: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                            ),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 24),
+
+                  // Right: Settings button
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SettingsPage(
+                            api: widget.api,
+                            playerService: playerService,
+                            setThemeMode: widget.setThemeMode,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: Icon(
+                      Icons.settings_rounded,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    style: IconButton.styleFrom(
+                      padding: const EdgeInsets.all(8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
+
+          // Main content area
           Expanded(
-            child: Column(
+            child: Row(
               children: [
+                DesktopSidebar(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: _onDestinationSelected,
+                  api: widget.api,
+                  playerService: playerService,
+                  setThemeMode: widget.setThemeMode,
+                ),
                 Expanded(child: _pages[_selectedIndex]),
-                DesktopPlayerBar(playerService: playerService, api: widget.api),
               ],
             ),
           ),
+
+          // Player Bar (across entire app)
+          DesktopPlayerBar(playerService: playerService, api: widget.api),
         ],
       ),
     );
