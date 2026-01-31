@@ -81,32 +81,24 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
   }
 
   Widget _buildHeader() {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _getGreeting(),
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -1,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '发现好音乐',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
+        Text(
+          _getGreeting(),
+          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: -1,
           ),
         ),
-        const SizedBox(width: 32),
-        _buildSearchBar(),
+        const SizedBox(height: 8),
+        Text(
+          '发现好音乐',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            letterSpacing: 0.2,
+          ),
+        ),
       ],
     );
   }
@@ -124,46 +116,6 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
     } else {
       return '晚上好';
     }
-  }
-
-  Widget _buildSearchBar() {
-    return Container(
-      width: 400,
-      height: 48,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: '搜索歌曲、专辑、艺人...',
-          hintStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 12,
-          ),
-        ),
-        onSubmitted: (value) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DesktopSearchPage(
-                api: widget.api,
-                playerService: widget.playerService,
-                initialQuery: value,
-              ),
-            ),
-          );
-        },
-      ),
-    );
   }
 
   Widget _buildQuickAccess() {

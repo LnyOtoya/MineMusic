@@ -285,9 +285,10 @@ class _DesktopMainPageState extends State<DesktopMainPage> {
 
                   const SizedBox(width: 48),
 
-                  // Center: Home button and search box
+                  // Center: Home button and search box (centered)
                   Expanded(
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         // Home button
                         Container(
