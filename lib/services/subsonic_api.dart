@@ -8,11 +8,17 @@ class SubsonicApi {
   final String username;
   final String password;
 
+  static List<Map<String, dynamic>>? _cachedPlaylists;
+
   SubsonicApi({
     required this.baseUrl,
     required this.username,
     required this.password,
   });
+
+  void clearPlaylistCache() {
+    _cachedPlaylists = null;
+  }
 
   //核心方法：与服务器交互的各种接口[ping 获取音乐文件夹 获取艺术家等]
 
@@ -477,7 +483,11 @@ class SubsonicApi {
   }
 
   //创建播放列表
-  Future<bool> createPlaylist(String name, List<String> songIds) async {
+  Future<bool> createPlaylist(
+    String name,
+    List<String> songIds, {
+    String? comment,
+  }) async {
     try {
       final url = Uri.parse('$baseUrl/rest/createPlaylist');
 
@@ -488,7 +498,8 @@ class SubsonicApi {
         'c': 'MyMusicPlayer',
         'f': 'xml',
         'name': name,
-        'songId': songIds.join(','),
+        if (comment != null && comment.isNotEmpty) 'comment': comment,
+        if (songIds.isNotEmpty) 'songId': songIds.join(','),
       };
 
       final urlWithParams = url.replace(queryParameters: params);
@@ -503,6 +514,44 @@ class SubsonicApi {
       }
     } catch (e) {
       print('创建播放列表失败: $e');
+      return false;
+    }
+  }
+
+  //更新播放列表
+  Future<bool> updatePlaylist(
+    String playlistId, {
+    String? name,
+    String? comment,
+    bool? isPublic,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/updatePlaylist');
+
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MyMusicPlayer',
+        'f': 'xml',
+        'playlistId': playlistId,
+        if (name != null && name.isNotEmpty) 'name': name,
+        if (comment != null) 'comment': comment,
+        if (isPublic != null) 'public': isPublic.toString(),
+      };
+
+      final urlWithParams = url.replace(queryParameters: params);
+      final response = await http.get(urlWithParams);
+
+      if (response.statusCode == 200) {
+        print('✅ 播放列表更新成功');
+        return true;
+      } else {
+        print('❌ 播放列表更新失败: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('更新播放列表失败: $e');
       return false;
     }
   }
@@ -557,6 +606,7 @@ class SubsonicApi {
 
       if (response.statusCode == 200) {
         print('✅ 歌曲添加到歌单成功');
+        clearPlaylistCache();
         return true;
       } else {
         print('❌ 歌曲添加到歌单失败: ${response.statusCode}');
@@ -603,6 +653,7 @@ class SubsonicApi {
 
       if (response.statusCode == 200) {
         print('✅ 歌曲从歌单中删除成功');
+        clearPlaylistCache();
         return true;
       } else {
         print('❌ 歌曲从歌单中删除失败: ${response.statusCode}');

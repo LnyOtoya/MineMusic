@@ -36,10 +36,6 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
   }
 
   Future<List<Map<String, dynamic>>> _loadPlaylistsWithCover() async {
-    if (_cachedPlaylists != null) {
-      return _cachedPlaylists!;
-    }
-
     final playlists = await widget.api.getPlaylists();
 
     List<Map<String, dynamic>> playlistsWithCover = [];
@@ -354,6 +350,11 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
           playerService: widget.playerService,
           item: playlist,
           type: DetailType.playlist,
+          onPlaylistUpdated: () {
+            // 歌单更新后，重新加载歌单列表
+            _cachedPlaylists = null;
+            _loadPlaylists();
+          },
         ),
       ),
     );
@@ -399,6 +400,7 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
             ElevatedButton(
               onPressed: () async {
                 String name = nameController.text.trim();
+                String comment = commentController.text.trim();
                 if (name.isEmpty) {
                   ScaffoldMessenger.of(
                     context,
@@ -407,9 +409,14 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
                 }
 
                 // 创建歌单
-                bool success = await widget.api.createPlaylist(name, []);
+                bool success = await widget.api.createPlaylist(
+                  name,
+                  [],
+                  comment: comment,
+                );
                 if (success) {
                   // 重新加载歌单
+                  widget.api.clearPlaylistCache();
                   _cachedPlaylists = null;
                   _loadPlaylists();
                   Navigator.pop(context);
@@ -449,6 +456,7 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
                 bool success = await widget.api.deletePlaylist(playlist['id']);
                 if (success) {
                   // 重新加载歌单
+                  widget.api.clearPlaylistCache();
                   _cachedPlaylists = null;
                   _loadPlaylists();
                   Navigator.pop(context);

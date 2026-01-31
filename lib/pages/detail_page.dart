@@ -11,6 +11,7 @@ class DetailPage extends StatefulWidget {
   final Map<String, dynamic> item;
   final DetailType type;
   final String? sourceType;
+  final Function()? onPlaylistUpdated;
 
   const DetailPage({
     super.key,
@@ -19,6 +20,7 @@ class DetailPage extends StatefulWidget {
     required this.item,
     required this.type,
     this.sourceType,
+    this.onPlaylistUpdated,
   });
 
   @override
@@ -241,6 +243,91 @@ class _DetailPageState extends State<DetailPage> {
     }
   }
 
+  void _showEditPlaylistDialog() {
+    TextEditingController nameController = TextEditingController(
+      text: widget.item['name'] ?? '',
+    );
+    TextEditingController commentController = TextEditingController(
+      text: widget.item['comment'] ?? '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('编辑歌单'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: '歌单名称',
+                  hintText: '请输入歌单名称',
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: commentController,
+                decoration: const InputDecoration(
+                  labelText: '歌单注释',
+                  hintText: '请输入歌单注释（可选）',
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                String name = nameController.text.trim();
+                String comment = commentController.text.trim();
+                if (name.isEmpty) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('歌单名称不能为空')));
+                  return;
+                }
+
+                bool success = await widget.api.updatePlaylist(
+                  widget.item['id'],
+                  name: name,
+                  comment: comment,
+                );
+                if (success) {
+                  widget.api.clearPlaylistCache();
+                  setState(() {
+                    widget.item['name'] = name;
+                    widget.item['comment'] = comment;
+                  });
+                  // 通知父页面刷新歌单列表
+                  if (widget.onPlaylistUpdated != null) {
+                    widget.onPlaylistUpdated!();
+                  }
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('歌单更新成功')));
+                } else {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('歌单更新失败')));
+                }
+              },
+              child: const Text('保存'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildPlaylistCoverGrid(List<Map<String, dynamic>> songs) {
     List<String> coverArts = [];
     for (var i = 0; i < songs.length && i < 4; i++) {
@@ -346,6 +433,13 @@ class _DetailPageState extends State<DetailPage> {
               ? '艺人详情'
               : '歌单详情',
         ),
+        actions: [
+          if (widget.type == DetailType.playlist)
+            IconButton(
+              onPressed: () => _showEditPlaylistDialog(),
+              icon: const Icon(Icons.edit_rounded),
+            ),
+        ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _songsFuture,
