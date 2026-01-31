@@ -202,12 +202,24 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     _loadLyrics();
   }
 
+  Brightness? _previousBrightness;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // 初始化颜色动画变量（在 initState 之后调用，可以安全访问 Theme）
+    final currentBrightness = Theme.of(context).brightness; // 使用应用主题亮度而不是系统亮度
     final defaultColorScheme = Theme.of(context).colorScheme;
+
+    // 检测主题切换
+    if (_previousBrightness != null &&
+        _previousBrightness != currentBrightness) {
+      // 主题切换时，立即更新所有动画的当前值，避免二次变深
+      _updateAnimationValuesForThemeChange(defaultColorScheme);
+    }
+    _previousBrightness = currentBrightness;
+
+    // 初始化颜色动画变量（在 initState 之后调用，可以安全访问 Theme）
     _primaryColorAnimation = ColorTween(
       begin: defaultColorScheme.primary,
       end: defaultColorScheme.primary,
@@ -280,6 +292,22 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
         ).colorScheme.primary.withValues(alpha: 1),
       ),
     );
+  }
+
+  // 主题切换时更新动画值
+  void _updateAnimationValuesForThemeChange(ColorScheme colorScheme) {
+    // 立即更新 _coverColorScheme 为 null，强制使用新主题颜色
+    _coverColorScheme = null;
+    _targetCoverColorScheme = null;
+
+    // 重置颜色动画控制器，确保动画从新主题颜色开始
+    _colorAnimationController.value = 0;
+
+    // 重新计算并应用新主题的颜色
+    setState(() {
+      // 这里不需要做任何操作，因为 didChangeDependencies 会重新初始化动画
+      // 但我们需要确保 _coverColorScheme 为 null，这样就会使用新主题的颜色
+    });
   }
 
   void _onLyricsSettingsChanged() {
@@ -564,7 +592,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
 
     try {
       final coverArtUrl = widget.api.getCoverArtUrl(coverArt);
-      final brightness = MediaQuery.of(context).platformBrightness;
+      final brightness = Theme.of(context).brightness; // 使用应用主题亮度而不是系统亮度
 
       final colorScheme = await ColorCacheService.getColorScheme(
         coverArt,
@@ -596,60 +624,58 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       curve: Curves.easeInOutCubic, // 使用更自然的缓动曲线
     );
 
+    // 获取当前主题颜色方案
+    final currentThemeColorScheme = Theme.of(context).colorScheme;
+
     // 创建颜色动画
     _primaryColorAnimation = ColorTween(
-      begin:
-          _coverColorScheme?.primary ?? Theme.of(context).colorScheme.primary,
+      begin: _coverColorScheme?.primary ?? currentThemeColorScheme.primary,
       end: _targetCoverColorScheme!.primary,
     ).animate(curvedAnimation);
 
     _onPrimaryColorAnimation = ColorTween(
-      begin:
-          _coverColorScheme?.onPrimary ??
-          Theme.of(context).colorScheme.onPrimary,
+      begin: _coverColorScheme?.onPrimary ?? currentThemeColorScheme.onPrimary,
       end: _targetCoverColorScheme!.onPrimary,
     ).animate(curvedAnimation);
 
     _onSurfaceColorAnimation = ColorTween(
-      begin:
-          _coverColorScheme?.onSurface ??
-          Theme.of(context).colorScheme.onSurface,
+      begin: _coverColorScheme?.onSurface ?? currentThemeColorScheme.onSurface,
       end: _targetCoverColorScheme!.onSurface,
     ).animate(curvedAnimation);
 
     _onSurfaceVariantColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.onSurfaceVariant ??
-          Theme.of(context).colorScheme.onSurfaceVariant,
+          currentThemeColorScheme.onSurfaceVariant,
       end: _targetCoverColorScheme!.onSurfaceVariant,
     ).animate(curvedAnimation);
 
     _primaryContainerColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.primaryContainer ??
-          Theme.of(context).colorScheme.primaryContainer,
+          currentThemeColorScheme.primaryContainer,
       end: _targetCoverColorScheme!.primaryContainer,
     ).animate(curvedAnimation);
 
     _onPrimaryContainerColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.onPrimaryContainer ??
-          Theme.of(context).colorScheme.onPrimaryContainer,
+          currentThemeColorScheme.onPrimaryContainer,
       end: _targetCoverColorScheme!.onPrimaryContainer,
     ).animate(curvedAnimation);
 
     _surfaceVariantColorAnimation = ColorTween(
       begin:
           _coverColorScheme?.surfaceVariant ??
-          Theme.of(context).colorScheme.surfaceVariant,
+          currentThemeColorScheme.surfaceVariant,
       end: _targetCoverColorScheme!.surfaceVariant,
     ).animate(curvedAnimation);
 
     // 创建tonal surface背景色动画
     final currentPrimary =
-        _coverColorScheme?.primary ?? Theme.of(context).colorScheme.primary;
+        _coverColorScheme?.primary ?? currentThemeColorScheme.primary;
     final currentSurface =
-        _coverColorScheme?.surface ?? Theme.of(context).colorScheme.surface;
+        _coverColorScheme?.surface ?? currentThemeColorScheme.surface;
     final targetPrimary = _targetCoverColorScheme!.primary;
     final targetSurface = _targetCoverColorScheme!.surface;
 
