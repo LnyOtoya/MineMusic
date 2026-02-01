@@ -186,7 +186,7 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
     VoidCallback? onTap,
   }) {
     return SizedBox(
-      width: 200,
+      width: 180,
       height: 100,
       child: Card(
         elevation: 0,
@@ -196,16 +196,20 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
             child: Row(
               children: [
                 Icon(icon, size: 40, color: iconColor),
                 const SizedBox(width: 16),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: iconColor,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: iconColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -319,7 +323,7 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
             crossAxisCount: 6,
             crossAxisSpacing: 24,
             mainAxisSpacing: 24,
-            childAspectRatio: 1,
+            childAspectRatio: 0.7,
           ),
           itemCount: albums.length,
           itemBuilder: (context, index) {
@@ -353,7 +357,8 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
+            AspectRatio(
+              aspectRatio: 1,
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
@@ -394,7 +399,7 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -403,10 +408,10 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     album['artist'] ?? '未知艺术家',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -513,7 +518,7 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
             crossAxisCount: 6,
             crossAxisSpacing: 24,
             mainAxisSpacing: 24,
-            childAspectRatio: 1,
+            childAspectRatio: 0.7,
           ),
           itemCount: songs.length,
           itemBuilder: (context, index) {
@@ -542,7 +547,8 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
+            AspectRatio(
+              aspectRatio: 1,
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
@@ -583,7 +589,7 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -592,10 +598,10 @@ class _DesktopHomePageState extends State<DesktopHomePage> {
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     song['artist'] ?? '未知艺术家',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
