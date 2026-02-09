@@ -40,8 +40,8 @@
 - [ ] iOS(没设备，没开发者账号，有可能实现)
 
 ## 运行环境
-- Flutter 3.35.2
-- Dart 3.9.0
+- Flutter 3.38.9
+- Dart 3.10.8
 
 ## 使用方法
 1. 克隆仓库：`git clone https://github.com/LnyOtoya/MineMusic.git`
