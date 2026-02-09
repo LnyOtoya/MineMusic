@@ -531,8 +531,9 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       print('🎵 开始加载歌词: $title - $artist');
       print('📡 使用API: ${lyricsApiType.displayName}');
 
-      // 首先尝试使用OpenSubsonic API获取带时间轴的歌词
-      if (songId.isNotEmpty) {
+      // 根据用户选择的歌词API类型决定是否使用OpenSubsonic API
+      if (songId.isNotEmpty && lyricsApiType != LyricsApiType.customApi) {
+        // 只有当用户没有选择自建API时，才尝试使用OpenSubsonic API
         final openSubsonicLyrics = await widget.api.getLyricsBySongId(
           songId: songId,
         );
@@ -561,20 +562,11 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
               lrcLyrics += '[${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}.${milliseconds.toString().padLeft(2, '0')}]$value\n';
             }
 
-            final isQrc = LrcToQrcConverter.isQrcFormat(lrcLyrics);
-            final qrcLyrics = isQrc
-                ? lrcLyrics
-                : LrcToQrcConverter.convertLrcToQrc(lrcLyrics);
-
-            if (isQrc) {
-              print('✅ 检测到QRC格式，使用原始歌词（支持逐字高亮）');
-            } else {
-              print('🔄 已转换为QRC格式，支持逐字高亮');
-            }
-
+            // 非自建API，使用逐行歌词
+            print('📝 使用LRC格式，逐行显示歌词');
             setState(() {
-              _lrcLyrics = qrcLyrics;
-              _lyricController.loadLyric(qrcLyrics);
+              _lrcLyrics = lrcLyrics;
+              _lyricController.loadLyric(lrcLyrics);
             });
             return;
           }
@@ -593,21 +585,31 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           print('✅ 从Subsonic/Navidrome获取到歌词');
           final lyricsText = lyricData['text'];
 
-          final isQrc = LrcToQrcConverter.isQrcFormat(lyricsText);
-          final qrcLyrics = isQrc
-              ? lyricsText
-              : LrcToQrcConverter.convertLrcToQrc(lyricsText);
+          // 只有自建API才使用逐字歌词，其余一律逐行
+          if (lyricsApiType == LyricsApiType.customApi) {
+            final isQrc = LrcToQrcConverter.isQrcFormat(lyricsText);
+            final qrcLyrics = isQrc
+                ? lyricsText
+                : LrcToQrcConverter.convertLrcToQrc(lyricsText);
 
-          if (isQrc) {
-            print('✅ 检测到QRC格式，使用原始歌词（支持逐字高亮）');
+            if (isQrc) {
+              print('✅ 检测到QRC格式，使用原始歌词（支持逐字高亮）');
+            } else {
+              print('🔄 已转换为QRC格式，支持逐字高亮');
+            }
+
+            setState(() {
+              _lrcLyrics = qrcLyrics;
+              _lyricController.loadLyric(qrcLyrics);
+            });
           } else {
-            print('🔄 已转换为QRC格式，支持逐字高亮');
+            // 非自建API，使用逐行歌词
+            print('📝 使用LRC格式，逐行显示歌词');
+            setState(() {
+              _lrcLyrics = lyricsText;
+              _lyricController.loadLyric(lyricsText);
+            });
           }
-
-          setState(() {
-            _lrcLyrics = qrcLyrics;
-            _lyricController.loadLyric(qrcLyrics);
-          });
           return;
         }
 

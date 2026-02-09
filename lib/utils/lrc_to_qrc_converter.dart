@@ -8,7 +8,7 @@ class LrcToQrcConverter {
     return qrcPattern.hasMatch(lyrics);
   }
 
-  static String convertLrcToQrc(String lrcText) {
+  static String convertLrcToQrc(String lrcText, {bool forOpenSubsonic = false}) {
     if (lrcText.trim().isEmpty) return '';
 
     if (isQrcFormat(lrcText)) {
@@ -24,7 +24,7 @@ class LrcToQrcConverter {
 
       final parsedLine = _parseLrcLine(trimmedLine);
       if (parsedLine != null) {
-        final qrcLine = _convertLineToQrc(parsedLine);
+        final qrcLine = _convertLineToQrc(parsedLine, forOpenSubsonic: forOpenSubsonic);
         if (qrcLine.isNotEmpty) {
           qrcLines.add(qrcLine);
         }
@@ -58,13 +58,13 @@ class LrcToQrcConverter {
     return LrcLine(startTime: startTime, text: text);
   }
 
-  static String _convertLineToQrc(LrcLine line) {
+  static String _convertLineToQrc(LrcLine line, {bool forOpenSubsonic = false}) {
     if (line.text.isEmpty) return '';
 
     final startTimeMs = line.startTime.inMilliseconds;
     final text = line.text;
 
-    final totalDuration = _estimateLineDuration(text);
+    final totalDuration = _estimateLineDuration(text, forOpenSubsonic: forOpenSubsonic);
     final wordsWithTiming = <String>[];
 
     var currentOffset = 0;
@@ -81,14 +81,14 @@ class LrcToQrcConverter {
       }
 
       if (_isChinese(char)) {
-        final charDuration = _estimateCharDuration(char, totalDuration);
+        final charDuration = _estimateCharDuration(char, totalDuration, forOpenSubsonic: forOpenSubsonic);
         wordsWithTiming.add('$char($currentOffset,$charDuration)');
         currentOffset += charDuration;
         currentIndex++;
       } else {
         final wordEnd = _findWordEnd(text, currentIndex);
         final word = text.substring(currentIndex, wordEnd);
-        final wordDuration = _estimateWordDuration(word, totalDuration);
+        final wordDuration = _estimateWordDuration(word, totalDuration, forOpenSubsonic: forOpenSubsonic);
         wordsWithTiming.add('$word($currentOffset,$wordDuration)');
         currentOffset += wordDuration;
         currentIndex = wordEnd;
@@ -115,36 +115,63 @@ class LrcToQrcConverter {
     return index;
   }
 
-  static int _estimateLineDuration(String text) {
+  static int _estimateLineDuration(String text, {bool forOpenSubsonic = false}) {
     final charCount = text.replaceAll(' ', '').length;
     final chineseCount = text.split('').where(_isChinese).length;
 
-    final baseDuration = 3000;
-    final charFactor = charCount * 80;
-    final chineseFactor = chineseCount * 100;
+    // 根据歌词来源采用不同的时间估计策略
+    if (forOpenSubsonic) {
+      // OpenSubsonic歌词：使用更长的时间估计
+      final baseDuration = 4000;
+      final charFactor = charCount * 100;
+      final chineseFactor = chineseCount * 120;
 
-    return min(baseDuration + charFactor + chineseFactor, 10000);
+      return min(baseDuration + charFactor + chineseFactor, 12000);
+    } else {
+      // 自建API歌词：保持原有时间估计
+      final baseDuration = 3000;
+      final charFactor = charCount * 80;
+      final chineseFactor = chineseCount * 100;
+
+      return min(baseDuration + charFactor + chineseFactor, 10000);
+    }
   }
 
-  static int _estimateCharDuration(String char, int totalDuration) {
-    return max(150, min(400, totalDuration ~/ 5));
+  static int _estimateCharDuration(String char, int totalDuration, {bool forOpenSubsonic = false}) {
+    if (forOpenSubsonic) {
+      // OpenSubsonic歌词：使用更长的字符持续时间
+      return max(200, min(500, totalDuration ~/ 4));
+    } else {
+      // 自建API歌词：保持原有字符持续时间
+      return max(150, min(400, totalDuration ~/ 5));
+    }
   }
 
-  static int _estimateWordDuration(String word, int totalDuration) {
+  static int _estimateWordDuration(String word, int totalDuration, {bool forOpenSubsonic = false}) {
     final charCount = word.length;
     if (charCount == 0) return 100;
 
-    final baseDuration = 200;
-    final charFactor = charCount * 80;
+    if (forOpenSubsonic) {
+      // OpenSubsonic歌词：使用更长的单词持续时间
+      final baseDuration = 250;
+      final charFactor = charCount * 100;
 
-    return min(baseDuration + charFactor, totalDuration ~/ 2);
+      return min(baseDuration + charFactor, totalDuration ~/ 2);
+    } else {
+      // 自建API歌词：保持原有单词持续时间
+      final baseDuration = 200;
+      final charFactor = charCount * 80;
+
+      return min(baseDuration + charFactor, totalDuration ~/ 2);
+    }
   }
 
   static String convertLrcToQrcWithTranslation(
     String lrcText,
     String? translationText,
+    {bool forOpenSubsonic = false}
   ) {
-    final qrcLyrics = convertLrcToQrc(lrcText);
+    final qrcLyrics = convertLrcToQrc(lrcText, forOpenSubsonic: forOpenSubsonic);
 
     return qrcLyrics;
   }
