@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/subsonic_api.dart';
+import '../services/encryption_service.dart';
+import '../services/secure_storage_service.dart';
+import '../services/error_handler_service.dart';
 
 class LoginPage extends StatefulWidget {
   final Function(SubsonicApi, String, String, String) onLoginSuccess;
@@ -29,21 +31,22 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _loadSavedCredentials() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedBaseUrl = prefs.getString('baseUrl');
-      final savedUsername = prefs.getString('username');
-      final savedPassword = prefs.getString('password');
-      final savedRememberMe = prefs.getBool('rememberMe') ?? true;
+      final credentials = await SecureStorageService().loadCredentials();
 
-      if (savedBaseUrl != null &&
-          savedUsername != null &&
-          savedPassword != null) {
+      if (credentials != null) {
+        final savedBaseUrl = credentials['baseUrl'] as String;
+        final savedUsername = credentials['username'] as String;
+        final savedPassword = credentials['password'] as String;
+        final savedRememberMe = credentials['rememberMe'] as bool;
+
         final uri = Uri.parse(savedBaseUrl);
+        // 解密密码
+        final decryptedPassword = await EncryptionService().decryptPassword(savedPassword);
         setState(() {
           _baseUrlController.text = '${uri.scheme}://${uri.host}';
           _portController.text = uri.port.toString();
           _usernameController.text = savedUsername;
-          _passwordController.text = savedPassword;
+          _passwordController.text = decryptedPassword;
           _rememberMe = savedRememberMe;
         });
       }
@@ -54,19 +57,19 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _saveCredentials() async {
     if (!_rememberMe) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('baseUrl');
-      await prefs.remove('username');
-      await prefs.remove('password');
+      await SecureStorageService().clearCredentials();
       return;
     }
 
     final baseUrl = _buildBaseUrl();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('baseUrl', baseUrl);
-    await prefs.setString('username', _usernameController.text.trim());
-    await prefs.setString('password', _passwordController.text);
-    await prefs.setBool('rememberMe', _rememberMe);
+    // 加密密码
+    final encryptedPassword = await EncryptionService().encryptPassword(_passwordController.text);
+    await SecureStorageService().saveCredentials(
+      baseUrl: baseUrl,
+      username: _usernameController.text.trim(),
+      password: encryptedPassword,
+      rememberMe: _rememberMe,
+    );
   }
 
   String _buildBaseUrl() {
@@ -108,12 +111,12 @@ class _LoginPageState extends State<LoginPage> {
         widget.onLoginSuccess(api, baseUrl, username, password);
       } else {
         if (mounted) {
-          _showErrorDialog('连接失败', '无法连接到服务器，请检查地址、端口和凭据是否正确。');
+          ErrorHandlerService().handleLoginError(context, '无法连接到服务器，请检查地址、端口和凭据是否正确。');
         }
       }
     } catch (e) {
       if (mounted) {
-        _showErrorDialog('登录失败', '错误: $e');
+        ErrorHandlerService().handleLoginError(context, e);
       }
     } finally {
       if (mounted) {
@@ -122,22 +125,6 @@ class _LoginPageState extends State<LoginPage> {
         });
       }
     }
-  }
-
-  void _showErrorDialog(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('确定'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

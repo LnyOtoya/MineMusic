@@ -209,6 +209,25 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     _currentPosition = position ?? Duration.zero;
     _totalDuration = totalDuration;
 
+    // 初始化动画状态
+    if (isPlaying) {
+      // 设置为播放状态
+      _shapeAnimationController.value = 1.0;
+      _transitionAnimationController.value = 1.0;
+      _waveController.waveOn();
+    } else {
+      // 设置为暂停状态
+      _shapeAnimationController.value = 0.0;
+      _transitionAnimationController.value = 0.0;
+      _waveController.waveOff();
+    }
+
+    // 初始化波浪进度条
+    if (_totalDuration.inMilliseconds > 0) {
+      final double progress = _currentPosition.inMilliseconds / _totalDuration.inMilliseconds;
+      _waveController.setProgress(progress);
+    }
+
     _isInitialized = true; // 初始化完成
 
     // 加载当前歌曲歌词

@@ -19,6 +19,25 @@ class ColorManagerService {
   // 颜色变化监听器
   final List<Function(ColorScheme)> _listeners = [];
 
+  // 比较两个颜色方案是否相同
+  bool _colorSchemesAreEqual(ColorScheme? a, ColorScheme? b) {
+    if (a == null || b == null) return a == b;
+    
+    return a.primary == b.primary &&
+           a.onPrimary == b.onPrimary &&
+           a.primaryContainer == b.primaryContainer &&
+           a.onPrimaryContainer == b.onPrimaryContainer &&
+           a.secondary == b.secondary &&
+           a.onSecondary == b.onSecondary &&
+           a.secondaryContainer == b.secondaryContainer &&
+           a.onSecondaryContainer == b.onSecondaryContainer &&
+           a.surface == b.surface &&
+           a.onSurface == b.onSurface &&
+           a.surfaceVariant == b.surfaceVariant &&
+           a.onSurfaceVariant == b.onSurfaceVariant &&
+           a.brightness == b.brightness;
+  }
+
   // 从专辑封面提取颜色方案
   Future<ColorScheme> extractColorSchemeFromCover(
     String coverArtId,
@@ -38,31 +57,43 @@ class ColorManagerService {
       // 生成包含 tonal surface 的新颜色方案
       final tonalColorScheme = _createTonalColorScheme(colorScheme, brightness);
 
-      // 根据亮度模式存储到对应的变量
+      // 检查颜色方案是否真正变化
+      bool hasChanged = false;
       if (brightness == Brightness.light) {
+        hasChanged = !_colorSchemesAreEqual(_lightColorScheme, tonalColorScheme);
         _lightColorScheme = tonalColorScheme;
       } else {
+        hasChanged = !_colorSchemesAreEqual(_darkColorScheme, tonalColorScheme);
         _darkColorScheme = tonalColorScheme;
       }
 
       // 保存颜色方案到本地存储
       await _saveColorScheme(tonalColorScheme, brightness);
 
-      _notifyListeners(tonalColorScheme);
+      // 只有当颜色方案真正变化时才通知监听器
+      if (hasChanged) {
+        _notifyListeners(tonalColorScheme);
+      }
 
       return tonalColorScheme;
     } catch (e) {
       // 如果提取失败，使用默认颜色方案
       final defaultColorScheme = _createDefaultColorScheme(brightness);
 
-      // 根据亮度模式存储到对应的变量
+      // 检查颜色方案是否真正变化
+      bool hasChanged = false;
       if (brightness == Brightness.light) {
+        hasChanged = !_colorSchemesAreEqual(_lightColorScheme, defaultColorScheme);
         _lightColorScheme = defaultColorScheme;
       } else {
+        hasChanged = !_colorSchemesAreEqual(_darkColorScheme, defaultColorScheme);
         _darkColorScheme = defaultColorScheme;
       }
 
-      _notifyListeners(defaultColorScheme);
+      // 只有当颜色方案真正变化时才通知监听器
+      if (hasChanged) {
+        _notifyListeners(defaultColorScheme);
+      }
       return defaultColorScheme;
     }
   }

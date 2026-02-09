@@ -3,6 +3,7 @@ import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import 'detail_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../services/error_handler_service.dart';
 
 // 歌单页面
 class PlaylistsPage extends StatefulWidget {
@@ -36,26 +37,31 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
   }
 
   Future<List<Map<String, dynamic>>> _loadPlaylistsWithCover() async {
-    final playlists = await widget.api.getPlaylists();
+    try {
+      final playlists = await widget.api.getPlaylists();
 
-    List<Map<String, dynamic>> playlistsWithCover = [];
+      List<Map<String, dynamic>> playlistsWithCover = [];
 
-    for (var playlist in playlists) {
-      String? coverArt;
-      try {
-        final songs = await widget.api.getPlaylistSongs(playlist['id']);
-        if (songs.isNotEmpty && songs[0]['coverArt'] != null) {
-          coverArt = songs[0]['coverArt'];
+      for (var playlist in playlists) {
+        String? coverArt;
+        try {
+          final songs = await widget.api.getPlaylistSongs(playlist['id']);
+          if (songs.isNotEmpty && songs[0]['coverArt'] != null) {
+            coverArt = songs[0]['coverArt'];
+          }
+        } catch (e) {
+          print('获取歌单 ${playlist['name']} 的歌曲失败: $e');
         }
-      } catch (e) {
-        print('获取歌单 ${playlist['name']} 的歌曲失败: $e');
+
+        playlistsWithCover.add({...playlist, 'coverArt': coverArt});
       }
 
-      playlistsWithCover.add({...playlist, 'coverArt': coverArt});
+      _cachedPlaylists = playlistsWithCover;
+      return playlistsWithCover;
+    } catch (e) {
+      ErrorHandlerService().handleApiError(context, e, 'getPlaylists');
+      return [];
     }
-
-    _cachedPlaylists = playlistsWithCover;
-    return playlistsWithCover;
   }
 
   @override
@@ -231,7 +237,10 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
           ),
           itemCount: playlists.length,
           itemBuilder: (context, index) {
-            return _buildPlaylistCard(playlists[index]);
+            final playlist = playlists[index];
+            return RepaintBoundary(
+              child: _buildPlaylistCard(playlist),
+            );
           },
         );
       },
@@ -239,6 +248,11 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
   }
 
   Widget _buildPlaylistCard(Map<String, dynamic> playlist) {
+    final coverArtUrl = playlist['coverArt'] != null ? widget.api.getCoverArtUrl(playlist['coverArt']) : null;
+    final name = playlist['name'] ?? '未知歌单';
+    final songCount = playlist['songCount'] ?? 0;
+    final comment = playlist['comment'];
+
     return Card(
       elevation: 0,
       color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -259,38 +273,18 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
                   width: double.infinity,
                   height: 140,
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
-                  child: playlist['coverArt'] != null
+                  child: coverArtUrl != null
                       ? CachedNetworkImage(
-                          imageUrl: widget.api.getCoverArtUrl(
-                            playlist['coverArt'],
-                          ),
+                          imageUrl: coverArtUrl,
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: 140,
-                          placeholder: (context, url) => Icon(
-                            Icons.playlist_play_rounded,
-                            size: 56,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                          errorWidget: (context, url, error) => Icon(
-                            Icons.playlist_play_rounded,
-                            size: 56,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
+                          placeholder: (context, url) => _buildPlaylistIcon(context),
+                          errorWidget: (context, url, error) => _buildPlaylistIcon(context),
                         )
-                      : Icon(
-                          Icons.playlist_play_rounded,
-                          size: 56,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      : _buildPlaylistIcon(context),
                 ),
               ),
               Expanded(
@@ -301,7 +295,7 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        playlist['name'] ?? '未知歌单',
+                        name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -310,24 +304,20 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '歌曲数: ${playlist['songCount'] ?? 0}',
+                        '歌曲数: $songCount',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      if (playlist['comment'] != null &&
-                          playlist['comment']!.isNotEmpty) ...[
+                      if (comment != null && comment.isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Text(
-                          playlist['comment']!,
+                          comment,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ],
@@ -338,6 +328,15 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
           ),
         ),
       ),
+    );
+  }
+
+  // 构建播放列表图标，避免重复创建
+  Widget _buildPlaylistIcon(BuildContext context) {
+    return Icon(
+      Icons.playlist_play_rounded,
+      size: 56,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
   }
 

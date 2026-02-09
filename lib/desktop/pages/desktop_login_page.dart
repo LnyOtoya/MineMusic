@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/subsonic_api.dart';
+import '../../services/error_handler_service.dart';
+import '../../services/encryption_service.dart';
+import '../../services/secure_storage_service.dart';
 
 class DesktopLoginPage extends StatefulWidget {
   final Function(SubsonicApi, String, String, String) onLoginSuccess;
@@ -18,6 +20,34 @@ class _DesktopLoginPageState extends State<DesktopLoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final credentials = await SecureStorageService().loadCredentials();
+
+      if (credentials != null) {
+        final savedBaseUrl = credentials['baseUrl'] as String;
+        final savedUsername = credentials['username'] as String;
+        final savedPassword = credentials['password'] as String;
+
+        // 解密密码
+        final decryptedPassword = await EncryptionService().decryptPassword(savedPassword);
+        setState(() {
+          _urlController.text = savedBaseUrl;
+          _usernameController.text = savedUsername;
+          _passwordController.text = decryptedPassword;
+        });
+      }
+    } catch (e) {
+      print('加载保存的凭据时出错: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -50,29 +80,26 @@ class _DesktopLoginPageState extends State<DesktopLoginPage> {
       final success = await api.ping();
 
       if (success) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('baseUrl', url);
-        await prefs.setString('username', username);
-        await prefs.setString('password', password);
+        // 加密密码
+        final encryptedPassword = await EncryptionService().encryptPassword(password);
+        await SecureStorageService().saveCredentials(
+          baseUrl: url,
+          username: username,
+          password: encryptedPassword,
+          rememberMe: true,
+        );
 
         if (mounted) {
           widget.onLoginSuccess(api, url, username, password);
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('连接失败，请检查服务器地址和凭据'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          ErrorHandlerService().handleLoginError(context, '无法连接到服务器，请检查地址和凭据是否正确。');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('连接失败: $e'), backgroundColor: Colors.red),
-        );
+        ErrorHandlerService().handleLoginError(context, e);
       }
     } finally {
       if (mounted) {

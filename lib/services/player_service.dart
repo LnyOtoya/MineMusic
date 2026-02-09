@@ -10,7 +10,7 @@ import '../models/lyrics_api_type.dart';
 
 class PlayerService extends ChangeNotifier {
   late MyAudioHandler _audioHandler;
-  final SubsonicApi? _api;
+  SubsonicApi? _api;
   final PlayHistoryService _historyService = PlayHistoryService();
   final PlaybackStateService _playbackStateService = PlaybackStateService();
 
@@ -41,6 +41,11 @@ class PlayerService extends ChangeNotifier {
 
   PlayerService({SubsonicApi? api}) : _api = api {
     _initialize();
+  }
+
+  // 更新 API 实例
+  void updateApi(SubsonicApi? api) {
+    _api = api;
   }
 
   Future<void> _initialize() async {

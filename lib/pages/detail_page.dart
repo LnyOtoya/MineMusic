@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../services/error_handler_service.dart';
 
 enum DetailType { album, artist, playlist }
 
@@ -153,20 +154,24 @@ class _DetailPageState extends State<DetailPage> {
                     onTap: () async {
                       Navigator.pop(context);
                       // 将歌曲添加到歌单
-                      bool success = await widget.api.addSongToPlaylist(
-                        playlist['id'],
-                        song['id'],
-                      );
-                      if (success) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('歌曲已添加到歌单 "${playlist['name']}"'),
-                          ),
+                      try {
+                        bool success = await widget.api.addSongToPlaylist(
+                          playlist['id'],
+                          song['id'],
                         );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('添加歌曲到歌单失败')),
-                        );
+                        if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('歌曲已添加到歌单 "${playlist['name']}"'),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('添加歌曲到歌单失败')),
+                          );
+                        }
+                      } catch (e) {
+                        ErrorHandlerService().handleApiError(context, e, 'addSongToPlaylist');
                       }
                     },
                   );
@@ -183,10 +188,7 @@ class _DetailPageState extends State<DetailPage> {
         },
       );
     } catch (e) {
-      print('获取歌单列表失败: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('获取歌单列表失败')));
+      ErrorHandlerService().handleApiError(context, e, 'getPlaylists');
     }
   }
 
@@ -208,20 +210,24 @@ class _DetailPageState extends State<DetailPage> {
                 onPressed: () async {
                   Navigator.pop(context);
                   // 调用API删除歌曲
-                  bool success = await widget.api.removeSongFromPlaylist(
-                    widget.item['id'],
-                    song['id'],
-                  );
-                  if (success) {
-                    // 重新加载歌单
-                    _loadSongs();
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('歌曲已从歌单中删除')));
-                  } else {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('删除歌曲失败')));
+                  try {
+                    bool success = await widget.api.removeSongFromPlaylist(
+                      widget.item['id'],
+                      song['id'],
+                    );
+                    if (success) {
+                      // 重新加载歌单
+                      _loadSongs();
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('歌曲已从歌单中删除')));
+                    } else {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(const SnackBar(content: Text('删除歌曲失败')));
+                    }
+                  } catch (e) {
+                    ErrorHandlerService().handleApiError(context, e, 'removeSongFromPlaylist');
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -236,10 +242,7 @@ class _DetailPageState extends State<DetailPage> {
         },
       );
     } catch (e) {
-      print('从歌单中删除歌曲失败: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('删除歌曲失败')));
+      ErrorHandlerService().handleApiError(context, e, 'removeSongFromPlaylist');
     }
   }
 

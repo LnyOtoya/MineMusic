@@ -207,7 +207,7 @@ class MyAudioHandler extends BaseAudioHandler {
   void _updateSequenceState(SequenceState? sequenceState) {
     if (sequenceState == null) return;
 
-    _currentIndex = sequenceState.currentIndex;
+    _currentIndex = sequenceState.currentIndex ?? -1;
     final source = sequenceState.currentSource;
     if (source != null && source.tag != null) {
       final currentMediaItem = source.tag as MediaItem;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../services/error_handler_service.dart';
 
 // 歌曲页面
 class SongsPage extends StatefulWidget {
@@ -200,7 +201,10 @@ class _SongsPageState extends State<SongsPage> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
           itemCount: songs.length,
           itemBuilder: (context, index) {
-            return _buildSongItem(songs[index], index);
+            final song = songs[index];
+            return RepaintBoundary(
+              child: _buildSongItem(song, index),
+            );
           },
         );
       },
@@ -208,6 +212,12 @@ class _SongsPageState extends State<SongsPage> {
   }
 
   Widget _buildSongItem(Map<String, dynamic> song, int index) {
+    final coverArtUrl = song['coverArt'] != null ? widget.api.getCoverArtUrl(song['coverArt']) : null;
+    final title = song['title'] ?? '未知标题';
+    final artist = song['artist'] ?? '未知艺术家';
+    final album = song['album'] ?? '未知专辑';
+    final subtitle = '$artist • $album';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -226,37 +236,18 @@ class _SongsPageState extends State<SongsPage> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
-                    child: song['coverArt'] != null
+                    child: coverArtUrl != null
                         ? CachedNetworkImage(
-                            imageUrl: widget.api.getCoverArtUrl(
-                              song['coverArt'],
-                            ),
+                            imageUrl: coverArtUrl,
                             fit: BoxFit.cover,
                             width: 48,
                             height: 48,
-                            placeholder: (context, url) => Icon(
-                              Icons.music_note_rounded,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                            errorWidget: (context, url, error) => Icon(
-                              Icons.music_note_rounded,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
+                            placeholder: (context, url) => _buildMusicNoteIcon(context),
+                            errorWidget: (context, url, error) => _buildMusicNoteIcon(context),
                           )
-                        : Icon(
-                            Icons.music_note_rounded,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
+                        : _buildMusicNoteIcon(context),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -265,7 +256,7 @@ class _SongsPageState extends State<SongsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        song['title'] ?? '未知标题',
+                        title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -274,7 +265,7 @@ class _SongsPageState extends State<SongsPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${song['artist'] ?? '未知艺术家'} • ${song['album'] ?? '未知专辑'}',
+                        subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -289,6 +280,14 @@ class _SongsPageState extends State<SongsPage> {
           ),
         ),
       ),
+    );
+  }
+
+  // 构建音乐图标，避免重复创建
+  Widget _buildMusicNoteIcon(BuildContext context) {
+    return Icon(
+      Icons.music_note_rounded,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
   }
 
@@ -403,20 +402,24 @@ class _SongsPageState extends State<SongsPage> {
                     onTap: () async {
                       Navigator.pop(context);
                       // 将歌曲添加到歌单
-                      bool success = await widget.api.addSongToPlaylist(
-                        playlist['id'],
-                        song['id'],
-                      );
-                      if (success) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('歌曲已添加到歌单 "${playlist['name']}"'),
-                          ),
+                      try {
+                        bool success = await widget.api.addSongToPlaylist(
+                          playlist['id'],
+                          song['id'],
                         );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('添加歌曲到歌单失败')),
-                        );
+                        if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('歌曲已添加到歌单 "${playlist['name']}"'),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('添加歌曲到歌单失败')),
+                          );
+                        }
+                      } catch (e) {
+                        ErrorHandlerService().handleApiError(context, e, 'addSongToPlaylist');
                       }
                     },
                   );
@@ -433,10 +436,7 @@ class _SongsPageState extends State<SongsPage> {
         },
       );
     } catch (e) {
-      print('获取歌单列表失败: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('获取歌单列表失败')));
+      ErrorHandlerService().handleApiError(context, e, 'getPlaylists');
     }
   }
 }
