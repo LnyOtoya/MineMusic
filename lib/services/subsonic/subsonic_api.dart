@@ -58,6 +58,23 @@ class SubsonicApi {
   void clearAlbumCache() => _base.clearAlbumCache();
   void clearMusicFolderCache() => _base.clearMusicFolderCache();
   void clearGenreCache() => _base.clearGenreCache();
+  
+  // 缓存大小管理
+  Future<void> saveCacheSizeLimit(int limit) async {
+    await SubsonicApiBase.saveCacheSizeLimit(limit);
+  }
+  
+  int getCacheSizeLimit() {
+    return SubsonicApiBase.getCacheSizeLimit();
+  }
+  
+  Map<String, int> getCacheSizeOptions() {
+    return SubsonicApiBase.cacheSizeOptions;
+  }
+  
+  Future<int> calculateCurrentCacheSize() async {
+    return await SubsonicApiBase.calculateCurrentCacheSize();
+  }
 
   // 基础方法
   String getCoverArtUrl(String coverArtId) => _base.getCoverArtUrl(coverArtId);

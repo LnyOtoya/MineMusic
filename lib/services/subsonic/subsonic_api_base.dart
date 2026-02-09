@@ -32,6 +32,17 @@ class SubsonicApiBase {
     'genres': 0,
   };
   
+  // 缓存大小限制（字节）
+  static int _cacheSizeLimit = 0; // 0表示无限制
+  
+  // 缓存大小限制选项（字节）
+  static const Map<String, int> cacheSizeOptions = {
+    '1GB': 1024 * 1024 * 1024,      // 1GB
+    '2GB': 2 * 1024 * 1024 * 1024,   // 2GB
+    '3GB': 3 * 1024 * 1024 * 1024,   // 3GB
+    '无限制': 0,                     // 无限制
+  };
+  
   // 缓存键前缀
   static const String _cacheKeyPrefix = CACHE_KEY_PREFIX;
 
@@ -39,6 +50,9 @@ class SubsonicApiBase {
   static Future<void> initializeCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      
+      // 加载缓存大小限制
+      _loadCacheSizeLimit(prefs);
       
       // 加载缓存数据
       cachedPlaylists = _loadCacheData(prefs, 'playlists');
@@ -50,9 +64,189 @@ class SubsonicApiBase {
       // 加载缓存时间戳
       _loadCacheTimestamps(prefs);
       
+      // 检查缓存大小是否超出限制
+      await _checkCacheSizeLimit();
+      
       print('✅ 持久化缓存初始化完成');
     } catch (e) {
       print('初始化持久化缓存失败: $e');
+    }
+  }
+  
+  // 加载缓存大小限制
+  static void _loadCacheSizeLimit(SharedPreferences prefs) {
+    try {
+      _cacheSizeLimit = prefs.getInt('${_cacheKeyPrefix}size_limit') ?? 0;
+      print('✅ 加载缓存大小限制: ${_cacheSizeLimit == 0 ? '无限制' : '${(_cacheSizeLimit / (1024 * 1024 * 1024)).toStringAsFixed(1)}GB'}');
+    } catch (e) {
+      print('加载缓存大小限制失败: $e');
+      _cacheSizeLimit = 0;
+    }
+  }
+  
+  // 保存缓存大小限制
+  static Future<void> saveCacheSizeLimit(int limit) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('${_cacheKeyPrefix}size_limit', limit);
+      _cacheSizeLimit = limit;
+      print('✅ 保存缓存大小限制: ${limit == 0 ? '无限制' : '${(limit / (1024 * 1024 * 1024)).toStringAsFixed(1)}GB'}');
+      
+      // 检查缓存大小是否超出限制
+      await _checkCacheSizeLimit();
+    } catch (e) {
+      print('保存缓存大小限制失败: $e');
+    }
+  }
+  
+  // 获取当前缓存大小限制
+  static int getCacheSizeLimit() {
+    return _cacheSizeLimit;
+  }
+  
+  // 计算当前缓存大小（字节）
+  static Future<int> calculateCurrentCacheSize() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      int totalSize = 0;
+      
+      // 计算持久化缓存大小
+      final keys = prefs.getKeys();
+      for (final key in keys) {
+        if (key.startsWith(_cacheKeyPrefix)) {
+          try {
+            // 特殊处理缓存大小限制键和时间戳键
+            if (key == '${_cacheKeyPrefix}size_limit' || key.endsWith('_timestamp')) {
+              continue;
+            }
+
+            // 尝试获取不同类型的值
+            final stringValue = prefs.getString(key);
+            if (stringValue != null) {
+              totalSize += stringValue.length;
+              continue;
+            }
+
+            final intValue = prefs.getInt(key);
+            if (intValue != null) {
+              totalSize += intValue.toString().length;
+              continue;
+            }
+
+            final doubleValue = prefs.getDouble(key);
+            if (doubleValue != null) {
+              totalSize += doubleValue.toString().length;
+              continue;
+            }
+
+            final boolValue = prefs.getBool(key);
+            if (boolValue != null) {
+              totalSize += boolValue.toString().length;
+              continue;
+            }
+
+            final stringListValue = prefs.getStringList(key);
+            if (stringListValue != null) {
+              totalSize += stringListValue.toString().length;
+              continue;
+            }
+          } catch (e) {
+            // 忽略单个键的错误，继续处理其他键
+            print('处理缓存键 $key 时出错: $e');
+          }
+        }
+      }
+      
+      // 计算内存缓存大小（近似值）
+      if (cachedPlaylists != null) totalSize += cachedPlaylists!.length * 1000;
+      if (cachedArtists != null) totalSize += cachedArtists!.length * 1000;
+      if (cachedAlbums != null) totalSize += cachedAlbums!.length * 1000;
+      if (cachedMusicFolders != null) totalSize += cachedMusicFolders!.length * 500;
+      if (cachedGenres != null) totalSize += cachedGenres!.length * 500;
+      totalSize += cachedAlbumSongs.length * 1000;
+      totalSize += cachedArtistSongs.length * 1000;
+      totalSize += cachedPlaylistSongs.length * 1000;
+      
+      // 打印缓存大小，包括详细信息
+      print('✅ 当前缓存大小: ${(totalSize / (1024 * 1024)).toStringAsFixed(2)}MB');
+      print('   内存缓存:');
+      print('     - 歌单: ${cachedPlaylists?.length ?? 0} 个');
+      print('     - 艺术家: ${cachedArtists?.length ?? 0} 个');
+      print('     - 专辑: ${cachedAlbums?.length ?? 0} 个');
+      print('     - 音乐文件夹: ${cachedMusicFolders?.length ?? 0} 个');
+      print('     - 流派: ${cachedGenres?.length ?? 0} 个');
+      print('     - 专辑歌曲: ${cachedAlbumSongs.length} 个专辑');
+      print('     - 艺术家歌曲: ${cachedArtistSongs.length} 个艺术家');
+      print('     - 歌单歌曲: ${cachedPlaylistSongs.length} 个歌单');
+      
+      return totalSize;
+    } catch (e) {
+      print('计算缓存大小失败: $e');
+      return 0;
+    }
+  }
+  
+  // 检查缓存大小是否超出限制
+  static Future<void> _checkCacheSizeLimit() async {
+    if (_cacheSizeLimit == 0) return; // 无限制
+    
+    final currentSize = await calculateCurrentCacheSize();
+    if (currentSize > _cacheSizeLimit) {
+      print('⚠️ 缓存大小超出限制，清理部分缓存');
+      // 清理最旧的缓存
+      await _clearOldestCache();
+    }
+  }
+  
+  // 清理最旧的缓存
+  static Future<void> _clearOldestCache() async {
+    try {
+      // 找出最旧的缓存项
+      String? oldestKey;
+      int oldestTimestamp = DateTime.now().millisecondsSinceEpoch;
+      
+      for (final entry in _cacheTimestamps.entries) {
+        if (entry.value < oldestTimestamp) {
+          oldestTimestamp = entry.value;
+          oldestKey = entry.key;
+        }
+      }
+      
+      if (oldestKey != null) {
+        print('🗑️ 清理最旧的缓存: $oldestKey');
+        
+        // 清理内存缓存
+        switch (oldestKey) {
+          case 'playlists':
+            cachedPlaylists = null;
+            cachedPlaylistSongs.clear();
+            break;
+          case 'artists':
+            cachedArtists = null;
+            cachedArtistSongs.clear();
+            break;
+          case 'albums':
+            cachedAlbums = null;
+            cachedAlbumSongs.clear();
+            break;
+          case 'musicFolders':
+            cachedMusicFolders = null;
+            break;
+          case 'genres':
+            cachedGenres = null;
+            break;
+        }
+        
+        // 清理持久化缓存
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('${_cacheKeyPrefix}${oldestKey}_data');
+        await prefs.remove('${_cacheKeyPrefix}${oldestKey}_timestamp');
+        _cacheTimestamps[oldestKey] = 0;
+        
+        print('✅ 已清理最旧的缓存: $oldestKey');
+      }
+    } catch (e) {
+      print('清理最旧缓存失败: $e');
     }
   }
   
@@ -471,4 +665,4 @@ class SubsonicApiBase {
     ).replace(queryParameters: params);
     return uri.toString();
   }
-}
+} 

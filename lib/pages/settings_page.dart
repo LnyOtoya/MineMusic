@@ -204,10 +204,35 @@ class _SettingsPageState extends State<SettingsPage> {
             ListTile(
               leading: const Icon(Icons.storage_rounded),
               title: const Text('清除缓存'),
-              subtitle: const Text('清除所有下载的音频缓存'),
+              subtitle: const Text('清除所有缓存数据'),
               onTap: () {
                 _confirmClearCache();
               },
+            ),
+            ListTile(
+              leading: const Icon(Icons.sd_storage_rounded),
+              title: const Text('缓存大小限制'),
+              subtitle: Text(_getCurrentCacheSizeLimitText()),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                _showCacheSizeLimitDialog();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline_rounded),
+              title: const Text('当前缓存大小'),
+              subtitle: FutureBuilder<int>(
+                future: widget.api.calculateCurrentCacheSize(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    final sizeInMB = snapshot.data! / (1024 * 1024);
+                    return Text('${sizeInMB.toStringAsFixed(2)}MB');
+                  } else {
+                    return const Text('计算中...');
+                  }
+                },
+              ),
+              enabled: false,
             ),
           ]),
           const SizedBox(height: 16),
@@ -265,23 +290,95 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  String _getCurrentCacheSizeLimitText() {
+    final limit = widget.api.getCacheSizeLimit();
+    if (limit == 0) {
+      return '无限制';
+    } else {
+      final limitInGB = limit / (1024 * 1024 * 1024);
+      return '${limitInGB.toStringAsFixed(1)}GB';
+    }
+  }
+
+  void _showCacheSizeLimitDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('缓存大小限制'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: widget.api.getCacheSizeOptions().entries.map((entry) {
+            return RadioListTile<int>(
+              title: Text(entry.key),
+              value: entry.value,
+              groupValue: widget.api.getCacheSizeLimit(),
+              onChanged: (value) async {
+                if (value != null) {
+                  await widget.api.saveCacheSizeLimit(value);
+                  Navigator.pop(context);
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('缓存大小限制已设置为: ${entry.key}')),
+                  );
+                }
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmClearCache() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('清除缓存'),
-        content: const Text('确定要清除所有下载的音频缓存吗？'),
+        content: const Text('确定要清除所有缓存数据吗？这将删除所有已缓存的专辑、艺术家和播放列表数据。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('取消'),
           ),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('缓存清除功能开发中')));
+              
+              // 显示加载对话框
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const AlertDialog(
+                  title: Text('清除缓存'),
+                  content: Row(
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(width: 16),
+                      Text('正在清除缓存...'),
+                    ],
+                  ),
+                ),
+              );
+              
+              // 清除缓存
+              await widget.api.clearAllCache();
+              
+              // 关闭加载对话框
+              Navigator.pop(context);
+              
+              // 显示成功消息
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('缓存已成功清除')),
+              );
+              
+              // 刷新页面以更新当前缓存大小
+              setState(() {});
             },
             child: const Text('确定'),
           ),
