@@ -526,10 +526,63 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     try {
       final title = song['title'] ?? '';
       final artist = song['artist'] ?? '';
+      final songId = song['id'] ?? '';
 
       print('🎵 开始加载歌词: $title - $artist');
       print('📡 使用API: ${lyricsApiType.displayName}');
 
+      // 首先尝试使用OpenSubsonic API获取带时间轴的歌词
+      if (songId.isNotEmpty) {
+        final openSubsonicLyrics = await widget.api.getLyricsBySongId(
+          songId: songId,
+        );
+
+        if (openSubsonicLyrics != null && openSubsonicLyrics['structuredLyrics'] != null) {
+          print('✅ 从OpenSubsonic API获取到带时间轴的歌词');
+          
+          // 解析结构化歌词为LRC格式
+          final structuredLyrics = openSubsonicLyrics['structuredLyrics'] as List;
+          if (structuredLyrics.isNotEmpty) {
+            final bestLyrics = structuredLyrics[0];
+            final lines = bestLyrics['line'] as List;
+            
+            // 构建LRC格式歌词
+            String lrcLyrics = '';
+            for (var line in lines) {
+              final start = line['start'] ?? 0;
+              final value = line['value'] ?? '';
+              
+              // 转换毫秒为LRC格式时间 [mm:ss.ms]
+              final totalSeconds = start / 1000;
+              final minutes = (totalSeconds / 60).floor();
+              final seconds = (totalSeconds % 60).floor();
+              final milliseconds = ((totalSeconds % 1) * 100).floor();
+              
+              lrcLyrics += '[${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}.${milliseconds.toString().padLeft(2, '0')}]$value\n';
+            }
+
+            final isQrc = LrcToQrcConverter.isQrcFormat(lrcLyrics);
+            final qrcLyrics = isQrc
+                ? lrcLyrics
+                : LrcToQrcConverter.convertLrcToQrc(lrcLyrics);
+
+            if (isQrc) {
+              print('✅ 检测到QRC格式，使用原始歌词（支持逐字高亮）');
+            } else {
+              print('🔄 已转换为QRC格式，支持逐字高亮');
+            }
+
+            setState(() {
+              _lrcLyrics = qrcLyrics;
+              _lyricController.loadLyric(qrcLyrics);
+            });
+            return;
+          }
+        }
+        print('⚠️ OpenSubsonic API未找到歌词');
+      }
+
+      // 如果OpenSubsonic API失败，尝试使用其他API
       if (lyricsApiType == LyricsApiType.subsonic) {
         final lyricData = await widget.api.getLyrics(
           artist: artist,

@@ -6,7 +6,7 @@ extension LyricsApiTypeExtension on LyricsApiType {
       case LyricsApiType.disabled:
         return '关闭歌词';
       case LyricsApiType.subsonic:
-        return 'Subsonic/Navidrome';
+        return 'OpenSubsonic API';
       case LyricsApiType.customApi:
         return '自建API';
     }

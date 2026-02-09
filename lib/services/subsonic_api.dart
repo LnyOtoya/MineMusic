@@ -1061,7 +1061,7 @@ class SubsonicApi {
     }
   }
 
-  // 获取歌曲歌词
+  // 获取歌曲歌词（Subsonic API，纯文本）
   Future<Map<String, dynamic>?> getLyrics({
     required String artist,
     required String title,
@@ -1108,6 +1108,88 @@ class SubsonicApi {
     } catch (e) {
       print('获取歌词出错: $e');
       return null;
+    }
+  }
+
+  // 获取歌曲歌词（OpenSubsonic API，带时间轴）
+  Future<Map<String, dynamic>?> getLyricsBySongId({
+    required String songId,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/getLyricsBySongId');
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MineMusic',
+        'f': 'json',
+        'id': songId, // 歌曲ID
+      };
+      final urlWithParams = url.replace(queryParameters: params);
+      print('📜 请求带时间轴歌词 URL: $urlWithParams');
+
+      final response = await http.get(urlWithParams);
+      print('📡 歌词响应状态: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final data = json.decode(responseBody);
+        print('📄 歌词响应数据: ${json.encode(data)}');
+
+        // 解析歌词列表
+        final lyricsList = data['subsonic-response']?['lyricsList'];
+        if (lyricsList != null) {
+          final structuredLyrics = lyricsList['structuredLyrics'];
+          if (structuredLyrics is List && structuredLyrics.isNotEmpty) {
+            // 返回第一个歌词（通常是最佳匹配）
+            return {
+              'structuredLyrics': structuredLyrics,
+              'openSubsonic': true,
+            };
+          }
+        }
+        return null; // 未找到歌词
+      } else {
+        throw Exception('获取带时间轴歌词失败: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('获取带时间轴歌词出错: $e');
+      return null;
+    }
+  }
+
+  // 检查服务器是否支持OpenSubsonic API
+  Future<bool> checkOpenSubsonicSupport() async {
+    try {
+      final url = Uri.parse('$baseUrl/rest/getOpenSubsonicExtensions');
+      final params = {
+        'u': username,
+        'p': password,
+        'v': '1.16.0',
+        'c': 'MineMusic',
+        'f': 'json',
+      };
+      final urlWithParams = url.replace(queryParameters: params);
+      print('📜 检查OpenSubsonic支持 URL: $urlWithParams');
+
+      final response = await http.get(urlWithParams);
+      print('📡 响应状态: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final data = json.decode(responseBody);
+        print('📄 响应数据: ${json.encode(data)}');
+
+        // 检查是否有songLyrics扩展
+        final extensions = data['subsonic-response']?['openSubsonicExtensions']?['extensions'];
+        if (extensions is List) {
+          return extensions.contains('songLyrics');
+        }
+      }
+      return false;
+    } catch (e) {
+      print('检查OpenSubsonic支持出错: $e');
+      return false;
     }
   }
 

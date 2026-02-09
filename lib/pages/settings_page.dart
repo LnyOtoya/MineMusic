@@ -27,6 +27,7 @@ class _SettingsPageState extends State<SettingsPage> {
   ThemeMode _currentThemeMode = ThemeMode.system;
   LyricsApiType _currentLyricsApiType = LyricsApiType.disabled;
   bool _lyricsEnabled = false;
+  bool _isLyricsExpanded = false;
 
   @override
   void initState() {
@@ -43,6 +44,7 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       _currentLyricsApiType = PlayerService.lyricsApiTypeNotifier.value;
       _lyricsEnabled = PlayerService.lyricsEnabledNotifier.value;
+      _isLyricsExpanded = _lyricsEnabled;
     });
   }
 
@@ -82,11 +84,22 @@ class _SettingsPageState extends State<SettingsPage> {
     final savedLyricsEnabled = prefs.getBool('lyricsEnabled') ?? false;
     setState(() {
       _lyricsEnabled = savedLyricsEnabled;
+      _isLyricsExpanded = savedLyricsEnabled;
     });
   }
 
   Future<void> _saveLyricsEnabled(bool enabled) async {
     await PlayerService.setLyricsEnabled(enabled);
+    if (!enabled) {
+      await PlayerService.setLyricsApiType(LyricsApiType.disabled);
+    }
+  }
+
+  Future<void> _saveLyricsApiType(LyricsApiType type) async {
+    await PlayerService.setLyricsApiType(type);
+    if (type != LyricsApiType.disabled) {
+      await PlayerService.setLyricsEnabled(true);
+    }
   }
 
   @override
@@ -139,33 +152,51 @@ class _SettingsPageState extends State<SettingsPage> {
                 _showThemeModeDialog();
               },
             ),
-            SwitchListTile(
-              secondary: const Icon(Icons.lyrics_rounded),
-              title: const Text('启用歌词'),
-              subtitle: Text(_lyricsEnabled ? '已启用' : '已禁用'),
-              value: _lyricsEnabled,
-              onChanged: (value) async {
-                await _saveLyricsEnabled(value);
-                if (!value) {
-                  await PlayerService.setLyricsApiType(LyricsApiType.disabled);
-                } else if (_currentLyricsApiType == LyricsApiType.disabled) {
-                  await PlayerService.setLyricsApiType(LyricsApiType.customApi);
-                }
+            ExpansionTile(
+              leading: const Icon(Icons.lyrics_rounded),
+              title: const Text('歌词设置'),
+              subtitle: Text(_lyricsEnabled ? '已启用 - ${_currentLyricsApiType.displayName}' : '已禁用'),
+              initiallyExpanded: _isLyricsExpanded,
+              onExpansionChanged: (expanded) {
+                setState(() {
+                  _isLyricsExpanded = expanded;
+                });
               },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_rounded),
-              title: const Text('歌词API'),
-              subtitle: Text(_currentLyricsApiType.displayName),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CustomApiConfigPage(),
+              children: [
+                SwitchListTile(
+                  title: const Text('启用歌词'),
+                  value: _lyricsEnabled,
+                  onChanged: (value) async {
+                    await _saveLyricsEnabled(value);
+                    setState(() {
+                      _isLyricsExpanded = value;
+                    });
+                  },
+                ),
+                if (_lyricsEnabled) ...[
+                  const Divider(),
+                  ListTile(
+                    title: const Text('歌词API'),
+                    subtitle: Text(_currentLyricsApiType.displayName),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () {
+                      _showLyricsApiDialog();
+                    },
                   ),
-                );
-              },
+                  ListTile(
+                    title: const Text('自定义API配置'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CustomApiConfigPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ],
             ),
           ]),
           const SizedBox(height: 16),
@@ -342,6 +373,50 @@ class _SettingsPageState extends State<SettingsPage> {
                   setState(() {
                     _currentThemeMode = value;
                   });
+                  Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLyricsApiDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('选择歌词API'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<LyricsApiType>(
+              title: const Text('OpenSubsonic API'),
+              subtitle: const Text('使用服务器返回的带时间轴歌词'),
+              value: LyricsApiType.subsonic,
+              groupValue: _currentLyricsApiType,
+              onChanged: (value) {
+                if (value != null) {
+                  _saveLyricsApiType(value);
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            RadioListTile<LyricsApiType>(
+              title: const Text('自定义API'),
+              subtitle: const Text('使用自建的歌词API'),
+              value: LyricsApiType.customApi,
+              groupValue: _currentLyricsApiType,
+              onChanged: (value) {
+                if (value != null) {
+                  _saveLyricsApiType(value);
                   Navigator.pop(context);
                 }
               },
