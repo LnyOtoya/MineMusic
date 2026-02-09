@@ -39,7 +39,7 @@ class _DesktopPlayerBarState extends State<DesktopPlayerBar> {
       setState(() {
         final position = widget.playerService.currentPosition;
         final duration = widget.playerService.totalDuration;
-        if (duration != null && duration.inMilliseconds > 0) {
+        if (duration.inMilliseconds > 0) {
           _currentSliderValue =
               position.inMilliseconds / duration.inMilliseconds;
         }
@@ -83,7 +83,7 @@ class _DesktopPlayerBarState extends State<DesktopPlayerBar> {
     final currentPosition = widget.playerService.currentPosition;
     final totalDuration = widget.playerService.totalDuration;
 
-    return Container(
+    return SizedBox(
       height: 4,
       child: SliderTheme(
         data: SliderTheme.of(context).copyWith(
@@ -108,13 +108,11 @@ class _DesktopPlayerBarState extends State<DesktopPlayerBar> {
               _isDragging = false;
             });
             final duration = widget.playerService.totalDuration;
-            if (duration != null) {
-              final position = Duration(
-                milliseconds: (duration.inMilliseconds * value).toInt(),
-              );
-              widget.playerService.seekTo(position);
-            }
-          },
+            final position = Duration(
+              milliseconds: (duration.inMilliseconds * value).toInt(),
+            );
+            widget.playerService.seekTo(position);
+                    },
         ),
       ),
     );

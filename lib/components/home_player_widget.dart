@@ -57,7 +57,7 @@ class HomePlayerWidget extends StatelessWidget {
                             placeholder: (context, url) => Container(
                               color: Theme.of(
                                 context,
-                              ).colorScheme.surfaceVariant,
+                              ).colorScheme.surfaceContainerHighest,
                               child: Center(
                                 child: Icon(
                                   Icons.music_note_outlined,
@@ -71,7 +71,7 @@ class HomePlayerWidget extends StatelessWidget {
                             errorWidget: (context, url, error) => Container(
                               color: Theme.of(
                                 context,
-                              ).colorScheme.surfaceVariant,
+                              ).colorScheme.surfaceContainerHighest,
                               child: Center(
                                 child: Icon(
                                   Icons.music_note_outlined,
@@ -84,7 +84,7 @@ class HomePlayerWidget extends StatelessWidget {
                             ),
                           )
                         : Container(
-                            color: Theme.of(context).colorScheme.surfaceVariant,
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             child: Center(
                               child: Icon(
                                 Icons.music_note_outlined,

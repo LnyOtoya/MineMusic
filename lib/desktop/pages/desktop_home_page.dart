@@ -5,10 +5,7 @@ import '../../services/player_service.dart';
 import '../../pages/random_songs_page.dart';
 import '../../pages/newest_albums_page.dart';
 import '../../pages/similar_songs_page.dart';
-import '../../pages/player_page.dart';
 import '../../pages/detail_page.dart';
-import '../../components/home_player_widget.dart';
-import 'desktop_search_page.dart';
 
 class DesktopHomePage extends StatefulWidget {
   final SubsonicApi api;

@@ -59,7 +59,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   final PageController _pageController = PageController(initialPage: 0);
   int _currentPage = 0;
   String? _currentSongId;
-  Map<String, String?> _artistAvatarCache = {}; // 缓存歌手头像URL
+
   ColorScheme? _coverColorScheme; // 提取的封面颜色方案
   ColorScheme? _targetCoverColorScheme; // 目标封面颜色方案
   bool _isExtractingColors = false; // 颜色提取加载状态
@@ -694,9 +694,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
         final artistName = currentSong['artist'] as String?;
         final songTitle = currentSong['title'] as String?;
         if (artistName != null &&
-            artistName != '未知艺术家' &&
-            !_artistAvatarCache.containsKey(artistName)) {
-          _preloadArtistAvatar(artistName, songTitle);
+            artistName != '未知艺术家') {
+
         }
       }
     }
@@ -779,19 +778,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     String artistName,
     String? songTitle,
   ) async {
-    try {
-      print('🔄 开始预加载歌手头像: $artistName');
-      final avatarUrl = await widget.api.getArtistAvatar(
-        artistName,
-        songTitle: songTitle,
-      );
-      setState(() {
-        _artistAvatarCache[artistName] = avatarUrl;
-      });
-      print('✅ 预加载歌手头像完成: $artistName - $avatarUrl');
-    } catch (e) {
-      print('❌ 预加载歌手头像失败: $e');
-    }
+    // 已移除头像预加载逻辑
   }
 
   // 使用全局颜色方案
@@ -1871,12 +1858,6 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                               song['artist'] != '未知艺术家' &&
                               song['artistId'] != null) {
                             final artistName = song['artist'] as String;
-                            final avatarUrl = _artistAvatarCache[artistName];
-                            // 打印日志，确认是否正确获取了缓存的头像URL
-                            print('🔍 点击歌手名称:');
-                            print('   - artist name: $artistName');
-                            print('   - avatarUrl: $avatarUrl');
-                            print('   - 缓存内容: $_artistAvatarCache');
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -1887,7 +1868,6 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                                   },
                                   api: widget.api,
                                   playerService: widget.playerService,
-                                  avatarUrl: avatarUrl,
                                 ),
                               ),
                             );

@@ -92,10 +92,10 @@ class ColorManagerService {
       );
 
       if (lightColorSchemeJson != null) {
-        _lightColorScheme = _jsonToColorScheme(lightColorSchemeJson!);
+        _lightColorScheme = _jsonToColorScheme(lightColorSchemeJson);
       }
       if (darkColorSchemeJson != null) {
-        _darkColorScheme = _jsonToColorScheme(darkColorSchemeJson!);
+        _darkColorScheme = _jsonToColorScheme(darkColorSchemeJson);
       }
     } catch (e) {
       print('恢复颜色方案失败: $e');
@@ -121,11 +121,11 @@ class ColorManagerService {
       'onError': colorScheme.onError.value,
       'errorContainer': colorScheme.errorContainer.value,
       'onErrorContainer': colorScheme.onErrorContainer.value,
-      'background': colorScheme.background.value,
-      'onBackground': colorScheme.onBackground.value,
+      'background': colorScheme.surface.value,
+      'onBackground': colorScheme.onSurface.value,
       'surface': colorScheme.surface.value,
       'onSurface': colorScheme.onSurface.value,
-      'surfaceVariant': colorScheme.surfaceVariant.value,
+      'surfaceVariant': colorScheme.surfaceContainerHighest.value,
       'onSurfaceVariant': colorScheme.onSurfaceVariant.value,
       'outline': colorScheme.outline.value,
       'outlineVariant': colorScheme.outlineVariant.value,
@@ -161,11 +161,9 @@ class ColorManagerService {
       onError: Color(colorMap['onError'] as int),
       errorContainer: Color(colorMap['errorContainer'] as int),
       onErrorContainer: Color(colorMap['onErrorContainer'] as int),
-      background: Color(colorMap['background'] as int),
-      onBackground: Color(colorMap['onBackground'] as int),
       surface: Color(colorMap['surface'] as int),
       onSurface: Color(colorMap['onSurface'] as int),
-      surfaceVariant: Color(colorMap['surfaceVariant'] as int),
+      surfaceContainerHighest: Color(colorMap['surfaceVariant'] as int),
       onSurfaceVariant: Color(colorMap['onSurfaceVariant'] as int),
       outline: Color(colorMap['outline'] as int),
       outlineVariant: Color(colorMap['outlineVariant'] as int),
@@ -196,7 +194,7 @@ class ColorManagerService {
     return original.copyWith(
       surface: tonalSurface,
       // 确保其他颜色也符合 Material 3 规范
-      surfaceVariant: original.surfaceVariant,
+      surfaceContainerHighest: original.surfaceContainerHighest,
     );
   }
 

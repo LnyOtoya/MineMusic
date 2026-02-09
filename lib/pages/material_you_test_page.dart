@@ -54,16 +54,16 @@ class MaterialYouTestPage extends StatelessWidget {
           _buildColorTestSection(context, '表面色调', [
             _ColorInfo('surface', colorScheme.surface, colorScheme.onSurface),
             _ColorInfo('onSurface', colorScheme.onSurface, colorScheme.surface),
-            _ColorInfo('surfaceVariant', colorScheme.surfaceVariant, colorScheme.onSurfaceVariant),
-            _ColorInfo('onSurfaceVariant', colorScheme.onSurfaceVariant, colorScheme.surfaceVariant),
+            _ColorInfo('surfaceVariant', colorScheme.surfaceContainerHighest, colorScheme.onSurfaceVariant),
+            _ColorInfo('onSurfaceVariant', colorScheme.onSurfaceVariant, colorScheme.surfaceContainerHighest),
           ]),
           
           const SizedBox(height: 20),
           
           // 背景和错误颜色
           _buildColorTestSection(context, '背景和错误', [
-            _ColorInfo('background', colorScheme.background, colorScheme.onBackground),
-            _ColorInfo('onBackground', colorScheme.onBackground, colorScheme.background),
+            _ColorInfo('background', colorScheme.surface, colorScheme.onSurface),
+            _ColorInfo('onBackground', colorScheme.onSurface, colorScheme.surface),
             _ColorInfo('error', colorScheme.error, colorScheme.onError),
             _ColorInfo('onError', colorScheme.onError, colorScheme.error),
           ]),

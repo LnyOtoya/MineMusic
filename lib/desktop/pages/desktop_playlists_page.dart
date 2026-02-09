@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/subsonic_api.dart';
 import '../../services/player_service.dart';
 import '../../pages/detail_page.dart';

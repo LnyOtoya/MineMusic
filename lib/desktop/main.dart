@@ -1,10 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import '../services/color_manager_service.dart';
-import '../models/lyrics_api_type.dart';
 import '../services/custom_lyrics_api_service.dart';
 import 'pages/desktop_home_page.dart';
 import 'pages/desktop_login_page.dart';
@@ -15,8 +13,6 @@ import '../pages/settings_page.dart';
 import 'components/desktop_sidebar.dart';
 import 'components/desktop_player_bar.dart';
 import 'components/desktop_right_panel.dart';
-import 'package:dynamic_color/dynamic_color.dart';
-import '../utils/tonal_surface_helper.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -322,7 +322,7 @@ class LyricsApi {
         }
 
         final List<dynamic> songs = dataField is List
-            ? dataField as List<dynamic>
+            ? dataField
             : [dataField];
 
         if (songs.isEmpty) {

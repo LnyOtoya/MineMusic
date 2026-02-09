@@ -47,7 +47,7 @@ void main() async {
 
         print("转换成功！生成文件：${qrcFile.path.split(Platform.pathSeparator).last}\n");
       } catch (e) {
-        print("处理文件 ${yrcFilePath} 失败：$e\n");
+        print("处理文件 $yrcFilePath 失败：$e\n");
         continue;
       }
     }

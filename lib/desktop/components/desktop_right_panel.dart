@@ -334,7 +334,7 @@ class DesktopRightPanel extends StatelessWidget {
             ),
           ],
         ),
-        content: Container(
+        content: SizedBox(
           width: 480,
           height: 560,
           child: playlist.isEmpty

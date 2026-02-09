@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
-import '../models/lyrics_api_type.dart';
 import '../components/home_player_widget.dart';
 import 'random_songs_page.dart';
 import 'newest_albums_page.dart';

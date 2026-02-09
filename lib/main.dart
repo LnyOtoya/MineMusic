@@ -4,16 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'services/subsonic_api.dart';
 import 'services/player_service.dart';
 import 'services/color_manager_service.dart';
-import 'models/lyrics_api_type.dart';
 import 'services/custom_lyrics_api_service.dart';
 import 'components/mini_player.dart';
 import 'pages/home_page.dart';
 import 'pages/login_page.dart';
 import 'pages/songs_page.dart';
 import 'pages/playlists_page.dart';
-import 'package:dynamic_color/dynamic_color.dart';
-import 'models/lyrics_api_type.dart';
-import 'utils/tonal_surface_helper.dart';
 import 'desktop/main.dart' as desktop;
 
 Future<void> main() async {

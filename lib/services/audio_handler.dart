@@ -10,7 +10,7 @@ class MyAudioHandler extends BaseAudioHandler {
   // 播放状态相关
   List<MediaItem> _mediaItems = [];
   int _currentIndex = -1;
-  ConcatenatingAudioSource _playlist = ConcatenatingAudioSource(children: []);
+  final ConcatenatingAudioSource _playlist = ConcatenatingAudioSource(children: []);
   String? _currentSongId; // 添加当前歌曲ID跟踪
   bool _isScrobbled = false; // 是否已提交 scrobble
   DateTime? _playStartTime; // 播放开始时间
@@ -130,8 +130,7 @@ class MyAudioHandler extends BaseAudioHandler {
   // 检查是否已经加载了指定歌曲
   bool isSongLoaded(String songId) {
     return _currentSongId == songId &&
-        _player.playerState != null &&
-        _player.playerState!.processingState != ProcessingState.idle;
+        _player.playerState.processingState != ProcessingState.idle;
   }
 
   // 将歌曲信息转换为 MediaItem
@@ -206,9 +205,9 @@ class MyAudioHandler extends BaseAudioHandler {
 
   // 更新播放序列状态
   void _updateSequenceState(SequenceState? sequenceState) {
-    if (sequenceState == null || sequenceState.currentIndex == null) return;
+    if (sequenceState == null) return;
 
-    _currentIndex = sequenceState.currentIndex!;
+    _currentIndex = sequenceState.currentIndex;
     final source = sequenceState.currentSource;
     if (source != null && source.tag != null) {
       final currentMediaItem = source.tag as MediaItem;

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
-import '../models/lyrics_api_type.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../pages/player_page.dart';
 
