@@ -47,6 +47,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   bool _isPlaying = false;
   bool _wasPlaying = false;
   bool _isInitialized = false;
+  bool _isDraggingProgressBar = false;
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
@@ -772,8 +773,8 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
       _totalDuration = newTotalDuration;
     });
 
-    // 更新波浪进度条
-    if (_totalDuration.inMilliseconds > 0) {
+    // 更新波浪进度条（拖动时跳过，避免干扰）
+    if (_totalDuration.inMilliseconds > 0 && !_isDraggingProgressBar) {
       final double progress =
           _currentPosition.inMilliseconds / _totalDuration.inMilliseconds;
       _waveController.setProgress(progress);
@@ -1921,6 +1922,16 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                         Duration(milliseconds: newValue.toInt()),
                       );
                     },
+                    onDragStart: () {
+                      setState(() {
+                        _isDraggingProgressBar = true;
+                      });
+                    },
+                    onDragEnd: () {
+                      setState(() {
+                        _isDraggingProgressBar = false;
+                      });
+                    },
                     transitionAnimation: _transitionAnimation,
                   ),
                   Padding(
@@ -2083,13 +2094,15 @@ class WaveLinearProgressController extends ChangeNotifier {
   }
 }
 
-class WaveLinearProgressIndicator extends StatelessWidget {
+class WaveLinearProgressIndicator extends StatefulWidget {
   const WaveLinearProgressIndicator({
     super.key,
     required this.controller,
     required this.primaryColor,
     required this.surfaceVariantColor,
     required this.onTap,
+    this.onDragStart,
+    this.onDragEnd,
     this.transitionAnimation,
   });
 
@@ -2097,25 +2110,87 @@ class WaveLinearProgressIndicator extends StatelessWidget {
   final Color primaryColor;
   final Color surfaceVariantColor;
   final Function(double) onTap;
+  final VoidCallback? onDragStart;
+  final VoidCallback? onDragEnd;
   final Animation<double>? transitionAnimation;
+
+  @override
+  State<WaveLinearProgressIndicator> createState() => _WaveLinearProgressIndicatorState();
+}
+
+class _WaveLinearProgressIndicatorState extends State<WaveLinearProgressIndicator> {
+  bool _isDragging = false;
+  double _cachedProgress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _cachedProgress = widget.controller.progress;
+  }
+
+  void _updateProgress(Offset localPosition) {
+    final box = context.findRenderObject() as RenderBox;
+    final double width = box.size.width;
+    double progress = localPosition.dx / width;
+    
+    // 确保进度值在 0-1 范围内
+    progress = progress.clamp(0.0, 1.0);
+    
+    setState(() {
+      widget.controller.setProgress(progress);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (TapDownDetails details) {
+      onPanStart: (DragStartDetails details) {
+        _isDragging = true;
+        widget.onDragStart?.call();
         final box = context.findRenderObject() as RenderBox;
-        final position = box.globalToLocal(details.globalPosition);
+        final localPosition = box.globalToLocal(details.globalPosition);
+        _updateProgress(localPosition);
+      },
+      onPanUpdate: (DragUpdateDetails details) {
+        if (_isDragging) {
+          final box = context.findRenderObject() as RenderBox;
+          final localPosition = box.globalToLocal(details.globalPosition);
+          _updateProgress(localPosition);
+        }
+      },
+      onPanEnd: (DragEndDetails details) {
+        if (_isDragging) {
+          _isDragging = false;
+          widget.onTap(widget.controller.progress);
+          widget.onDragEnd?.call();
+          _cachedProgress = widget.controller.progress;
+        }
+      },
+      onPanCancel: () {
+        if (_isDragging) {
+          _isDragging = false;
+          widget.onDragEnd?.call();
+          setState(() {
+            widget.controller.setProgress(_cachedProgress);
+          });
+        }
+      },
+      onTapDown: (TapDownDetails details) {
+        // 处理点击事件
+        final box = context.findRenderObject() as RenderBox;
+        final localPosition = box.globalToLocal(details.globalPosition);
         final double width = box.size.width;
-        final double progress = position.dx / width;
-        onTap(progress);
+        double progress = localPosition.dx / width;
+        progress = progress.clamp(0.0, 1.0);
+        widget.onTap(progress);
       },
       child: CustomPaint(
         size: Size(double.infinity, 40),
         painter: WaveLinearPainter(
-          controller: controller,
-          primaryColor: primaryColor,
-          surfaceVariantColor: surfaceVariantColor,
-          transitionAnimation: transitionAnimation,
+          controller: widget.controller,
+          primaryColor: widget.primaryColor,
+          surfaceVariantColor: widget.surfaceVariantColor,
+          transitionAnimation: widget.transitionAnimation,
         ),
       ),
     );
