@@ -45,11 +45,12 @@ class MusicPlayerWidget : AppWidgetProvider() {
         )
         views.setOnClickPendingIntent(R.id.iv_album_art, openAppPendingIntent)
 
-        // 加载播放状态（当前歌曲、艺术家、封面）
+        // 加载播放状态（当前歌曲、艺术家、封面、播放状态）
         val sp = context.getSharedPreferences("play_state", Context.MODE_PRIVATE)
         val songTitle = sp.getString("current_song_title", "暂无播放歌曲") ?: ""
         val artist = sp.getString("current_artist", "未知艺术家") ?: ""
         val coverId = sp.getString("current_cover_id", "") ?: "" // Subsonic的coverArt ID
+        val isPlaying = sp.getBoolean("is_playing", false)
 
         // 设置歌曲信息
         views.setTextViewText(R.id.tv_song_title, songTitle)
@@ -57,6 +58,13 @@ class MusicPlayerWidget : AppWidgetProvider() {
 
         // 加载封面图片
         CoverLoader(context, appWidgetId, views).loadCover(coverId)
+
+        // 根据播放状态设置图标
+        if (isPlaying) {
+            views.setImageViewResource(R.id.btn_play_pause, R.drawable.ic_pause)
+        } else {
+            views.setImageViewResource(R.id.btn_play_pause, R.drawable.ic_play_arrow)
+        }
 
         // 绑定播放/暂停按钮的点击事件
         val playPauseIntent = Intent(context, MusicWidgetReceiver::class.java).apply {
@@ -70,25 +78,13 @@ class MusicPlayerWidget : AppWidgetProvider() {
         )
         views.setOnClickPendingIntent(R.id.btn_play_pause, playPausePendingIntent)
 
-        // 绑定上一曲按钮的点击事件
-        val previousIntent = Intent(context, MusicWidgetReceiver::class.java).apply {
-            action = ACTION_PREVIOUS
-        }
-        val previousPendingIntent = PendingIntent.getBroadcast(
-            context,
-            2,
-            previousIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        views.setOnClickPendingIntent(R.id.btn_prev, previousPendingIntent)
-
         // 绑定下一曲按钮的点击事件
         val nextIntent = Intent(context, MusicWidgetReceiver::class.java).apply {
             action = ACTION_NEXT
         }
         val nextPendingIntent = PendingIntent.getBroadcast(
             context,
-            3,
+            2,
             nextIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
