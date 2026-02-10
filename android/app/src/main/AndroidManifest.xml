@@ -56,6 +56,29 @@
             </intent-filter>
         </receiver>
 
+        <!-- 声明 AppWidgetProvider -->
+        <receiver
+            android:name="com.example.minemusic.MusicPlayerWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_music_player_info" />
+        </receiver>
+
+        <!-- 声明 BroadcastReceiver -->
+        <receiver
+            android:name="com.example.minemusic.MusicWidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.minemusic.ACTION_PLAY_PAUSE" />
+                <action android:name="com.example.minemusic.ACTION_PREVIOUS" />
+                <action android:name="com.example.minemusic.ACTION_NEXT" />
+            </intent-filter>
+        </receiver>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
