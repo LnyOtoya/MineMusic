@@ -1,4 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#ffffff</color>
+    <!-- Material Design Colors -->
+    
+    <!-- White -->
+    <color name="md_white_1000">#FFFFFF</color>
+    
+    <!-- Black -->
+    <color name="md_black_1000">#000000</color>
+    
+    <!-- Grey -->
+    <color name="md_grey_200">#EEEEEE</color>
+    <color name="md_grey_400">#BDBDBD</color>
+    <color name="md_grey_500">#9E9E9E</color>
+    <color name="md_grey_600">#757575</color>
+    <color name="md_grey_700">#616161</color>
+    <color name="md_grey_800">#424242</color>
+    
+    <!-- Red -->
+    <color name="md_red_400">#EF5350</color>
+    <color name="md_red_500">#F44336</color>
+    
+    <!-- Blue -->
+    <color name="md_blue_500">#2196F3</color>
+    
+    <!-- Green -->
+    <color name="md_green_500">#4CAF50</color>
+    
+    <!-- Indigo -->
+    <color name="md_indigo_A400">#3D5AFE</color>
+    
+    <!-- Surface Colors -->
+    <color name="lighterColorSurface">#dddddd</color>
+    <color name="darkerColorSurface">#353535</color>
+    <color name="blackColorSurface">#000000</color>
+    
+    <!-- Widget Colors -->
+    <color name="widget_md3_bg_color">@color/lighterColorSurface</color>
+    <color name="widget_circle_button_color">@color/md_indigo_A400</color>
+    <color name="widget_md3_button_bg_color">@color/lighterColorSurface</color>
 </resources>

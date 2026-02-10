@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- MD3 Widget Name -->
+    <string name="app_widget_md3_name">MD3</string>
+    <!-- Circle Widget Name -->
+    <string name="app_widget_circle_name">唱盘</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- MD3 Widget Dimensions -->
+    <dimen name="app_widget_md3_height">90dp</dimen>
+    <dimen name="app_widget_md3_image_size">70dp</dimen>
+
+    <!-- Card radius used in MD3 widget -->
+    <dimen name="app_widget_card_radius">8dp</dimen>
+</resources>

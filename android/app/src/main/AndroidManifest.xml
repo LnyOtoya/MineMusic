@@ -46,6 +46,12 @@
             </intent-filter>
         </service>
 
+        <!-- 音乐小部件服务 -->
+        <service 
+            android:name="com.example.minemusic.service.MusicService"
+            android:exported="true"
+            tools:ignore="Instantiatable" />
+
         <!-- 媒体按钮接收器（支持耳机线控等） -->
         <receiver 
             android:name="com.ryanheise.audioservice.MediaButtonReceiver"
@@ -66,6 +72,32 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_music_player_info" />
+        </receiver>
+
+        <!-- 声明 MD3 AppWidgetProvider -->
+        <receiver
+            android:name="com.example.minemusic.appwidgets.AppWidgetMD3"
+            android:exported="true"
+            android:label="@string/app_widget_md3_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widget_md3_info" />
+        </receiver>
+
+        <!-- 声明 Circle AppWidgetProvider -->
+        <receiver
+            android:name="com.example.minemusic.appwidgets.AppWidgetCircle"
+            android:exported="true"
+            android:label="@string/app_widget_circle_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widget_circle_info" />
         </receiver>
 
         <!-- 声明 BroadcastReceiver -->
