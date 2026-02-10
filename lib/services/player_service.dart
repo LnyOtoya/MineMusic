@@ -7,6 +7,7 @@ import 'play_history_service.dart';
 import 'playback_state_service.dart';
 import 'color_manager_service.dart';
 import '../models/lyrics_api_type.dart';
+import '../utils/native_channel.dart';
 
 class PlayerService extends ChangeNotifier {
   late MyAudioHandler _audioHandler;
@@ -167,6 +168,16 @@ class PlayerService extends ChangeNotifier {
         _playbackStateService.savePlaybackPosition(_currentPosition);
       }
 
+      // 同步播放状态到原生（小部件显示）
+      if (_currentSong != null) {
+        NativeChannel.syncPlayState(
+          songTitle: _currentSong!['title'] ?? '未知歌曲',
+          artist: _currentSong!['artist'] ?? '未知艺术家',
+          coverId: _currentSong!['coverArt'] ?? '',
+          isPlaying: _isPlaying,
+        );
+      }
+
       notifyListeners();
     });
 
@@ -201,6 +212,16 @@ class PlayerService extends ChangeNotifier {
         // 当歌曲切换时，从专辑封面提取颜色方案
         if (_currentSong != null && _api != null) {
           _updateColorSchemeFromCurrentSong();
+        }
+
+        // 同步播放状态到原生（小部件显示）
+        if (_currentSong != null) {
+          NativeChannel.syncPlayState(
+            songTitle: _currentSong!['title'] ?? '未知歌曲',
+            artist: _currentSong!['artist'] ?? '未知艺术家',
+            coverId: _currentSong!['coverArt'] ?? '',
+            isPlaying: _isPlaying,
+          );
         }
 
         // 启动完成后，允许处理所有歌曲变化事件
