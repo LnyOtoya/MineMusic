@@ -61,8 +61,8 @@
     <!-- 左下角圆角正方形播放/暂停按钮 -->
     <ImageButton
         android:id="@+id/btn_play_pause"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="70dp"
+        android:layout_height="70dp"
         android:layout_gravity="bottom|left"
         android:background="@drawable/rounded_square_background"
         android:src="@drawable/ic_play_arrow"
@@ -72,12 +72,12 @@
     <!-- 右上角圆形下一曲按钮 -->
     <ImageButton
         android:id="@+id/btn_next"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:layout_gravity="top|right"
         android:background="@drawable/circle_white_background"
         android:src="@drawable/ic_skip_next"
-        android:tint="@android:color/black"
+        android:tint="@android:color/white"
         android:layout_margin="16dp"/>
 
 </FrameLayout>
