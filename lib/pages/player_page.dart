@@ -2151,24 +2151,25 @@ class _WaveLinearProgressIndicatorState extends State<WaveLinearProgressIndicato
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
+    return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onPointerDown: (PointerDownEvent event) {
+      onPanDown: (DragDownDetails details) {
         _isDragging = true;
         _isHorizontalDrag = false;
+        // 立即禁用页面滚动，防止初始拖动时页面跟随移动
         widget.onDragStart?.call();
         
         final box = context.findRenderObject() as RenderBox;
         if (box != null) {
-          final localPosition = box.globalToLocal(event.position);
+          final localPosition = box.globalToLocal(details.globalPosition);
           _updateProgress(localPosition);
         }
       },
-      onPointerMove: (PointerMoveEvent event) {
+      onPanUpdate: (DragUpdateDetails details) {
         if (_isDragging) {
           // 检测是否为水平拖动
           if (!_isHorizontalDrag) {
-            final delta = event.delta;
+            final delta = details.delta;
             if (delta.dx.abs() > delta.dy.abs()) {
               _isHorizontalDrag = true;
             }
@@ -2178,13 +2179,13 @@ class _WaveLinearProgressIndicatorState extends State<WaveLinearProgressIndicato
           if (_isHorizontalDrag) {
             final box = context.findRenderObject() as RenderBox;
             if (box != null) {
-              final localPosition = box.globalToLocal(event.position);
+              final localPosition = box.globalToLocal(details.globalPosition);
               _updateProgress(localPosition);
             }
           }
         }
       },
-      onPointerUp: (PointerUpEvent event) {
+      onPanEnd: (DragEndDetails details) {
         if (_isDragging) {
           _isDragging = false;
           
@@ -2198,7 +2199,7 @@ class _WaveLinearProgressIndicatorState extends State<WaveLinearProgressIndicato
           _isHorizontalDrag = false;
         }
       },
-      onPointerCancel: (PointerCancelEvent event) {
+      onPanCancel: () {
         if (_isDragging) {
           _isDragging = false;
           widget.onDragEnd?.call();
