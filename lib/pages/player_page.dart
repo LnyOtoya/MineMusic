@@ -48,6 +48,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   bool _wasPlaying = false;
   bool _isInitialized = false;
   bool _isDraggingProgressBar = false;
+  bool _isScrollEnabled = true;
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
@@ -1013,6 +1014,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
           Theme.of(context).colorScheme.surface,
       body: PageView(
         controller: _pageController,
+        physics: _isScrollEnabled ? null : NeverScrollableScrollPhysics(),
         onPageChanged: (index) => setState(() => _currentPage = index),
         children: [
           // 原始播放页面 - 整合原有布局
@@ -1925,11 +1927,13 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                     onDragStart: () {
                       setState(() {
                         _isDraggingProgressBar = true;
+                        _isScrollEnabled = false;
                       });
                     },
                     onDragEnd: () {
                       setState(() {
                         _isDraggingProgressBar = false;
+                        _isScrollEnabled = true;
                       });
                     },
                     transitionAnimation: _transitionAnimation,
@@ -2121,6 +2125,7 @@ class WaveLinearProgressIndicator extends StatefulWidget {
 class _WaveLinearProgressIndicatorState extends State<WaveLinearProgressIndicator> {
   bool _isDragging = false;
   double _cachedProgress = 0;
+  bool _isHorizontalDrag = false;
 
   @override
   void initState() {
@@ -2130,59 +2135,77 @@ class _WaveLinearProgressIndicatorState extends State<WaveLinearProgressIndicato
 
   void _updateProgress(Offset localPosition) {
     final box = context.findRenderObject() as RenderBox;
+    if (box == null) return;
+    
     final double width = box.size.width;
+    if (width <= 0) return;
+    
     double progress = localPosition.dx / width;
     
     // 确保进度值在 0-1 范围内
     progress = progress.clamp(0.0, 1.0);
     
-    setState(() {
-      widget.controller.setProgress(progress);
-    });
+    widget.controller.setProgress(progress);
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onPanStart: (DragStartDetails details) {
+    return Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: (PointerDownEvent event) {
         _isDragging = true;
+        _isHorizontalDrag = false;
         widget.onDragStart?.call();
+        
         final box = context.findRenderObject() as RenderBox;
-        final localPosition = box.globalToLocal(details.globalPosition);
-        _updateProgress(localPosition);
-      },
-      onPanUpdate: (DragUpdateDetails details) {
-        if (_isDragging) {
-          final box = context.findRenderObject() as RenderBox;
-          final localPosition = box.globalToLocal(details.globalPosition);
+        if (box != null) {
+          final localPosition = box.globalToLocal(event.position);
           _updateProgress(localPosition);
         }
       },
-      onPanEnd: (DragEndDetails details) {
+      onPointerMove: (PointerMoveEvent event) {
+        if (_isDragging) {
+          // 检测是否为水平拖动
+          if (!_isHorizontalDrag) {
+            final delta = event.delta;
+            if (delta.dx.abs() > delta.dy.abs()) {
+              _isHorizontalDrag = true;
+            }
+          }
+          
+          // 只处理水平拖动
+          if (_isHorizontalDrag) {
+            final box = context.findRenderObject() as RenderBox;
+            if (box != null) {
+              final localPosition = box.globalToLocal(event.position);
+              _updateProgress(localPosition);
+            }
+          }
+        }
+      },
+      onPointerUp: (PointerUpEvent event) {
         if (_isDragging) {
           _isDragging = false;
-          widget.onTap(widget.controller.progress);
+          
+          // 只有水平拖动才触发进度更新
+          if (_isHorizontalDrag) {
+            widget.onTap(widget.controller.progress);
+          }
+          
           widget.onDragEnd?.call();
           _cachedProgress = widget.controller.progress;
+          _isHorizontalDrag = false;
         }
       },
-      onPanCancel: () {
+      onPointerCancel: (PointerCancelEvent event) {
         if (_isDragging) {
           _isDragging = false;
           widget.onDragEnd?.call();
-          setState(() {
-            widget.controller.setProgress(_cachedProgress);
-          });
+          widget.controller.setProgress(_cachedProgress);
+          setState(() {});
+          _isHorizontalDrag = false;
         }
-      },
-      onTapDown: (TapDownDetails details) {
-        // 处理点击事件
-        final box = context.findRenderObject() as RenderBox;
-        final localPosition = box.globalToLocal(details.globalPosition);
-        final double width = box.size.width;
-        double progress = localPosition.dx / width;
-        progress = progress.clamp(0.0, 1.0);
-        widget.onTap(progress);
       },
       child: CustomPaint(
         size: Size(double.infinity, 40),
