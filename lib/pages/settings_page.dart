@@ -200,41 +200,42 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ]),
           const SizedBox(height: 16),
-          _buildSection('缓存', [
-            ListTile(
-              leading: const Icon(Icons.storage_rounded),
-              title: const Text('清除缓存'),
-              subtitle: const Text('清除所有缓存数据'),
-              onTap: () {
-                _confirmClearCache();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.sd_storage_rounded),
-              title: const Text('缓存大小限制'),
-              subtitle: Text(_getCurrentCacheSizeLimitText()),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {
-                _showCacheSizeLimitDialog();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.info_outline_rounded),
-              title: const Text('当前缓存大小'),
-              subtitle: FutureBuilder<int>(
-                future: widget.api.calculateCurrentCacheSize(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    final sizeInMB = snapshot.data! / (1024 * 1024);
-                    return Text('${sizeInMB.toStringAsFixed(2)}MB');
-                  } else {
-                    return const Text('计算中...');
-                  }
-                },
-              ),
-              enabled: false,
-            ),
-          ]),
+          // 缓存部分已隐藏，因为用户觉得用处不大
+          // _buildSection('缓存', [
+          //   ListTile(
+          //     leading: const Icon(Icons.storage_rounded),
+          //     title: const Text('清除缓存'),
+          //     subtitle: const Text('清除所有缓存数据'),
+          //     onTap: () {
+          //       _confirmClearCache();
+          //     },
+          //   ),
+          //   ListTile(
+          //     leading: const Icon(Icons.sd_storage_rounded),
+          //     title: const Text('缓存大小限制'),
+          //     subtitle: Text(_getCurrentCacheSizeLimitText()),
+          //     trailing: const Icon(Icons.chevron_right_rounded),
+          //     onTap: () {
+          //       _showCacheSizeLimitDialog();
+          //     },
+          //   ),
+          //   ListTile(
+          //     leading: const Icon(Icons.info_outline_rounded),
+          //     title: const Text('当前缓存大小'),
+          //     subtitle: FutureBuilder<int>(
+          //       future: widget.api.calculateCurrentCacheSize(),
+          //       builder: (context, snapshot) {
+          //         if (snapshot.hasData) {
+          //           final sizeInMB = snapshot.data! / (1024 * 1024);
+          //           return Text('${sizeInMB.toStringAsFixed(2)}MB');
+          //         } else {
+          //           return const Text('计算中...');
+          //         }
+          //       },
+          //     ),
+          //     enabled: false,
+          //   ),
+          // ]),
           const SizedBox(height: 16),
           _buildSection('其他', [
             ListTile(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
+import '../services/image_cache_service.dart';
 import '../components/home_player_widget.dart';
 import 'random_songs_page.dart';
 import 'newest_albums_page.dart';
@@ -55,8 +56,46 @@ class _HomePageState extends State<HomePage>
       _recentPlayedFuture = widget.playerService.getRecentSongs(count: 5);
       _currentSongId = widget.playerService.currentSong?['id'];
       widget.playerService.addListener(_onPlayerStateChanged);
+      _preloadImages();
       _isInitialized = true;
     }
+  }
+
+  // 预加载关键图片
+  void _preloadImages() {
+    // 预加载当前播放歌曲的封面
+    if (widget.playerService.currentSong?['coverArt'] != null && context.mounted) {
+      final coverUrl = widget.api.getCoverArtUrl(
+        widget.playerService.currentSong?['coverArt'],
+      );
+      ImageCacheService().precacheSingleImage(coverUrl, context);
+    }
+
+    // 预加载随机专辑的封面
+    _randomAlbumsFuture.then((albums) {
+      if (context.mounted) {
+        final imageUrls = albums
+            .where((album) => album['coverArt'] != null)
+            .map((album) => widget.api.getCoverArtUrl(album['coverArt']))
+            .toList();
+        ImageCacheService().precacheImages(imageUrls, context);
+      }
+    }).catchError((error) {
+      print('预加载专辑封面失败: $error');
+    });
+
+    // 预加载最近播放歌曲的封面
+    _recentPlayedFuture.then((songs) {
+      if (context.mounted) {
+        final imageUrls = songs
+            .where((song) => song['coverArt'] != null)
+            .map((song) => widget.api.getCoverArtUrl(song['coverArt']))
+            .toList();
+        ImageCacheService().precacheImages(imageUrls, context);
+      }
+    }).catchError((error) {
+      print('预加载最近播放歌曲封面失败: $error');
+    });
   }
 
   @override
@@ -522,6 +561,28 @@ class _HomePageState extends State<HomePage>
                 width: 56,
                 height: 56,
                 fit: BoxFit.cover,
+                placeholderFadeInDuration: Duration(milliseconds: 200),
+                fadeInDuration: Duration(milliseconds: 300),
+                placeholder: (context, url) => Container(
+                  width: 56,
+                  height: 56,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.music_note,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    size: 24,
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  width: 56,
+                  height: 56,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.music_note,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    size: 24,
+                  ),
+                ),
               )
             : Container(
                 width: 56,
@@ -530,6 +591,7 @@ class _HomePageState extends State<HomePage>
                 child: Icon(
                   Icons.music_note,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  size: 24,
                 ),
               ),
       ),
@@ -722,6 +784,8 @@ class _HomePageState extends State<HomePage>
         child: CachedNetworkImage(
           imageUrl: widget.api.getCoverArtUrl(album['coverArt']),
           fit: BoxFit.cover,
+          placeholderFadeInDuration: Duration(milliseconds: 200),
+          fadeInDuration: Duration(milliseconds: 300),
           placeholder: (context, url) => Container(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Icon(

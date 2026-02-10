@@ -1,8 +1,17 @@
 import 'dart:ui';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/subsonic_api.dart';
 import 'playback_state_service.dart';
+
+// 颜色提取参数类
+class _ColorExtractParams {
+  final String coverArtUrl;
+  final int brightnessIndex;
+
+  _ColorExtractParams(this.coverArtUrl, this.brightnessIndex);
+}
 
 class ColorManagerService {
   static final ColorManagerService _instance = ColorManagerService._private();
@@ -38,6 +47,67 @@ class ColorManagerService {
            a.brightness == b.brightness;
   }
 
+  // 后台颜色提取函数
+  static Future<ColorScheme> _extractColorSchemeInBackground(
+    _ColorExtractParams params,
+  ) async {
+    try {
+      // 转换亮度索引回Brightness枚举
+      final brightness = Brightness.values[params.brightnessIndex];
+      
+      // 使用 ColorScheme.fromImageProvider 从专辑封面提取颜色
+      final imageProvider = NetworkImage(params.coverArtUrl);
+
+      // 根据亮度模式设置不同的提取参数
+      final colorScheme = await ColorScheme.fromImageProvider(
+        provider: imageProvider,
+        brightness: brightness,
+      );
+
+      // 生成包含 tonal surface 的新颜色方案
+      return _createTonalColorSchemeStatic(colorScheme, brightness);
+    } catch (e) {
+      print('后台颜色提取失败: $e');
+      // 如果提取失败，使用默认颜色方案
+      final brightness = Brightness.values[params.brightnessIndex];
+      return _createDefaultColorSchemeStatic(brightness);
+    }
+  }
+
+  // 静态版本的 createTonalColorScheme
+  static ColorScheme _createTonalColorSchemeStatic(
+    ColorScheme original,
+    Brightness brightness,
+  ) {
+    // 根据亮度模式设置不同的不透明度
+    final double opacity = brightness == Brightness.light ? 0.06 : 0.11;
+
+    // 生成 tonal surface 背景色
+    final Color tonalSurface = Color.alphaBlend(
+      original.primary.withValues(alpha: opacity),
+      original.surface,
+    );
+
+    // 创建新的颜色方案，替换 surface 为 tonal surface
+    return original.copyWith(
+      surface: tonalSurface,
+      // 确保其他颜色也符合 Material 3 规范
+      surfaceContainerHighest: original.surfaceContainerHighest,
+    );
+  }
+
+  // 静态版本的 createDefaultColorScheme
+  static ColorScheme _createDefaultColorSchemeStatic(Brightness brightness) {
+    final seedColor = Colors.blue; // 默认种子颜色
+
+    final defaultScheme = ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: brightness,
+    );
+
+    return _createTonalColorSchemeStatic(defaultScheme, brightness);
+  }
+
   // 从专辑封面提取颜色方案
   Future<ColorScheme> extractColorSchemeFromCover(
     String coverArtId,
@@ -45,14 +115,15 @@ class ColorManagerService {
     Brightness brightness,
   ) async {
     try {
-      // 使用 ColorScheme.fromImageProvider 从专辑封面提取颜色
-      final imageProvider = NetworkImage(coverArtUrl);
-
-      // 根据亮度模式设置不同的提取参数
-      final colorScheme = await ColorScheme.fromImageProvider(
-        provider: imageProvider,
-        brightness: brightness,
-      );
+      // 直接在主线程上异步提取颜色
+      // 使用Future确保不会阻塞UI
+      final colorScheme = await Future(() async {
+        final imageProvider = NetworkImage(coverArtUrl);
+        return await ColorScheme.fromImageProvider(
+          provider: imageProvider,
+          brightness: brightness,
+        );
+      });
 
       // 生成包含 tonal surface 的新颜色方案
       final tonalColorScheme = _createTonalColorScheme(colorScheme, brightness);
@@ -77,6 +148,7 @@ class ColorManagerService {
 
       return tonalColorScheme;
     } catch (e) {
+      print('颜色提取失败: $e');
       // 如果提取失败，使用默认颜色方案
       final defaultColorScheme = _createDefaultColorScheme(brightness);
 
@@ -103,13 +175,16 @@ class ColorManagerService {
     ColorScheme colorScheme,
     Brightness brightness,
   ) async {
-    try {
-      final colorSchemeJson = _colorSchemeToJson(colorScheme);
-      final isDark = brightness == Brightness.dark;
-      await PlaybackStateService().saveColorScheme(colorSchemeJson, isDark);
-    } catch (e) {
-      print('保存颜色方案失败: $e');
-    }
+    // 完全异步执行，不阻塞调用者
+    Future.microtask(() async {
+      try {
+        final colorSchemeJson = _colorSchemeToJson(colorScheme);
+        final isDark = brightness == Brightness.dark;
+        await PlaybackStateService().saveColorScheme(colorSchemeJson, isDark);
+      } catch (e) {
+        print('保存颜色方案失败: $e');
+      }
+    });
   }
 
   // 从本地存储恢复颜色方案
@@ -264,6 +339,35 @@ class ColorManagerService {
     }
 
     return defaultScheme;
+  }
+
+  // 检查是否已有缓存的颜色方案
+  bool hasCachedColorScheme(Brightness brightness) {
+    if (brightness == Brightness.light) {
+      return _lightColorScheme != null;
+    } else {
+      return _darkColorScheme != null;
+    }
+  }
+
+  // 直接设置颜色方案（用于快速更新）
+  void setColorScheme(ColorScheme colorScheme) {
+    final brightness = colorScheme.brightness;
+    bool hasChanged = false;
+
+    if (brightness == Brightness.light) {
+      hasChanged = !_colorSchemesAreEqual(_lightColorScheme, colorScheme);
+      _lightColorScheme = colorScheme;
+    } else {
+      hasChanged = !_colorSchemesAreEqual(_darkColorScheme, colorScheme);
+      _darkColorScheme = colorScheme;
+    }
+
+    if (hasChanged) {
+      _notifyListeners(colorScheme);
+      // 异步保存，不阻塞UI
+      Future.microtask(() => _saveColorScheme(colorScheme, brightness));
+    }
   }
 
   // 添加颜色变化监听器

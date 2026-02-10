@@ -54,31 +54,25 @@ class HomePlayerWidget extends StatelessWidget {
                         ? CachedNetworkImage(
                             imageUrl: coverUrl!,
                             fit: BoxFit.cover,
+                            placeholderFadeInDuration: Duration(milliseconds: 300),
+                            fadeInDuration: Duration(milliseconds: 500),
                             placeholder: (context, url) => Container(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
                               child: Center(
                                 child: Icon(
                                   Icons.music_note_outlined,
                                   size: containerSize * 0.3,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
                             errorWidget: (context, url, error) => Container(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
                               child: Center(
                                 child: Icon(
                                   Icons.music_note_outlined,
                                   size: containerSize * 0.3,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),

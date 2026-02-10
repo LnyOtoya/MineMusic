@@ -211,10 +211,12 @@ class MyAudioHandler extends BaseAudioHandler {
     final source = sequenceState.currentSource;
     if (source != null && source.tag != null) {
       final currentMediaItem = source.tag as MediaItem;
-      mediaItem.add(currentMediaItem);
 
       // 检测歌曲变化，更新当前歌曲ID并重置scrobble状态
       if (_currentSongId != currentMediaItem.id) {
+        // 只有当真正的歌曲切换发生时才发布媒体项和更新状态
+        mediaItem.add(currentMediaItem);
+        
         print('🎵 检测到歌曲变化：');
         print('   旧歌曲：$_currentSongId');
         print('   新歌曲：${currentMediaItem.id} - ${currentMediaItem.title}');
@@ -462,15 +464,24 @@ class MyAudioHandler extends BaseAudioHandler {
         'MyAudioHandler.loadSong: 转换为 AudioSource，包含 ${audioSources.length} 首歌曲',
       );
 
+      // 计算初始索引
+      final initialIndex = songsToPlay.indexWhere((s) => s['id'] == song['id']);
+      print('MyAudioHandler.loadSong: 初始索引: $initialIndex');
+
       // 设置播放列表
       await _player.setAudioSource(
         ConcatenatingAudioSource(children: audioSources),
-        initialIndex: songsToPlay.indexWhere((s) => s['id'] == song['id']),
+        initialIndex: initialIndex,
       );
       print('MyAudioHandler.loadSong: 设置播放列表完成');
 
-      // 更新当前歌曲ID
+      // 直接更新当前歌曲ID，避免触发不必要的歌曲变化事件
       _currentSongId = song['id'];
+
+      // 直接发布正确的媒体项，避免显示错误的歌曲
+      final targetMediaItem = _mediaItems[initialIndex];
+      mediaItem.add(targetMediaItem);
+      print('MyAudioHandler.loadSong: 直接发布目标媒体项: ${targetMediaItem.title}');
 
       // 更新队列
       queue.value = _mediaItems;

@@ -49,9 +49,14 @@ class PlayerService extends ChangeNotifier {
   }
 
   Future<void> _initialize() async {
+    // 优先初始化音频服务
     await _initAudioService();
-    await _loadLyricsSettings();
-    await _loadPlaybackState();
+    
+    // 延迟加载非关键资源
+    Future.microtask(() async {
+      await _loadLyricsSettings();
+      await _loadPlaybackState();
+    });
   }
 
   Future<void> _loadLyricsSettings() async {
@@ -93,16 +98,7 @@ class PlayerService extends ChangeNotifier {
 
     print('正在加载歌曲: ${song['title']}, 播放列表包含 ${playlist?.length ?? 0} 首歌曲');
 
-    // 将歌曲添加到音频处理程序的队列中
-    await _audioHandler.loadSong(song, playlist: playlist);
-
-    // 恢复播放进度
-    final savedPosition = await _playbackStateService.getPlaybackPosition();
-    if (savedPosition > Duration.zero) {
-      await _audioHandler.seek(savedPosition);
-    }
-
-    // 更新当前歌曲信息
+    // 立即更新当前歌曲信息，避免播放器初始化过程中显示错误的歌曲
     _currentSong = song;
     _totalDuration = song['duration'] != null
         ? Duration(seconds: int.tryParse(song['duration'].toString()) ?? 0)
@@ -117,7 +113,17 @@ class PlayerService extends ChangeNotifier {
     // 从专辑封面提取颜色方案
     _updateColorSchemeFromCurrentSong();
 
+    // 立即通知监听器，显示正确的歌曲信息
     notifyListeners();
+
+    // 将歌曲添加到音频处理程序的队列中
+    await _audioHandler.loadSong(song, playlist: playlist);
+
+    // 恢复播放进度
+    final savedPosition = await _playbackStateService.getPlaybackPosition();
+    if (savedPosition > Duration.zero) {
+      await _audioHandler.seek(savedPosition);
+    }
   }
 
   static Future<void> setLyricsApiType(LyricsApiType type) async {
@@ -147,6 +153,9 @@ class PlayerService extends ChangeNotifier {
     _setupListeners();
   }
 
+  // 启动时忽略错误歌曲事件的标志
+  bool _ignoreInitialMediaItemEvents = true;
+  
   void _setupListeners() {
     // 监听播放状态
     _audioHandler.playbackState.listen((state) {
@@ -164,6 +173,25 @@ class PlayerService extends ChangeNotifier {
     // 监听当前媒体项
     _audioHandler.mediaItem.listen((mediaItem) {
       if (mediaItem != null) {
+        // 检查是否是启动时的错误歌曲事件
+        if (_ignoreInitialMediaItemEvents && _currentSong != null) {
+          // 获取媒体项中的歌曲ID
+          final mediaItemSongId = mediaItem.id;
+          // 获取当前歌曲的ID
+          final currentSongId = _currentSong?['id'];
+          
+          // 只有当媒体项的歌曲ID与当前歌曲的ID不同时，才忽略这个事件
+          // 这样可以确保启动时的错误歌曲事件被忽略，而正常的歌曲切换事件仍然会被处理
+          if (mediaItemSongId != currentSongId) {
+            print('忽略启动时的错误歌曲事件: ${mediaItem.title}');
+            return;
+          } else {
+            // 如果ID相同，说明是正确的歌曲事件，取消忽略标志
+            _ignoreInitialMediaItemEvents = false;
+          }
+        }
+        
+        // 正常处理歌曲变化事件
         _currentSong = mediaItem.extras?['song_data'];
         _totalDuration = mediaItem.duration ?? Duration.zero;
 
@@ -173,6 +201,11 @@ class PlayerService extends ChangeNotifier {
         // 当歌曲切换时，从专辑封面提取颜色方案
         if (_currentSong != null && _api != null) {
           _updateColorSchemeFromCurrentSong();
+        }
+
+        // 启动完成后，允许处理所有歌曲变化事件
+        if (_ignoreInitialMediaItemEvents && _currentSong != null) {
+          _ignoreInitialMediaItemEvents = false;
         }
 
         notifyListeners();
@@ -290,9 +323,12 @@ class PlayerService extends ChangeNotifier {
     // 获取封面艺术URL
     final coverArtUrl = _api!.getCoverArtUrl(coverArt);
 
-    // 提取浅色和深色模式的颜色方案
-    _extractColorScheme(coverArt, coverArtUrl, Brightness.light);
-    _extractColorScheme(coverArt, coverArtUrl, Brightness.dark);
+    // 延迟提取颜色方案，避免阻塞启动
+    Future.delayed(Duration(milliseconds: 500), () {
+      // 提取浅色和深色模式的颜色方案
+      _extractColorScheme(coverArt, coverArtUrl, Brightness.light);
+      _extractColorScheme(coverArt, coverArtUrl, Brightness.dark);
+    });
   }
 
   // 提取颜色方案
