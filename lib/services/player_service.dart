@@ -14,7 +14,6 @@ enum PlaybackMode {
   sequential,
   shuffle,
   repeatOne,
-  repeatAll,
 }
 
 extension PlaybackModeExtension on PlaybackMode {
@@ -26,8 +25,6 @@ extension PlaybackModeExtension on PlaybackMode {
         return '随机播放';
       case PlaybackMode.repeatOne:
         return '单曲循环';
-      case PlaybackMode.repeatAll:
-        return '列表循环';
     }
   }
 
@@ -39,8 +36,6 @@ extension PlaybackModeExtension on PlaybackMode {
         return Icons.shuffle;
       case PlaybackMode.repeatOne:
         return Icons.repeat_one;
-      case PlaybackMode.repeatAll:
-        return Icons.repeat;
     }
   }
 
@@ -52,10 +47,10 @@ extension PlaybackModeExtension on PlaybackMode {
         return PlaybackMode.shuffle;
       case 'repeatOne':
         return PlaybackMode.repeatOne;
-      case 'repeatAll':
-        return PlaybackMode.repeatAll;
       case 'repeat':
-        return PlaybackMode.repeatAll;
+        return PlaybackMode.repeatOne;
+      case 'repeatAll':
+        return PlaybackMode.sequential;
       default:
         return PlaybackMode.sequential;
     }
@@ -378,13 +373,6 @@ class PlayerService extends ChangeNotifier {
         await _audioHandler.seek(Duration.zero);
         await _audioHandler.play();
         break;
-      case PlaybackMode.repeatAll:
-        if (_currentIndex >= _currentPlaylist.length - 1) {
-          await _audioHandler.skipToIndex(0);
-        } else {
-          await _audioHandler.skipToNext();
-        }
-        break;
       case PlaybackMode.sequential:
         await _audioHandler.skipToNext();
         break;
@@ -421,9 +409,6 @@ class PlayerService extends ChangeNotifier {
         _playbackMode = PlaybackMode.repeatOne;
         break;
       case PlaybackMode.repeatOne:
-        _playbackMode = PlaybackMode.repeatAll;
-        break;
-      case PlaybackMode.repeatAll:
         _playbackMode = PlaybackMode.sequential;
         break;
     }
