@@ -415,14 +415,14 @@ class MyAudioHandler extends BaseAudioHandler {
         initialIndex: songsToPlay.indexWhere((s) => s['id'] == song['id']),
       );
 
+      // 清除加载标志，允许状态更新
+      _isLoading = false;
+
       // 更新队列
       queue.add(_mediaItems);
 
       // 开始播放
       await _player.play();
-
-      // 清除加载标志
-      _isLoading = false;
     } catch (e) {
       print('播放失败: $e');
       // 确保在出错时也清除加载标志
@@ -492,6 +492,10 @@ class MyAudioHandler extends BaseAudioHandler {
       );
       print('MyAudioHandler.loadSong: 设置播放列表完成');
 
+      // 清除加载标志，允许状态更新
+      _isLoading = false;
+      print('MyAudioHandler.loadSong: 清除加载标志，允许状态更新');
+
       // 直接发布正确的媒体项，避免显示错误的歌曲
       final targetMediaItem = _mediaItems[initialIndex];
       mediaItem.add(targetMediaItem);
@@ -508,10 +512,7 @@ class MyAudioHandler extends BaseAudioHandler {
       // 重置 scrobble 状态
       _isScrobbled = false;
       _playStartTime = null;
-
-      // 清除加载标志
-      _isLoading = false;
-      print('MyAudioHandler.loadSong: 加载完成，设置 _isLoading = false');
+      print('MyAudioHandler.loadSong: 加载完成');
     } catch (e) {
       print('加载歌曲失败: $e');
       // 确保在出错时也清除加载标志
