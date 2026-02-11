@@ -68,9 +68,22 @@ class AppWidgetCircle : BaseAppWidget() {
         // 应用动态颜色（Android 12+）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             try {
-                // 使用资源文件中的动态颜色
-                val buttonBackgroundColor = service.getColor(android.R.color.system_accent1_200)
-                val buttonIconColor = service.getColor(android.R.color.system_accent1_800)
+                // 检测当前系统主题模式
+                val currentNightMode = service.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                val isDarkMode = currentNightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                
+                // 根据主题模式选择合适的动态颜色
+                val buttonBackgroundColor = if (isDarkMode) {
+                    service.getColor(android.R.color.system_accent1_800) // 深色模式使用更深的颜色
+                } else {
+                    service.getColor(android.R.color.system_accent1_200) // 浅色模式使用更浅的颜色
+                }
+                
+                val buttonIconColor = if (isDarkMode) {
+                    service.getColor(android.R.color.system_accent1_200) // 深色模式使用更浅的图标颜色
+                } else {
+                    service.getColor(android.R.color.system_accent1_800) // 浅色模式使用更深的图标颜色
+                }
                 
                 // 设置按钮背景颜色（保持原始形状）
                 val colorStateList = android.content.res.ColorStateList.valueOf(buttonBackgroundColor)
