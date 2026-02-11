@@ -79,28 +79,7 @@ class MyAudioHandler extends BaseAudioHandler {
         // 重置状态
         _playStartTime = null;
         _isScrobbled = false;
-        // 手动更新播放状态，确保 UI 和通知栏一致
-        playbackState.add(
-          PlaybackState(
-            controls: [
-              MediaControl.skipToPrevious,
-              MediaControl.play,
-              MediaControl.skipToNext,
-            ],
-            systemActions: const {
-              MediaAction.seek,
-              MediaAction.seekForward,
-              MediaAction.seekBackward,
-            },
-            androidCompactActionIndices: const [0, 1, 2],
-            processingState: AudioProcessingState.completed,
-            playing: false,
-            updatePosition: _player.position,
-            bufferedPosition: _player.bufferedPosition,
-            speed: _player.speed,
-            queueIndex: _player.currentIndex,
-          ),
-        );
+        // 播放状态会在 _updatePlaybackState 中自动更新
       }
     } else if (state.processingState == ProcessingState.idle) {
       // 播放器空闲时重置状态
@@ -149,11 +128,16 @@ class MyAudioHandler extends BaseAudioHandler {
 
   // 更新播放状态 - 修复版本
   void _updatePlaybackState(PlayerState state) {
+    // 如果是播放完成状态且没有下一首，确保 playing 为 false
+    final isCompletedWithoutNext = 
+        state.processingState == ProcessingState.completed && 
+        !_player.hasNext;
+    
     playbackState.add(
       PlaybackState(
         controls: [
           MediaControl.skipToPrevious,
-          if (state.playing) MediaControl.pause else MediaControl.play,
+          if (state.playing && !isCompletedWithoutNext) MediaControl.pause else MediaControl.play,
           MediaControl.skipToNext,
           // MediaControl.stop,
         ],
@@ -170,7 +154,7 @@ class MyAudioHandler extends BaseAudioHandler {
           ProcessingState.ready: AudioProcessingState.ready,
           ProcessingState.completed: AudioProcessingState.completed,
         }[state.processingState]!,
-        playing: state.playing,
+        playing: state.playing && !isCompletedWithoutNext,
         updatePosition: _player.position,
         bufferedPosition: _player.bufferedPosition,
         speed: _player.speed,
