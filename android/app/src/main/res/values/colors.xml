@@ -30,7 +30,7 @@
     <color name="md_indigo_A400">#3D5AFE</color>
     
     <!-- Surface Colors -->
-    <color name="lighterColorSurface">#dddddd</color>
+    <color name="lighterColorSurface">#ffffff</color>
     <color name="darkerColorSurface">#353535</color>
     <color name="blackColorSurface">#000000</color>
     
