@@ -14,6 +14,7 @@ class MyAudioHandler extends BaseAudioHandler {
   String? _currentSongId; // 添加当前歌曲ID跟踪
   bool _isScrobbled = false; // 是否已提交 scrobble
   DateTime? _playStartTime; // 播放开始时间
+  bool _isLoading = false; // 是否正在加载歌曲，防止加载过程中触发错误的歌曲变化
 
   MyAudioHandler(this._api) {
     // 设置监听器
@@ -198,14 +199,32 @@ class MyAudioHandler extends BaseAudioHandler {
   // 更新当前索引
   void _updateCurrentIndex(int? index) {
     _currentIndex = index ?? -1;
-    if (_currentIndex != -1 && _mediaItems.isNotEmpty) {
-      mediaItem.add(_mediaItems[_currentIndex]);
+    // 如果正在加载中，忽略索引变化，防止发布错误的媒体项
+    if (_isLoading) {
+      print('🎵 正在加载中，忽略索引变化: $_currentIndex');
+      return;
+    }
+    // 只有在媒体项列表不为空且索引有效时才发布媒体项
+    // 避免在启动时发布错误的媒体项
+    if (_currentIndex != -1 && _mediaItems.isNotEmpty && _currentIndex < _mediaItems.length) {
+      // 检查是否需要发布媒体项（避免重复发布）
+      final targetMediaItem = _mediaItems[_currentIndex];
+      // 只有当当前媒体项与目标媒体项不同时才发布
+      if (mediaItem.value?.id != targetMediaItem.id) {
+        mediaItem.add(targetMediaItem);
+      }
     }
   }
 
   // 更新播放序列状态
   void _updateSequenceState(SequenceState? sequenceState) {
     if (sequenceState == null) return;
+
+    // 如果正在加载中，忽略序列状态变化，防止触发错误的歌曲变化
+    if (_isLoading) {
+      print('🎵 正在加载中，忽略序列状态变化');
+      return;
+    }
 
     _currentIndex = sequenceState.currentIndex ?? -1;
     final source = sequenceState.currentSource;
@@ -214,9 +233,6 @@ class MyAudioHandler extends BaseAudioHandler {
 
       // 检测歌曲变化，更新当前歌曲ID并重置scrobble状态
       if (_currentSongId != currentMediaItem.id) {
-        // 只有当真正的歌曲切换发生时才发布媒体项和更新状态
-        mediaItem.add(currentMediaItem);
-        
         print('🎵 检测到歌曲变化：');
         print('   旧歌曲：$_currentSongId');
         print('   新歌曲：${currentMediaItem.id} - ${currentMediaItem.title}');
@@ -225,6 +241,11 @@ class MyAudioHandler extends BaseAudioHandler {
         _currentSongId = currentMediaItem.id;
         _isScrobbled = false;
         _playStartTime = DateTime.now();
+
+        // 只有当当前媒体项与目标媒体项不同时才发布
+        if (mediaItem.value?.id != currentMediaItem.id) {
+          mediaItem.add(currentMediaItem);
+        }
 
         // 强制触发 Now Playing 通知
         print('📢 自动切歌，发送 Now Playing：${currentMediaItem.title}');
@@ -378,6 +399,9 @@ class MyAudioHandler extends BaseAudioHandler {
         return;
       }
 
+      // 设置加载标志，防止加载过程中触发错误的歌曲变化
+      _isLoading = true;
+
       // 重置 scrobble 状态
       _isScrobbled = false;
       _playStartTime = null;
@@ -398,22 +422,27 @@ class MyAudioHandler extends BaseAudioHandler {
         return AudioSource.uri(Uri.parse(playUrl), tag: _songToMediaItem(song));
       }).toList();
 
+      // 先设置当前歌曲ID，避免 setAudioSource 触发错误的歌曲变化事件
+      _currentSongId = song['id'];
+
       // 设置播放列表
       await _player.setAudioSource(
         ConcatenatingAudioSource(children: audioSources),
         initialIndex: songsToPlay.indexWhere((s) => s['id'] == song['id']),
       );
 
-      // 更新当前歌曲ID
-      _currentSongId = song['id'];
-
       // 更新队列
       queue.add(_mediaItems);
 
       // 开始播放
       await _player.play();
+
+      // 清除加载标志
+      _isLoading = false;
     } catch (e) {
       print('播放失败: $e');
+      // 确保在出错时也清除加载标志
+      _isLoading = false;
     }
   }
 
@@ -432,9 +461,9 @@ class MyAudioHandler extends BaseAudioHandler {
         return;
       }
 
-      // 重置 scrobble 状态
-      _isScrobbled = false;
-      _playStartTime = null;
+      // 设置加载标志，防止加载过程中触发错误的歌曲变化
+      _isLoading = true;
+      print('MyAudioHandler.loadSong: 开始加载，设置 _isLoading = true');
 
       List<Map<String, dynamic>> songsToPlay;
 
@@ -468,15 +497,16 @@ class MyAudioHandler extends BaseAudioHandler {
       final initialIndex = songsToPlay.indexWhere((s) => s['id'] == song['id']);
       print('MyAudioHandler.loadSong: 初始索引: $initialIndex');
 
+      // 先设置当前歌曲ID，避免 setAudioSource 触发错误的歌曲变化事件
+      _currentSongId = song['id'];
+      print('MyAudioHandler.loadSong: 预先设置当前歌曲ID: $_currentSongId');
+
       // 设置播放列表
       await _player.setAudioSource(
         ConcatenatingAudioSource(children: audioSources),
         initialIndex: initialIndex,
       );
       print('MyAudioHandler.loadSong: 设置播放列表完成');
-
-      // 直接更新当前歌曲ID，避免触发不必要的歌曲变化事件
-      _currentSongId = song['id'];
 
       // 直接发布正确的媒体项，避免显示错误的歌曲
       final targetMediaItem = _mediaItems[initialIndex];
@@ -490,8 +520,18 @@ class MyAudioHandler extends BaseAudioHandler {
       // 确保处于暂停状态
       await _player.pause();
       print('MyAudioHandler.loadSong: 确保处于暂停状态');
+
+      // 重置 scrobble 状态
+      _isScrobbled = false;
+      _playStartTime = null;
+
+      // 清除加载标志
+      _isLoading = false;
+      print('MyAudioHandler.loadSong: 加载完成，设置 _isLoading = false');
     } catch (e) {
       print('加载歌曲失败: $e');
+      // 确保在出错时也清除加载标志
+      _isLoading = false;
     }
   }
 
