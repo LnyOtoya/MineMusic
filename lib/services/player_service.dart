@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,7 +13,8 @@ import '../utils/native_channel.dart';
 enum PlaybackMode {
   sequential,
   shuffle,
-  repeat,
+  repeatOne,
+  repeatAll,
 }
 
 extension PlaybackModeExtension on PlaybackMode {
@@ -22,19 +24,23 @@ extension PlaybackModeExtension on PlaybackMode {
         return '顺序播放';
       case PlaybackMode.shuffle:
         return '随机播放';
-      case PlaybackMode.repeat:
-        return '循环播放';
+      case PlaybackMode.repeatOne:
+        return '单曲循环';
+      case PlaybackMode.repeatAll:
+        return '列表循环';
     }
   }
 
   IconData get icon {
     switch (this) {
       case PlaybackMode.sequential:
-        return Icons.repeat;
+        return Icons.replay;
       case PlaybackMode.shuffle:
         return Icons.shuffle;
-      case PlaybackMode.repeat:
+      case PlaybackMode.repeatOne:
         return Icons.repeat_one;
+      case PlaybackMode.repeatAll:
+        return Icons.repeat;
     }
   }
 
@@ -44,8 +50,12 @@ extension PlaybackModeExtension on PlaybackMode {
         return PlaybackMode.sequential;
       case 'shuffle':
         return PlaybackMode.shuffle;
+      case 'repeatOne':
+        return PlaybackMode.repeatOne;
+      case 'repeatAll':
+        return PlaybackMode.repeatAll;
       case 'repeat':
-        return PlaybackMode.repeat;
+        return PlaybackMode.repeatAll;
       default:
         return PlaybackMode.sequential;
     }
@@ -364,8 +374,16 @@ class PlayerService extends ChangeNotifier {
       case PlaybackMode.shuffle:
         await _playRandomSong();
         break;
-      case PlaybackMode.repeat:
-        await _audioHandler.skipToNext();
+      case PlaybackMode.repeatOne:
+        await _audioHandler.seek(Duration.zero);
+        await _audioHandler.play();
+        break;
+      case PlaybackMode.repeatAll:
+        if (_currentIndex >= _currentPlaylist.length - 1) {
+          await _audioHandler.skipToIndex(0);
+        } else {
+          await _audioHandler.skipToNext();
+        }
         break;
       case PlaybackMode.sequential:
         await _audioHandler.skipToNext();
@@ -380,8 +398,17 @@ class PlayerService extends ChangeNotifier {
   Future<void> _playRandomSong() async {
     if (_currentPlaylist.isEmpty) return;
     
-    final random = DateTime.now().millisecondsSinceEpoch;
-    final randomIndex = random % _currentPlaylist.length;
+    final random = Random();
+    int randomIndex;
+    
+    if (_currentPlaylist.length == 1) {
+      randomIndex = 0;
+    } else {
+      do {
+        randomIndex = random.nextInt(_currentPlaylist.length);
+      } while (randomIndex == _currentIndex);
+    }
+    
     await _audioHandler.skipToIndex(randomIndex);
   }
 
@@ -391,9 +418,12 @@ class PlayerService extends ChangeNotifier {
         _playbackMode = PlaybackMode.shuffle;
         break;
       case PlaybackMode.shuffle:
-        _playbackMode = PlaybackMode.repeat;
+        _playbackMode = PlaybackMode.repeatOne;
         break;
-      case PlaybackMode.repeat:
+      case PlaybackMode.repeatOne:
+        _playbackMode = PlaybackMode.repeatAll;
+        break;
+      case PlaybackMode.repeatAll:
         _playbackMode = PlaybackMode.sequential;
         break;
     }
