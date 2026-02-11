@@ -20,7 +20,11 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.widget.RemoteViews
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.ColorUtils
+import com.google.android.material.color.DynamicColors
 import com.example.minemusic.R
 import com.example.minemusic.MainActivity
 import com.example.minemusic.MusicPlayerWidget
@@ -57,9 +61,30 @@ class AppWidgetCircle : BaseAppWidget() {
         val artist = sp.getString("current_artist", "") ?: ""
         val coverId = sp.getString("current_cover_id", "") ?: ""
 
-        val playPauseRes =
+        val playPauseRes = 
             if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_arrow
         appWidgetView.setImageViewResource(R.id.button_toggle_play_pause, playPauseRes)
+
+        // 应用动态颜色（Android 12+）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                // 使用资源文件中的动态颜色
+                val buttonBackgroundColor = service.getColor(android.R.color.system_accent1_200)
+                val buttonIconColor = service.getColor(android.R.color.system_accent1_800)
+                
+                // 设置按钮背景颜色（保持原始形状）
+                val colorStateList = android.content.res.ColorStateList.valueOf(buttonBackgroundColor)
+                appWidgetView.setColorStateList(R.id.button_toggle_play_pause, "setBackgroundTintList", colorStateList)
+                appWidgetView.setColorStateList(R.id.button_toggle_skip, "setBackgroundTintList", colorStateList)
+                
+                // 设置图标颜色
+                appWidgetView.setInt(R.id.button_toggle_play_pause, "setColorFilter", buttonIconColor)
+                appWidgetView.setInt(R.id.button_toggle_skip, "setColorFilter", buttonIconColor)
+            } catch (e: Exception) {
+                // 异常处理，确保小部件正常工作
+                e.printStackTrace()
+            }
+        }
 
         linkButtons(service, appWidgetView)
 
