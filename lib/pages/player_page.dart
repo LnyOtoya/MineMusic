@@ -1967,6 +1967,12 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
+                // 播放模式按钮
+                _buildPlaybackModeButton(
+                  primaryContainerColor: primaryContainerColor,
+                  onPrimaryContainerColor: onPrimaryContainerColor,
+                ),
+
                 // 上一曲
                 _buildControlButton(
                   icon: Icons.skip_previous,
@@ -2020,6 +2026,12 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
                   primaryContainerColor: primaryContainerColor,
                   onPrimaryContainerColor: onPrimaryContainerColor,
                 ),
+
+                // 播放列表按钮
+                _buildPlaylistButton(
+                  primaryContainerColor: primaryContainerColor,
+                  onPrimaryContainerColor: onPrimaryContainerColor,
+                ),
               ],
             ),
           ),
@@ -2055,6 +2067,213 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildPlaybackModeButton({
+    required Color primaryContainerColor,
+    required Color onPrimaryContainerColor,
+  }) {
+    return GestureDetector(
+      onTapDown: (_) => _playButtonController.forward(),
+      onTapUp: (_) => _playButtonController.reverse(),
+      onTapCancel: () => _playButtonController.reverse(),
+      onTap: () {
+        widget.playerService.togglePlaybackMode();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('切换到${widget.playerService.playbackMode.displayName}'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      },
+      child: AnimatedBuilder(
+        animation: _playButtonScale,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _playButtonScale.value,
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: primaryContainerColor.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ValueListenableBuilder(
+                valueListenable: PlayerService.playbackModeNotifier,
+                builder: (context, mode, child) {
+                  return Icon(
+                    mode.icon,
+                    color: onPrimaryContainerColor,
+                    size: 28,
+                  );
+                },
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPlaylistButton({
+    required Color primaryContainerColor,
+    required Color onPrimaryContainerColor,
+  }) {
+    return GestureDetector(
+      onTapDown: (_) => _playButtonController.forward(),
+      onTapUp: (_) => _playButtonController.reverse(),
+      onTapCancel: () => _playButtonController.reverse(),
+      onTap: () {
+        _showPlaylistBottomSheet();
+      },
+      child: AnimatedBuilder(
+        animation: _playButtonScale,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _playButtonScale.value,
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: primaryContainerColor.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.queue_music_rounded,
+                color: onPrimaryContainerColor,
+                size: 28,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showPlaylistBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      '播放列表',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${widget.playerService.playlist.length} 首歌曲',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: widget.playerService.playlist.length,
+                  itemBuilder: (context, index) {
+                    final song = widget.playerService.playlist[index];
+                    final isCurrentSong =
+                        widget.playerService.currentSong?['id'] == song['id'];
+
+                    return ListTile(
+                      leading: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: song['coverArt'] != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: CachedNetworkImage(
+                                  imageUrl: widget.api.getCoverArtUrl(
+                                    song['coverArt'],
+                                  ),
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : Icon(
+                                Icons.music_note_rounded,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                      ),
+                      title: Text(
+                        song['title'] ?? '未知歌曲',
+                        style: TextStyle(
+                          fontWeight: isCurrentSong
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isCurrentSong
+                              ? Theme.of(context).colorScheme.primary
+                              : null,
+                        ),
+                      ),
+                      subtitle: Text(
+                        song['artist'] ?? '未知艺术家',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      trailing: isCurrentSong
+                          ? Icon(
+                              Icons.equalizer_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 20,
+                            )
+                          : null,
+                      onTap: () {
+                        widget.playerService.playSongAt(index);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

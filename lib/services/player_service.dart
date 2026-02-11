@@ -9,6 +9,49 @@ import 'color_manager_service.dart';
 import '../models/lyrics_api_type.dart';
 import '../utils/native_channel.dart';
 
+enum PlaybackMode {
+  sequential,
+  shuffle,
+  repeat,
+}
+
+extension PlaybackModeExtension on PlaybackMode {
+  String get displayName {
+    switch (this) {
+      case PlaybackMode.sequential:
+        return '顺序播放';
+      case PlaybackMode.shuffle:
+        return '随机播放';
+      case PlaybackMode.repeat:
+        return '循环播放';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case PlaybackMode.sequential:
+        return Icons.repeat;
+      case PlaybackMode.shuffle:
+        return Icons.shuffle;
+      case PlaybackMode.repeat:
+        return Icons.repeat_one;
+    }
+  }
+
+  static PlaybackMode fromString(String value) {
+    switch (value) {
+      case 'sequential':
+        return PlaybackMode.sequential;
+      case 'shuffle':
+        return PlaybackMode.shuffle;
+      case 'repeat':
+        return PlaybackMode.repeat;
+      default:
+        return PlaybackMode.sequential;
+    }
+  }
+}
+
 class PlayerService extends ChangeNotifier {
   late MyAudioHandler _audioHandler;
   SubsonicApi? _api;
@@ -19,6 +62,11 @@ class PlayerService extends ChangeNotifier {
   static final ValueNotifier<LyricsApiType> lyricsApiTypeNotifier =
       ValueNotifier(LyricsApiType.disabled);
   static final ValueNotifier<bool> lyricsEnabledNotifier = ValueNotifier(false);
+
+  // 播放模式
+  PlaybackMode _playbackMode = PlaybackMode.sequential;
+  static final ValueNotifier<PlaybackMode> playbackModeNotifier =
+      ValueNotifier(PlaybackMode.sequential);
 
   // 播放状态相关变量
   Map<String, dynamic>? _currentSong;
@@ -38,6 +86,7 @@ class PlayerService extends ChangeNotifier {
   int get currentIndex => _currentIndex;
   Duration get currentPosition => _currentPosition;
   Duration get totalDuration => _totalDuration;
+  PlaybackMode get playbackMode => _playbackMode;
   PlayHistoryService get historyService => _historyService;
 
   PlayerService({SubsonicApi? api}) : _api = api {
@@ -56,6 +105,7 @@ class PlayerService extends ChangeNotifier {
     // 延迟加载非关键资源
     Future.microtask(() async {
       await _loadLyricsSettings();
+      await _loadPlaybackMode();
       await _loadPlaybackState();
     });
   }
@@ -71,6 +121,20 @@ class PlayerService extends ChangeNotifier {
       );
     }
     lyricsEnabledNotifier.value = savedLyricsEnabled;
+  }
+
+  Future<void> _loadPlaybackMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPlaybackMode = prefs.getString('playbackMode');
+    if (savedPlaybackMode != null) {
+      _playbackMode = PlaybackModeExtension.fromString(savedPlaybackMode);
+      playbackModeNotifier.value = _playbackMode;
+    }
+  }
+
+  Future<void> _savePlaybackMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('playbackMode', _playbackMode.name);
   }
 
   Future<void> _loadPlaybackState() async {
@@ -296,11 +360,45 @@ class PlayerService extends ChangeNotifier {
   }
 
   Future<void> nextSong() async {
-    await _audioHandler.skipToNext();
+    switch (_playbackMode) {
+      case PlaybackMode.shuffle:
+        await _playRandomSong();
+        break;
+      case PlaybackMode.repeat:
+        await _audioHandler.skipToNext();
+        break;
+      case PlaybackMode.sequential:
+        await _audioHandler.skipToNext();
+        break;
+    }
   }
 
   Future<void> previousSong() async {
     await _audioHandler.skipToPrevious();
+  }
+
+  Future<void> _playRandomSong() async {
+    if (_currentPlaylist.isEmpty) return;
+    
+    final random = DateTime.now().millisecondsSinceEpoch;
+    final randomIndex = random % _currentPlaylist.length;
+    await _audioHandler.skipToIndex(randomIndex);
+  }
+
+  void togglePlaybackMode() {
+    switch (_playbackMode) {
+      case PlaybackMode.sequential:
+        _playbackMode = PlaybackMode.shuffle;
+        break;
+      case PlaybackMode.shuffle:
+        _playbackMode = PlaybackMode.repeat;
+        break;
+      case PlaybackMode.repeat:
+        _playbackMode = PlaybackMode.sequential;
+        break;
+    }
+    playbackModeNotifier.value = _playbackMode;
+    _savePlaybackMode();
   }
 
   Future<void> playSongAt(int index) async {
