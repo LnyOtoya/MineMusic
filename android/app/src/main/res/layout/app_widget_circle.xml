@@ -21,7 +21,7 @@
         android:layout_alignTop="@+id/image"
         android:layout_alignEnd="@+id/image"
         android:layout_margin="4dp"
-        android:background="@color/widget_md3_button_bg_color"
+        android:background="@drawable/circle_widget_background"
         android:clickable="false"
         android:padding="14dp"
         android:scaleType="centerInside"
