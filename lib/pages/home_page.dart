@@ -493,7 +493,7 @@ class _HomePageState extends State<HomePage>
                       children: [
                         Text(
                           '正在播放~',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.onPrimaryContainer,
                           ),
@@ -506,20 +506,6 @@ class _HomePageState extends State<HomePage>
                           ),
                         ),
                       ],
-                    ),
-                    // 装饰元素
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.queue_music_rounded,
-                        size: 20,
-                        color: Theme.of(context).colorScheme.onSecondaryContainer,
-                      ),
                     ),
                   ],
                 ),
@@ -679,31 +665,16 @@ class _HomePageState extends State<HomePage>
                   ),
                 ),
         ),
-        title: Row(
-          children: [
-            if (isCurrent)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Icon(
-                  Icons.equalizer_rounded,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            Expanded(
-              child: Text(
-                song['title'] ?? '未知标题',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
-                  color: isCurrent 
-                      ? Theme.of(context).colorScheme.primary 
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ),
-          ],
+        title: Text(
+          song['title'] ?? '未知标题',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
+            color: isCurrent 
+                ? Theme.of(context).colorScheme.primary 
+                : Theme.of(context).colorScheme.onSurface,
+          ),
         ),
         subtitle: Text(
           song['artist'] ?? '未知艺术家',
@@ -713,22 +684,6 @@ class _HomePageState extends State<HomePage>
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
-        trailing: isCurrent
-            ? Icon(
-                Icons.play_circle_filled,
-                size: 24,
-                color: Theme.of(context).colorScheme.primary,
-              )
-            : IconButton(
-                icon: Icon(
-                  Icons.more_vert,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-                onPressed: () {
-                  // 更多选项
-                },
-              ),
         onTap: () {
           if (!isCurrent) {
             final playlist = widget.playerService.currentPlaylist;

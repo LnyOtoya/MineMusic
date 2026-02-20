@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/subsonic_api.dart';
 import 'services/player_service.dart';
@@ -72,14 +73,150 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    // 使用最基础的默认颜色，不使用任何取色逻辑
+    final fallbackFonts = [
+      GoogleFonts.notoSansSc(fontWeight: FontWeight.w600).fontFamily ?? '',
+      GoogleFonts.notoSansJp(fontWeight: FontWeight.w600).fontFamily ?? '',
+      GoogleFonts.notoSansKr(fontWeight: FontWeight.w600).fontFamily ?? '',
+      GoogleFonts.notoSans(fontWeight: FontWeight.w600).fontFamily ?? '',
+    ].where((s) => s.isNotEmpty).toList();
+
+    final textThemeLight = GoogleFonts.nunitoTextTheme().copyWith(
+      bodyLarge: GoogleFonts.nunitoTextTheme().bodyLarge?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      bodyMedium: GoogleFonts.nunitoTextTheme().bodyMedium?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      bodySmall: GoogleFonts.nunitoTextTheme().bodySmall?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      displayLarge: GoogleFonts.nunitoTextTheme().displayLarge?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      displayMedium: GoogleFonts.nunitoTextTheme().displayMedium?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      displaySmall: GoogleFonts.nunitoTextTheme().displaySmall?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      headlineLarge: GoogleFonts.nunitoTextTheme().headlineLarge?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      headlineMedium: GoogleFonts.nunitoTextTheme().headlineMedium?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      headlineSmall: GoogleFonts.nunitoTextTheme().headlineSmall?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      titleLarge: GoogleFonts.nunitoTextTheme().titleLarge?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      titleMedium: GoogleFonts.nunitoTextTheme().titleMedium?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      titleSmall: GoogleFonts.nunitoTextTheme().titleSmall?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      labelLarge: GoogleFonts.nunitoTextTheme().labelLarge?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      labelMedium: GoogleFonts.nunitoTextTheme().labelMedium?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      labelSmall: GoogleFonts.nunitoTextTheme().labelSmall?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+
+    final textThemeDark = GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).copyWith(
+      bodyLarge: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).bodyLarge?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      bodyMedium: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).bodyMedium?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      bodySmall: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).bodySmall?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      displayLarge: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).displayLarge?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      displayMedium: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).displayMedium?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      displaySmall: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).displaySmall?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      headlineLarge: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).headlineLarge?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      headlineMedium: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).headlineMedium?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      headlineSmall: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).headlineSmall?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      titleLarge: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).titleLarge?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      titleMedium: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).titleMedium?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      titleSmall: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).titleSmall?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      labelLarge: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).labelLarge?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      labelMedium: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).labelMedium?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+      labelSmall: GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme).labelSmall?.copyWith(
+        fontFamilyFallback: fallbackFonts,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+
     return MaterialApp(
       title: '音乐播放器',
       theme: ThemeData(
         useMaterial3: true,
+        fontFamily: GoogleFonts.nunito(fontWeight: FontWeight.w600).fontFamily,
+        textTheme: textThemeLight,
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
+        fontFamily: GoogleFonts.nunito(fontWeight: FontWeight.w600).fontFamily,
+        textTheme: textThemeDark,
       ),
       themeMode: _themeMode,
       home: InitializerPage(setThemeMode: setThemeMode),

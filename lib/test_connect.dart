@@ -222,44 +222,44 @@ Future<void> testAllSongsViaSearch() async {
   }
 }
 
-Future<void> testLyrics() async {
-  print('\n📜 测试获取歌词...');
+// Future<void> testLyrics() async {
+//   print('\n📜 测试获取歌词...');
   
-  final api = SubsonicApi(
-    baseUrl: 'http://192.168.2.164:4533',
-    username: 'otoya',
-    password: '486952',
-  );
+//   final api = SubsonicApi(
+//     baseUrl: 'http://192.168.2.164:4533',
+//     username: 'otoya',
+//     password: '486952',
+//   );
   
-  try {
-    // 先获取一首随机歌曲作为测试样本
-    var randomSongs = await api.getRandomSongs(count: 1);
-    if (randomSongs.isEmpty) {
-      print('❌ 没有获取到测试用歌曲');
-      return;
-    }
+//   try {
+//     // 先获取一首随机歌曲作为测试样本
+//     var randomSongs = await api.getRandomSongs(count: 1);
+//     if (randomSongs.isEmpty) {
+//       print('❌ 没有获取到测试用歌曲');
+//       return;
+//     }
     
-    var testSong = randomSongs.first;
-    print('   测试歌曲: ${testSong['title']} - ${testSong['artist']}');
+//     var testSong = randomSongs.first;
+//     print('   测试歌曲: ${testSong['title']} - ${testSong['artist']}');
     
-    // 调用获取歌词方法
-    var lyrics = await api.getLyrics(
-      artist: testSong['artist'] ?? '',
-      title: testSong['title'] ?? '',
-    );
+//     // 调用获取歌词方法
+//     var lyrics = await api.getLyrics(
+//       artist: testSong['artist'] ?? '',
+//       title: testSong['title'] ?? '',
+//     );
     
-    if (lyrics != null && lyrics['text'].isNotEmpty) {
-      print('✅ 获取歌词成功');
-      print('   歌词预览: ${lyrics['text'].length > 50 ? 
-          lyrics['text'].substring(0, 50) + '...' : 
-          lyrics['text']}');
-    } else {
-      print('⚠️ 未找到该歌曲的歌词');
-    }
-  } catch (e) {
-    print('❌ 获取歌词失败: $e');
-  }
-}
+//     if (lyrics != null && lyrics['text'].isNotEmpty) {
+//       print('✅ 获取歌词成功');
+//       print('   歌词预览: ${lyrics['text'].length > 50 ? 
+//           lyrics['text'].substring(0, 50) + '...' : 
+//           lyrics['text']}');
+//     } else {
+//       print('⚠️ 未找到该歌曲的歌词');
+//     }
+//   } catch (e) {
+//     print('❌ 获取歌词失败: $e');
+//   }
+// }
 
 
 
@@ -277,6 +277,6 @@ void main() async {
   // await testAllSongs();
   await testPlaylists();
   await testCreatePlaylist();
-  await testLyrics();
+  // await testLyrics();
 
 }

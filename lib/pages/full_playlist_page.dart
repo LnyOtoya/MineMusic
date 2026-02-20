@@ -139,31 +139,16 @@ class _FullPlaylistPageState extends State<FullPlaylistPage> {
                   ),
                 ),
         ),
-        title: Row(
-          children: [
-            if (isCurrent)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Icon(
-                  Icons.equalizer_rounded,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            Expanded(
-              child: Text(
-                song['title'] ?? '未知标题',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
-                  color: isCurrent 
-                      ? Theme.of(context).colorScheme.primary 
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ),
-          ],
+        title: Text(
+          song['title'] ?? '未知标题',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
+            color: isCurrent 
+                ? Theme.of(context).colorScheme.primary 
+                : Theme.of(context).colorScheme.onSurface,
+          ),
         ),
         subtitle: Text(
           song['artist'] ?? '未知艺术家',
@@ -173,22 +158,6 @@ class _FullPlaylistPageState extends State<FullPlaylistPage> {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
-        trailing: isCurrent
-            ? Icon(
-                Icons.play_circle_filled,
-                size: 24,
-                color: Theme.of(context).colorScheme.primary,
-              )
-            : IconButton(
-                icon: Icon(
-                  Icons.more_vert,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-                onPressed: () {
-                  // 更多选项
-                },
-              ),
         onTap: () {
           if (!isCurrent) {
             widget.playerService.playSongAt(index);
