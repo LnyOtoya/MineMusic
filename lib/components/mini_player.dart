@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -95,6 +96,10 @@ class _MiniPlayerState extends State<MiniPlayer>
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _triggerHapticFeedback() {
+    HapticFeedback.lightImpact();
   }
 
   @override
@@ -316,6 +321,7 @@ class _MiniPlayerState extends State<MiniPlayer>
             color: colorScheme.onSurface,
           ),
           onPressed: () {
+            _triggerHapticFeedback();
             widget.playerService.previousSong();
           },
           iconSize: 24,
@@ -337,7 +343,10 @@ class _MiniPlayerState extends State<MiniPlayer>
                   : Icons.play_arrow_rounded,
               color: colorScheme.onPrimary,
             ),
-            onPressed: widget.playerService.togglePlayPause,
+            onPressed: () {
+              _triggerHapticFeedback();
+              widget.playerService.togglePlayPause();
+            },
             iconSize: 20,
             padding: const EdgeInsets.all(8),
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
@@ -351,6 +360,7 @@ class _MiniPlayerState extends State<MiniPlayer>
             color: colorScheme.onSurface,
           ),
           onPressed: () {
+            _triggerHapticFeedback();
             widget.playerService.nextSong();
           },
           iconSize: 24,
@@ -366,6 +376,7 @@ class _MiniPlayerState extends State<MiniPlayer>
             color: colorScheme.onSurface,
           ),
           onPressed: () {
+            _triggerHapticFeedback();
             _showPlaylistBottomSheet();
           },
           iconSize: 24,
@@ -385,123 +396,140 @@ class _MiniPlayerState extends State<MiniPlayer>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      barrierColor: Colors.black54,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) => Stack(
+        children: [
+          GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+            },
+            child: Container(
+              color: Colors.transparent,
+            ),
           ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+          DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            minChildSize: 0.4,
+            maxChildSize: 0.9,
+            snap: true,
+            snapSizes: const [0.4, 0.6, 0.9],
+            builder: (context, scrollController) => Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      '播放列表',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    const Spacer(),
-                    Text(
-                      '${widget.playerService.playlist.length} 首歌曲',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
                     ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: widget.playerService.playlist.length,
-                  itemBuilder: (context, index) {
-                    final song = widget.playerService.playlist[index];
-                    final isCurrentSong =
-                        widget.playerService.currentSong?['id'] == song['id'];
+                    child: Row(
+                      children: [
+                        Text(
+                          '播放列表',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${widget.playerService.playlist.length} 首歌曲',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: widget.playerService.playlist.length,
+                      itemBuilder: (context, index) {
+                        final song = widget.playerService.playlist[index];
+                        final isCurrentSong =
+                            widget.playerService.currentSong?['id'] == song['id'];
 
-                    return ListTile(
-                      leading: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: song['coverArt'] != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: CachedNetworkImage(
-                                  imageUrl: widget.api.getCoverArtUrl(
-                                    song['coverArt'],
+                        return ListTile(
+                          leading: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: song['coverArt'] != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: CachedNetworkImage(
+                                      imageUrl: widget.api.getCoverArtUrl(
+                                        song['coverArt'],
+                                      ),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.music_note_rounded,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                                   ),
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Icon(
-                                Icons.music_note_rounded,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                      ),
-                      title: Text(
-                        song['title'] ?? '未知歌曲',
-                        style: TextStyle(
-                          fontWeight: isCurrentSong
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isCurrentSong
-                              ? Theme.of(context).colorScheme.primary
+                          ),
+                          title: Text(
+                            song['title'] ?? '未知歌曲',
+                            style: TextStyle(
+                              fontWeight: isCurrentSong
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isCurrentSong
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                            ),
+                          ),
+                          subtitle: Text(
+                            song['artist'] ?? '未知艺术家',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          trailing: isCurrentSong
+                              ? Icon(
+                                  Icons.equalizer_rounded,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                )
                               : null,
-                        ),
-                      ),
-                      subtitle: Text(
-                        song['artist'] ?? '未知艺术家',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      trailing: isCurrentSong
-                          ? Icon(
-                              Icons.equalizer_rounded,
-                              color: Theme.of(context).colorScheme.primary,
-                              size: 20,
-                            )
-                          : null,
-                      onTap: () {
-                        widget.playerService.playSongAt(index);
-                        Navigator.pop(context);
+                          onTap: () {
+                            widget.playerService.playSongAt(index);
+                            Navigator.pop(context);
+                          },
+                        );
                       },
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

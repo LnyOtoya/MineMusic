@@ -3,6 +3,7 @@ import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/error_handler_service.dart';
+import '../utils/app_fonts.dart';
 
 // 歌曲页面
 class SongsPage extends StatefulWidget {
@@ -55,6 +56,9 @@ class _SongsPageState extends State<SongsPage> {
   }
 
   Widget _buildHeader() {
+    final title = '所有歌曲';
+    final subtitle = '浏览和播放所有歌曲';
+    
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 64, 20, 16),
       child: Column(
@@ -64,18 +68,23 @@ class _SongsPageState extends State<SongsPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '所有歌曲',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                title,
+                style: AppFonts.getTextStyle(
+                  text: title,
+                  fontSize: 32,
                   fontWeight: FontWeight.bold,
                   letterSpacing: -0.8,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            '浏览和播放所有歌曲',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            subtitle,
+            style: AppFonts.getTextStyle(
+              text: subtitle,
+              fontSize: 18,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 0.2,
             ),

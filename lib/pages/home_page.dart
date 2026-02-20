@@ -4,6 +4,7 @@ import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import '../services/image_cache_service.dart';
 import '../services/color_extraction_service.dart';
+import '../utils/app_fonts.dart';
 import '../components/home_player_widget.dart';
 import 'random_songs_page.dart';
 import 'newest_albums_page.dart';
@@ -58,7 +59,6 @@ class _HomePageState extends State<HomePage>
       _recentPlayedFuture = widget.playerService.getRecentSongs(count: 5);
       _currentSongId = widget.playerService.currentSong?['id'];
       widget.playerService.addListener(_onPlayerStateChanged);
-      PlayerService.colorSchemeNotifier.addListener(_onColorSchemeChanged);
       _preloadImages();
       _isInitialized = true;
     }
@@ -104,7 +104,6 @@ class _HomePageState extends State<HomePage>
   @override
   void dispose() {
     widget.playerService.removeListener(_onPlayerStateChanged);
-    PlayerService.colorSchemeNotifier.removeListener(_onColorSchemeChanged);
     super.dispose();
   }
 
@@ -157,12 +156,6 @@ class _HomePageState extends State<HomePage>
       widget.playerService.updateColorScheme(colorScheme);
     } else {
       print('主页: 颜色提取失败');
-    }
-  }
-
-  void _onColorSchemeChanged() {
-    if (mounted) {
-      setState(() {});
     }
   }
 
@@ -219,6 +212,9 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildWelcomeSection() {
+    final greeting = _getGreeting();
+    final subtitle = '发现好音乐';
+    
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
       child: Column(
@@ -231,17 +227,21 @@ class _HomePageState extends State<HomePage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _getGreeting(),
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5,
-                          ),
+                      greeting,
+                      style: AppFonts.getTextStyle(
+                        text: greeting,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '发现好音乐',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      subtitle,
+                      style: AppFonts.getTextStyle(
+                        text: subtitle,
+                        fontSize: 18,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         letterSpacing: 0.2,
                       ),

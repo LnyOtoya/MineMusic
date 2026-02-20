@@ -4,6 +4,7 @@ import '../services/player_service.dart';
 import 'detail_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/error_handler_service.dart';
+import '../utils/app_fonts.dart';
 
 // 歌单页面
 class PlaylistsPage extends StatefulWidget {
@@ -79,6 +80,8 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
   }
 
   Widget _buildHeader() {
+    final title = '我的歌单';
+    
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 64, 20, 16),
       child: Column(
@@ -88,10 +91,13 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '我的歌单',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                title,
+                style: AppFonts.getTextStyle(
+                  text: title,
+                  fontSize: 32,
                   fontWeight: FontWeight.bold,
                   letterSpacing: -0.8,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               IconButton(

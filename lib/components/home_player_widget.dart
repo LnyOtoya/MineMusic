@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 class HomePlayerWidget extends StatelessWidget {
   final String? coverUrl;
@@ -123,8 +124,12 @@ class HomePlayerWidget extends StatelessWidget {
                     ),
                     child: Icon(
                       isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
+                          ? Symbols.pause
+                          : Symbols.play_arrow,
+                      fill: 1,
+                      weight: 400,
+                      grade: 0,
+                      opticalSize: 24,
                       size: containerSize * 0.15,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -159,7 +164,11 @@ class HomePlayerWidget extends StatelessWidget {
                     elevation: 0,
                     shape: const CircleBorder(),
                     child: Icon(
-                      Icons.skip_next_rounded,
+                      Symbols.skip_next,
+                      fill: 0,
+                      weight: 400,
+                      grade: 0,
+                      opticalSize: 24,
                       size: containerSize * 0.12,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -75,6 +76,10 @@ class _PlaybackPageState extends State<PlaybackPage> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _triggerHapticFeedback() {
+    HapticFeedback.lightImpact();
   }
 
   Future<void> _extractColorFromAlbumArt() async {
@@ -224,7 +229,10 @@ class _PlaybackPageState extends State<PlaybackPage> {
                       grade: 0,
                       opticalSize: 24,
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      _triggerHapticFeedback();
+                      Navigator.pop(context);
+                    },
                     style: IconButton.styleFrom(
                       backgroundColor: effectiveColorScheme.primaryContainer,
                       padding: EdgeInsets.zero,
@@ -450,7 +458,10 @@ class _PlaybackPageState extends State<PlaybackPage> {
                       grade: 0,
                       opticalSize: 24,
                     ),
-                    onPressed: () => widget.playerService.previousSong(),
+                    onPressed: () {
+                      _triggerHapticFeedback();
+                      widget.playerService.previousSong();
+                    },
                     style: IconButton.styleFrom(
                       backgroundColor: colorScheme.primaryContainer,
                       shape: RoundedRectangleBorder(
@@ -475,7 +486,10 @@ class _PlaybackPageState extends State<PlaybackPage> {
                       opticalSize: 24,
                       color: Colors.white,
                     ),
-                    onPressed: () => widget.playerService.togglePlayPause(),
+                    onPressed: () {
+                      _triggerHapticFeedback();
+                      widget.playerService.togglePlayPause();
+                    },
                     style: IconButton.styleFrom(
                       backgroundColor: colorScheme.primary,
                       shape: RoundedRectangleBorder(
@@ -499,7 +513,10 @@ class _PlaybackPageState extends State<PlaybackPage> {
                       grade: 0,
                       opticalSize: 24,
                     ),
-                    onPressed: () => widget.playerService.nextSong(),
+                    onPressed: () {
+                      _triggerHapticFeedback();
+                      widget.playerService.nextSong();
+                    },
                     style: IconButton.styleFrom(
                       backgroundColor: colorScheme.primaryContainer,
                       shape: RoundedRectangleBorder(
@@ -538,7 +555,10 @@ class _PlaybackPageState extends State<PlaybackPage> {
                             ? colorScheme.onPrimaryContainer
                             : colorScheme.onPrimaryContainer,
                       ),
-                  onPressed: () => widget.playerService.toggleShuffle(),
+                  onPressed: () {
+                    _triggerHapticFeedback();
+                    widget.playerService.toggleShuffle();
+                  },
                   style: IconButton.styleFrom(
                     backgroundColor: widget.playerService.playbackMode == PlaybackMode.shuffle
                         ? colorScheme.primary
@@ -573,7 +593,10 @@ class _PlaybackPageState extends State<PlaybackPage> {
                             ? colorScheme.onPrimaryContainer
                             : colorScheme.onPrimaryContainer,
                       ),
-                  onPressed: () => widget.playerService.toggleRepeat(),
+                  onPressed: () {
+                    _triggerHapticFeedback();
+                    widget.playerService.toggleRepeat();
+                  },
                   style: IconButton.styleFrom(
                     backgroundColor: (widget.playerService.playbackMode == PlaybackMode.repeatOne ||
                             widget.playerService.playbackMode == PlaybackMode.repeatAll)
@@ -596,7 +619,10 @@ class _PlaybackPageState extends State<PlaybackPage> {
                   grade: 0,
                   opticalSize: 24,
                 ),
-                onPressed: () => _showPlaylistBottomSheet(),
+                onPressed: () {
+                  _triggerHapticFeedback();
+                  _showPlaylistBottomSheet();
+                },
                 style: IconButton.styleFrom(
                   backgroundColor: colorScheme.primaryContainer,
                   shape: RoundedRectangleBorder(
@@ -619,117 +645,134 @@ class _PlaybackPageState extends State<PlaybackPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      barrierColor: Colors.black54,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (context) => Stack(
+        children: [
+          GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+            },
+            child: Container(
+              color: Colors.transparent,
+            ),
           ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+          DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            minChildSize: 0.4,
+            maxChildSize: 0.9,
+            snap: true,
+            snapSizes: const [0.4, 0.6, 0.9],
+            builder: (context, scrollController) => Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      '播放列表',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    const Spacer(),
-                    Text(
-                      '${widget.playerService.playlist.length} 首歌曲',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 8,
                     ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: widget.playerService.playlist.length,
-                  itemBuilder: (context, index) {
-                    final song = widget.playerService.playlist[index];
-                    final isCurrentSong =
-                        widget.playerService.currentSong?['id'] == song['id'];
+                    child: Row(
+                      children: [
+                        Text(
+                          '播放列表',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${widget.playerService.playlist.length} 首歌曲',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: widget.playerService.playlist.length,
+                      itemBuilder: (context, index) {
+                        final song = widget.playerService.playlist[index];
+                        final isCurrentSong =
+                            widget.playerService.currentSong?['id'] == song['id'];
 
-                    return ListTile(
-                      leading: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: song['coverArt'] != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: CachedNetworkImage(
-                                  imageUrl: widget.api.getCoverArtUrl(
-                                    song['coverArt'],
+                        return ListTile(
+                          leading: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: song['coverArt'] != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: CachedNetworkImage(
+                                      imageUrl: widget.api.getCoverArtUrl(
+                                        song['coverArt'],
+                                      ),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.music_note_rounded,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Icon(
-                                Icons.music_note_rounded,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                      ),
-                      title: Text(
-                        song['title'] ?? '未知歌曲',
-                        style: TextStyle(
-                          fontWeight: isCurrentSong
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isCurrentSong
-                              ? Theme.of(context).colorScheme.primary
+                          ),
+                          title: Text(
+                            song['title'] ?? '未知歌曲',
+                            style: TextStyle(
+                              fontWeight: isCurrentSong
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isCurrentSong
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                            ),
+                          ),
+                          subtitle: Text(
+                            song['artist'] ?? '未知艺术家',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          trailing: isCurrentSong
+                              ? Icon(
+                                  Icons.equalizer_rounded,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                )
                               : null,
-                        ),
-                      ),
-                      subtitle: Text(
-                        song['artist'] ?? '未知艺术家',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      trailing: isCurrentSong
-                          ? Icon(
-                              Icons.equalizer_rounded,
-                              color: Theme.of(context).colorScheme.primary,
-                              size: 20,
-                            )
-                          : null,
-                      onTap: () {
-                        widget.playerService.playSongAt(index);
-                        Navigator.pop(context);
+                          onTap: () {
+                            widget.playerService.playSongAt(index);
+                            Navigator.pop(context);
+                          },
+                        );
                       },
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
