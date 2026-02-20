@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/lyrics_model.dart';
 
 class LyricsWidget extends StatefulWidget {
@@ -140,14 +141,30 @@ class _LyricsWidgetState extends State<LyricsWidget> {
     );
   }
 
+  TextStyle _getFontForLanguage() {
+    final lang = widget.lyricsData?.lang ?? 'und';
+    
+    if (lang.startsWith('zh') || lang == 'zho') {
+      return GoogleFonts.notoSansSc();
+    } else if (lang.startsWith('en') || lang == 'eng') {
+      return GoogleFonts.nunito();
+    } else if (lang.startsWith('ja') || lang.startsWith('ko') || lang.startsWith('ru')) {
+      return GoogleFonts.notoSansSc();
+    } else {
+      return GoogleFonts.nunito();
+    }
+  }
+
   LyricStyle _createLyricStyle() {
+    final baseFont = _getFontForLanguage();
+    
     return LyricStyle(
-      textStyle: TextStyle(
+      textStyle: baseFont.copyWith(
         color: Theme.of(context).colorScheme.onSurfaceVariant,
         fontSize: 24,
         height: 1.6,
       ),
-      activeStyle: TextStyle(
+      activeStyle: baseFont.copyWith(
         color: Theme.of(context).colorScheme.primary,
         fontSize: 28,
         fontWeight: FontWeight.bold,
@@ -170,7 +187,7 @@ class _LyricsWidgetState extends State<LyricsWidget> {
       selectionAutoResumeDuration: const Duration(seconds: 2),
       activeAutoResumeDuration: const Duration(seconds: 3),
       translationLineGap: 6,
-      translationStyle: TextStyle(
+      translationStyle: baseFont.copyWith(
         color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
         fontSize: 18,
       ),
