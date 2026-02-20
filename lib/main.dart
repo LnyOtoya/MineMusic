@@ -6,6 +6,8 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/subsonic_api.dart';
 import 'services/player_service.dart';
+import 'services/secure_storage_service.dart';
+import 'services/encryption_service.dart';
 import 'components/mini_player.dart';
 import 'pages/home_page.dart';
 import 'pages/login_page.dart';
@@ -259,31 +261,36 @@ class _InitializerPageState extends State<InitializerPage> {
 
   Future<void> _initializeApp() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final baseUrl = prefs.getString('baseUrl');
-      final username = prefs.getString('username');
-      final password = prefs.getString('password');
+      final credentials = await SecureStorageService().loadCredentials();
 
-      if (baseUrl != null && username != null && password != null) {
-        final api = SubsonicApi(
-          baseUrl: baseUrl,
-          username: username,
-          password: password,
-        );
+      if (credentials != null) {
+        final savedBaseUrl = credentials['baseUrl'] as String;
+        final savedUsername = credentials['username'] as String;
+        final savedPassword = credentials['password'] as String;
+        final savedRememberMe = credentials['rememberMe'] as bool;
 
-        final success = await api.ping();
-        if (success) {
-          setState(() {
-            _homePage = MusicHomePage(
-              api: api,
-              baseUrl: baseUrl,
-              username: username,
-              password: password,
-              setThemeMode: widget.setThemeMode,
-            );
-            _isLoading = false;
-          });
-          return;
+        if (savedRememberMe) {
+          final decryptedPassword = await EncryptionService().decryptPassword(savedPassword);
+          final api = SubsonicApi(
+            baseUrl: savedBaseUrl,
+            username: savedUsername,
+            password: decryptedPassword,
+          );
+
+          final success = await api.ping();
+          if (success) {
+            setState(() {
+              _homePage = MusicHomePage(
+                api: api,
+                baseUrl: savedBaseUrl,
+                username: savedUsername,
+                password: decryptedPassword,
+                setThemeMode: widget.setThemeMode,
+              );
+              _isLoading = false;
+            });
+            return;
+          }
         }
       }
     } catch (e) {
