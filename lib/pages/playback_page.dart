@@ -139,6 +139,23 @@ class _PlaybackPageState extends State<PlaybackPage> {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Column(
               children: [
+                // 保留现有的进度条
+                MaterialWaveSlider(
+                  height: 40.0,
+                  value: progress,
+                  min: 0.0,
+                  max: 1.0,
+                  paused: !isPlaying,
+                  onChanged: (value) {
+                    if (totalDuration.inMilliseconds > 0) {
+                      final newPosition = Duration(
+                        milliseconds: (value * totalDuration.inMilliseconds).round(),
+                      );
+                      widget.playerService.seekTo(newPosition);
+                    }
+                  },
+                ),
+                const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -155,23 +172,6 @@ class _PlaybackPageState extends State<PlaybackPage> {
                           ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                // 保留现有的进度条
-                MaterialWaveSlider(
-                  height: 40.0,
-                  value: progress,
-                  min: 0.0,
-                  max: 1.0,
-                  paused: !isPlaying,
-                  onChanged: (value) {
-                    if (totalDuration.inMilliseconds > 0) {
-                      final newPosition = Duration(
-                        milliseconds: (value * totalDuration.inMilliseconds).round(),
-                      );
-                      widget.playerService.seekTo(newPosition);
-                    }
-                  },
                 ),
               ],
             ),
@@ -192,17 +192,17 @@ class _PlaybackPageState extends State<PlaybackPage> {
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.primary,
-                          fontSize: 22,
+                          fontSize: 28,
                         ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
                     currentSong?['artist'] ?? 'Unknown artist',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 16,
+                          fontSize: 20,
                         ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -281,7 +281,7 @@ class _PlaybackPageState extends State<PlaybackPage> {
             ),
           ),
 
-          const SizedBox(height: 48),
+          const SizedBox(height: 16),
 
           // 底部控制
           Padding(
