@@ -154,8 +154,20 @@ class PlayerService extends ChangeNotifier {
     if (savedSong != null && _api != null) {
       // 恢复播放来源
       _sourceType = savedSourceType;
-      // 加载歌曲但不自动播放
-      await _loadSongWithoutPlaying(savedSong, playlist: savedPlaylist);
+      // 只恢复歌曲信息，不立即加载音频（避免启动时触发解码器初始化）
+      _currentSong = savedSong;
+      _totalDuration = savedSong['duration'] != null
+          ? Duration(seconds: int.tryParse(savedSong['duration'].toString()) ?? 0)
+          : Duration.zero;
+      _currentPosition = await _playbackStateService.getPlaybackPosition();
+      
+      // 保存播放列表但不加载到音频播放器
+      if (savedPlaylist != null && savedPlaylist.isNotEmpty) {
+        _currentPlaylist = savedPlaylist;
+      }
+      
+      print('已恢复播放状态（仅元数据，未加载音频）');
+      notifyListeners();
     }
   }
 
@@ -323,18 +335,35 @@ class PlayerService extends ChangeNotifier {
     }
     
     await _historyService.addToHistory(song);
-    await _audioHandler.playSong(song, playlist: playlist);
+    
+    // 如果是首次播放（音频播放器中没有歌曲），使用 loadSong 而不是 playSong
+    if (_audioHandler.currentSong == null) {
+      print('首次播放，使用 loadSong 加载音频');
+      await _audioHandler.loadSong(song, playlist: playlist);
+      
+      // 恢复播放进度
+      final savedPosition = await _playbackStateService.getPlaybackPosition();
+      if (savedPosition > Duration.zero) {
+        await _audioHandler.seek(savedPosition);
+      }
+      
+      // 开始播放
+      await _audioHandler.play();
+    } else {
+      // 正常播放
+      await _audioHandler.playSong(song, playlist: playlist);
+      
+      // 恢复播放进度
+      final savedPosition = await _playbackStateService.getPlaybackPosition();
+      if (savedPosition > Duration.zero) {
+        await seekTo(savedPosition);
+      }
+    }
 
     // 保存播放列表
     if (playlist != null && playlist.isNotEmpty) {
       await _playbackStateService.savePlaylist(playlist);
       print('已保存完整播放列表，包含 ${playlist.length} 首歌曲');
-    }
-
-    // 恢复播放进度
-    final savedPosition = await _playbackStateService.getPlaybackPosition();
-    if (savedPosition > Duration.zero) {
-      await seekTo(savedPosition);
     }
   }
 
@@ -343,6 +372,17 @@ class PlayerService extends ChangeNotifier {
   }
 
   Future<void> resume() async {
+    // 检查是否需要先加载音频（首次播放时）
+    if (_currentSong != null && _audioHandler.currentSong == null) {
+      print('首次播放，加载音频到播放器');
+      await _audioHandler.loadSong(_currentSong!, playlist: _currentPlaylist);
+      
+      // 恢复播放进度
+      if (_currentPosition > Duration.zero) {
+        await _audioHandler.seek(_currentPosition);
+      }
+    }
+    
     await _audioHandler.play();
   }
 
@@ -355,6 +395,12 @@ class PlayerService extends ChangeNotifier {
   }
 
   Future<void> nextSong() async {
+    // 检查是否需要先加载音频（首次播放时）
+    if (_currentSong != null && _audioHandler.currentSong == null && _currentPlaylist.isNotEmpty) {
+      print('首次播放，加载音频到播放器');
+      await _audioHandler.loadSong(_currentSong!, playlist: _currentPlaylist);
+    }
+    
     switch (_playbackMode) {
       case PlaybackMode.shuffle:
         await _playRandomSong();
