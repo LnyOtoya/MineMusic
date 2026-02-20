@@ -159,7 +159,7 @@ class _LyricsWidgetState extends State<LyricsWidget> {
       activeAlignment: MainAxisAlignment.center,
       fadeRange: FadeRange(
         top: 0.3,
-        bottom: 0.3,
+        bottom: 0.2,
       ),
       scrollDuration: const Duration(milliseconds: 300),
       scrollCurve: Curves.easeInOut,
