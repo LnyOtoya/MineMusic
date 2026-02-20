@@ -289,7 +289,7 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
