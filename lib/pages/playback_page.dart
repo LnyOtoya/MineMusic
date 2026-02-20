@@ -256,43 +256,54 @@ class _PlaybackPageState extends State<PlaybackPage> {
         // 时间显示和进度条
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            children: [
-              // 保留现有的进度条
-              MaterialWaveSlider(
-                height: 40.0,
-                value: progress,
-                min: 0.0,
-                max: 1.0,
-                paused: !isPlaying,
-                onChanged: (value) {
-                  if (totalDuration.inMilliseconds > 0) {
-                    final newPosition = Duration(
-                      milliseconds: (value * totalDuration.inMilliseconds).round(),
-                    );
-                    widget.playerService.seekTo(newPosition);
-                  }
-                },
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatDuration(currentPosition),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+          child: GestureDetector(
+            onHorizontalDragStart: (_) {},
+            onHorizontalDragUpdate: (_) {},
+            onHorizontalDragEnd: (_) {},
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              children: [
+                // 保留现有的进度条
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 6.0,
                   ),
-                  Text(
-                    _formatDuration(totalDuration),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                  child: MaterialWaveSlider(
+                    height: 40.0,
+                    value: progress,
+                    min: 0.0,
+                    max: 1.0,
+                    paused: !isPlaying,
+                    onChanged: (value) {
+                      if (totalDuration.inMilliseconds > 0) {
+                        final newPosition = Duration(
+                          milliseconds: (value * totalDuration.inMilliseconds).round(),
+                        );
+                        widget.playerService.seekTo(newPosition);
+                      }
+                    },
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _formatDuration(currentPosition),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    Text(
+                      _formatDuration(totalDuration),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
 
