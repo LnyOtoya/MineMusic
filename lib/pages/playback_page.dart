@@ -43,6 +43,35 @@ class _PlaybackPageState extends State<PlaybackPage> {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
+  String _getSourceInfo() {
+    switch (widget.playerService.sourceType) {
+      case 'album':
+        return '专辑';
+      case 'playlist':
+        return '歌单';
+      case 'artist':
+        return '艺人';
+      case 'random':
+        return '随机歌曲';
+      case 'random_album':
+        return '随机专辑';
+      case 'search':
+        return '搜索结果';
+      case 'similar':
+        return '相似歌曲';
+      case 'recommended':
+        return '推荐歌曲';
+      case 'song':
+        return '歌曲';
+      case 'newest':
+        return '最新专辑';
+      case 'history':
+        return '最近常听';
+      default:
+        return '播放中';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentSong = widget.playerService.currentSong;
@@ -61,18 +90,32 @@ class _PlaybackPageState extends State<PlaybackPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 32),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('Now Playing', style: TextStyle(fontSize: 16)),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert_rounded),
-            onPressed: () {},
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 32),
+          child: Transform.scale(
+            scale: 1.5,
+            child: IconButton(
+              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 24),
+              onPressed: () => Navigator.pop(context),
+              style: IconButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                padding: EdgeInsets.zero,
+                shape: const CircleBorder(),
+              ),
+            ),
           ),
-        ],
+        ),
+        title: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Text(
+            _getSourceInfo(),
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+        centerTitle: false,
       ),
       body: Column(
         children: [
