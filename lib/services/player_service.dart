@@ -11,6 +11,7 @@ import '../utils/native_channel.dart';
 enum PlaybackMode {
   sequential,
   shuffle,
+  repeatAll,
   repeatOne,
 }
 
@@ -21,6 +22,8 @@ extension PlaybackModeExtension on PlaybackMode {
         return '顺序播放';
       case PlaybackMode.shuffle:
         return '随机播放';
+      case PlaybackMode.repeatAll:
+        return '列表循环';
       case PlaybackMode.repeatOne:
         return '单曲循环';
     }
@@ -32,6 +35,8 @@ extension PlaybackModeExtension on PlaybackMode {
         return Icons.replay;
       case PlaybackMode.shuffle:
         return Icons.shuffle;
+      case PlaybackMode.repeatAll:
+        return Icons.repeat;
       case PlaybackMode.repeatOne:
         return Icons.repeat_one;
     }
@@ -46,9 +51,9 @@ extension PlaybackModeExtension on PlaybackMode {
       case 'repeatOne':
         return PlaybackMode.repeatOne;
       case 'repeat':
-        return PlaybackMode.repeatOne;
+        return PlaybackMode.repeatAll;
       case 'repeatAll':
-        return PlaybackMode.sequential;
+        return PlaybackMode.repeatAll;
       default:
         return PlaybackMode.sequential;
     }
@@ -337,6 +342,13 @@ class PlayerService extends ChangeNotifier {
         await _audioHandler.seek(Duration.zero);
         await _audioHandler.play();
         break;
+      case PlaybackMode.repeatAll:
+        if (_currentIndex < _currentPlaylist.length - 1) {
+          await _audioHandler.skipToNext();
+        } else {
+          await _audioHandler.skipToIndex(0);
+        }
+        break;
       case PlaybackMode.sequential:
         await _audioHandler.skipToNext();
         break;
@@ -375,8 +387,42 @@ class PlayerService extends ChangeNotifier {
       case PlaybackMode.repeatOne:
         _playbackMode = PlaybackMode.sequential;
         break;
+      case PlaybackMode.repeatAll:
+        _playbackMode = PlaybackMode.sequential;
+        break;
     }
     playbackModeNotifier.value = _playbackMode;
+    _savePlaybackMode();
+  }
+
+  void toggleShuffle() {
+    if (_playbackMode == PlaybackMode.shuffle) {
+      _playbackMode = PlaybackMode.sequential;
+    } else {
+      _playbackMode = PlaybackMode.shuffle;
+    }
+    playbackModeNotifier.value = _playbackMode;
+    notifyListeners();
+    _savePlaybackMode();
+  }
+
+  void toggleRepeat() {
+    switch (_playbackMode) {
+      case PlaybackMode.sequential:
+        _playbackMode = PlaybackMode.repeatAll;
+        break;
+      case PlaybackMode.repeatAll:
+        _playbackMode = PlaybackMode.repeatOne;
+        break;
+      case PlaybackMode.repeatOne:
+        _playbackMode = PlaybackMode.sequential;
+        break;
+      case PlaybackMode.shuffle:
+        _playbackMode = PlaybackMode.repeatAll;
+        break;
+    }
+    playbackModeNotifier.value = _playbackMode;
+    notifyListeners();
     _savePlaybackMode();
   }
 

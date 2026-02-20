@@ -420,44 +420,58 @@ class _PlaybackPageState extends State<PlaybackPage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               // 随机播放 - 圆形
-              IconButton(
-                icon: Icon(
-                  Icons.shuffle_rounded,
-                  size: 20,
-                  color: widget.playerService.playbackMode.toString().contains('shuffle')
-                      ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-                onPressed: () => widget.playerService.togglePlaybackMode(),
-                style: IconButton.styleFrom(
-                  backgroundColor: widget.playerService.playbackMode.toString().contains('shuffle')
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.primaryContainer,
-                  shape: const CircleBorder(),
-                  padding: const EdgeInsets.all(16),
+              Tooltip(
+                message: widget.playerService.playbackMode == PlaybackMode.shuffle
+                    ? '随机播放'
+                    : '顺序播放',
+                child: IconButton(
+                  icon: Icon(
+                        Icons.shuffle_rounded,
+                        size: 20,
+                        color: widget.playerService.playbackMode == PlaybackMode.shuffle
+                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                            : Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                  onPressed: () => widget.playerService.toggleShuffle(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: widget.playerService.playbackMode == PlaybackMode.shuffle
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.primaryContainer,
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(16),
+                  ),
                 ),
               ),
 
               // 循环播放 - 胶囊形
-              IconButton(
-                icon: Icon(
-                  widget.playerService.playbackMode.toString().contains('repeatOne')
-                      ? Icons.repeat_one_rounded
-                      : Icons.repeat_rounded,
-                  size: 20,
-                  color: widget.playerService.playbackMode.toString().contains('repeatOne')
-                      ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-                onPressed: () => widget.playerService.togglePlaybackMode(),
-                style: IconButton.styleFrom(
-                  backgroundColor: widget.playerService.playbackMode.toString().contains('repeatOne')
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.primaryContainer,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+              Tooltip(
+                message: widget.playerService.playbackMode == PlaybackMode.repeatOne
+                    ? '单曲循环'
+                    : widget.playerService.playbackMode == PlaybackMode.repeatAll
+                        ? '列表循环'
+                        : '顺序播放',
+                child: IconButton(
+                  icon: Icon(
+                        widget.playerService.playbackMode == PlaybackMode.repeatOne
+                            ? Icons.repeat_one_rounded
+                            : Icons.repeat_rounded,
+                        size: 20,
+                        color: (widget.playerService.playbackMode == PlaybackMode.repeatOne ||
+                                widget.playerService.playbackMode == PlaybackMode.repeatAll)
+                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                            : Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                  onPressed: () => widget.playerService.toggleRepeat(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: (widget.playerService.playbackMode == PlaybackMode.repeatOne ||
+                            widget.playerService.playbackMode == PlaybackMode.repeatAll)
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.primaryContainer,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 ),
               ),
 
