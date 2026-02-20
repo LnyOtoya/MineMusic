@@ -134,44 +134,9 @@ class _LyricsWidgetState extends State<LyricsWidget> {
   }
 
   Widget _buildLyricsContent() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-          child: Row(
-            children: [
-              Text(
-                '歌词',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Spacer(),
-              if (widget.lyricsData!.lang != 'und')
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    widget.lyricsData!.languageName,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: LyricView(
-            controller: _lyricController,
-            style: _createLyricStyle(),
-          ),
-        ),
-      ],
+    return LyricView(
+      controller: _lyricController,
+      style: _createLyricStyle(),
     );
   }
 
@@ -179,22 +144,22 @@ class _LyricsWidgetState extends State<LyricsWidget> {
     return LyricStyle(
       textStyle: TextStyle(
         color: Theme.of(context).colorScheme.onSurfaceVariant,
-        fontSize: 18,
+        fontSize: 24,
         height: 1.6,
       ),
       activeStyle: TextStyle(
         color: Theme.of(context).colorScheme.primary,
-        fontSize: 22,
+        fontSize: 28,
         fontWeight: FontWeight.bold,
         height: 1.6,
       ),
-      lineGap: 8,
+      lineGap: 12,
       contentPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
       activeAnchorPosition: 0.5,
       activeAlignment: MainAxisAlignment.center,
       fadeRange: FadeRange(
-        top: 0.1,
-        bottom: 0.9,
+        top: 0.3,
+        bottom: 0.3,
       ),
       scrollDuration: const Duration(milliseconds: 300),
       scrollCurve: Curves.easeInOut,
@@ -204,10 +169,10 @@ class _LyricsWidgetState extends State<LyricsWidget> {
       selectionAnchorPosition: 0.5,
       selectionAutoResumeDuration: const Duration(seconds: 2),
       activeAutoResumeDuration: const Duration(seconds: 3),
-      translationLineGap: 4,
+      translationLineGap: 6,
       translationStyle: TextStyle(
         color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-        fontSize: 14,
+        fontSize: 18,
       ),
       selectedColor: Theme.of(context).colorScheme.primary,
       selectedTranslationColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
