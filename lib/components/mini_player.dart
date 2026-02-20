@@ -41,6 +41,7 @@ class _MiniPlayerState extends State<MiniPlayer>
 
     // 监听播放状态变化
     widget.playerService.addListener(_onPlayerStateChanged);
+    PlayerService.colorSchemeNotifier.addListener(_onColorSchemeChanged);
     // 初始检查状态
     _onPlayerStateChanged();
   }
@@ -86,7 +87,14 @@ class _MiniPlayerState extends State<MiniPlayer>
   void dispose() {
     _animationController.dispose();
     widget.playerService.removeListener(_onPlayerStateChanged);
+    PlayerService.colorSchemeNotifier.removeListener(_onColorSchemeChanged);
     super.dispose();
+  }
+
+  void _onColorSchemeChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -102,11 +110,14 @@ class _MiniPlayerState extends State<MiniPlayer>
   }
 
   Widget _buildPlayerContent() {
+    final dynamicColorScheme = widget.playerService.currentColorScheme;
+    final effectiveColorScheme = dynamicColorScheme ?? Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       height: 72,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        color: effectiveColorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -125,9 +136,9 @@ class _MiniPlayerState extends State<MiniPlayer>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                _buildLeftSection(),
+                _buildLeftSection(effectiveColorScheme),
                 const Spacer(),
-                _buildControlSection(),
+                _buildControlSection(effectiveColorScheme),
               ],
             ),
           ),
@@ -168,7 +179,7 @@ class _MiniPlayerState extends State<MiniPlayer>
   //   );
   // }
 
-  Widget _buildLeftSection() {
+  Widget _buildLeftSection(ColorScheme colorScheme) {
     final song = widget.playerService.currentSong;
     if (song == null) return const SizedBox();
 
@@ -179,7 +190,7 @@ class _MiniPlayerState extends State<MiniPlayer>
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(10),
           ),
           child: ClipRRect(
@@ -190,12 +201,12 @@ class _MiniPlayerState extends State<MiniPlayer>
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Icon(
                       Icons.music_note_rounded,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                       size: 22,
                     ),
                     errorWidget: (context, url, error) => Icon(
                       Icons.music_note_rounded,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant,
                       size: 22,
                     ),
                   )
@@ -295,14 +306,14 @@ class _MiniPlayerState extends State<MiniPlayer>
     }
   }
 
-  Widget _buildControlSection() {
+  Widget _buildControlSection(ColorScheme colorScheme) {
     return Row(
       children: [
         // 上一曲按钮
         IconButton(
           icon: Icon(
             Icons.skip_previous_rounded,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: colorScheme.onSurface,
           ),
           onPressed: () {
             widget.playerService.previousSong();
@@ -316,7 +327,7 @@ class _MiniPlayerState extends State<MiniPlayer>
         // 播放/暂停按钮
         Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
+            color: colorScheme.primary,
             shape: BoxShape.circle,
           ),
           child: IconButton(
@@ -324,7 +335,7 @@ class _MiniPlayerState extends State<MiniPlayer>
               widget.playerService.isPlaying
                   ? Icons.pause_rounded
                   : Icons.play_arrow_rounded,
-              color: Theme.of(context).colorScheme.onPrimary,
+              color: colorScheme.onPrimary,
             ),
             onPressed: widget.playerService.togglePlayPause,
             iconSize: 20,
@@ -337,7 +348,7 @@ class _MiniPlayerState extends State<MiniPlayer>
         IconButton(
           icon: Icon(
             Icons.skip_next_rounded,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: colorScheme.onSurface,
           ),
           onPressed: () {
             widget.playerService.nextSong();
@@ -352,7 +363,7 @@ class _MiniPlayerState extends State<MiniPlayer>
         IconButton(
           icon: Icon(
             Icons.queue_music_rounded,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: colorScheme.onSurface,
           ),
           onPressed: () {
             _showPlaylistBottomSheet();

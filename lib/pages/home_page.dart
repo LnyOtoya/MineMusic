@@ -678,7 +678,7 @@ class _HomePageState extends State<HomePage>
     return Container(
       decoration: BoxDecoration(
         color: isCurrent 
-            ? effectiveColorScheme.primaryContainer.withOpacity(0.3)
+            ? effectiveColorScheme.primaryContainer.withOpacity(0.5)
             : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
       ),
       child: ListTile(
