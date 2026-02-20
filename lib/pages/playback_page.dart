@@ -43,6 +43,13 @@ class _PlaybackPageState extends State<PlaybackPage> {
 
   void _onPlayerStateChanged() {
     if (mounted) {
+      final currentSong = widget.playerService.currentSong;
+      if (currentSong != null && currentSong['id'] != null) {
+        final songId = currentSong['id'];
+        if (_currentSongId != songId) {
+          _loadLyrics();
+        }
+      }
       setState(() {});
     }
   }
