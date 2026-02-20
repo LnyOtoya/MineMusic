@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/subsonic_api.dart';
 import 'services/player_service.dart';
@@ -365,13 +366,27 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
   Widget _buildNavigationDestination({
     required IconData icon,
-    required IconData selectedIcon,
     required String label,
     required int index,
   }) {
+    final isSelected = _selectedIndex == index;
     return NavigationDestination(
-      icon: Icon(icon),
-      selectedIcon: Icon(selectedIcon),
+      icon: Icon(
+        icon,
+        fill: isSelected ? 1 : 0,
+        weight: 400,
+        grade: 0,
+        opticalSize: 24,
+        // size: 40,
+      ),
+      selectedIcon: Icon(
+        icon,
+        fill: isSelected ? 1 : 0,
+        weight: 400,
+        grade: 0,
+        opticalSize: 24,
+        // size: 40,
+      ),
       label: label,
     );
   }
@@ -426,20 +441,17 @@ class _MusicHomePageState extends State<MusicHomePage> {
           backgroundColor: Colors.transparent,
           destinations: [
             _buildNavigationDestination(
-              icon: Icons.home_rounded,
-              selectedIcon: Icons.home_outlined,
+              icon: Symbols.home,
               label: '主页',
               index: 0,
             ),
             _buildNavigationDestination(
-              icon: Icons.music_note_rounded,
-              selectedIcon: Icons.music_note_outlined,
+              icon: Symbols.music_note,
               label: '歌曲',
               index: 1,
             ),
             _buildNavigationDestination(
-              icon: Icons.playlist_play_rounded,
-              selectedIcon: Icons.playlist_play_outlined,
+              icon: Symbols.queue_music,
               label: '歌单',
               index: 2,
             ),
