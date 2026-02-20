@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/subsonic_api.dart';
 import 'services/player_service.dart';
-import 'services/color_manager_service.dart';
+import 'services/enhanced_color_manager_service.dart';
 import 'services/custom_lyrics_api_service.dart';
 import 'components/mini_player.dart';
 import 'pages/home_page.dart';
@@ -49,9 +49,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _setupColorListeners() {
-    // 添加颜色变化监听器
-    ColorManagerService().addListener((colorScheme) {
-      // 颜色变化时触发重建，确保使用最新的颜色方案
+    EnhancedColorManagerService().addColorListener((colorPair) {
       setState(() {});
     });
   }
@@ -98,18 +96,18 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    // 使用 ColorManagerService 提供的动态颜色方案
-    final lightScheme = ColorManagerService().getCurrentColorScheme(
-      Brightness.light,
-    );
-    final darkScheme = ColorManagerService().getCurrentColorScheme(
-      Brightness.dark,
-    );
+    final colorManager = EnhancedColorManagerService();
 
     return MaterialApp(
       title: '音乐播放器',
-      theme: ThemeData(colorScheme: lightScheme, useMaterial3: true),
-      darkTheme: ThemeData(colorScheme: darkScheme, useMaterial3: true),
+      theme: ThemeData(
+        colorScheme: colorManager.lightScheme,
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: colorManager.darkScheme,
+        useMaterial3: true,
+      ),
       themeMode: _themeMode,
       home: InitializerPage(setThemeMode: setThemeMode),
     );

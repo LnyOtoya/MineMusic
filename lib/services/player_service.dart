@@ -6,7 +6,7 @@ import 'subsonic_api.dart';
 import 'audio_handler.dart';
 import 'play_history_service.dart';
 import 'playback_state_service.dart';
-import 'color_manager_service.dart';
+import 'enhanced_color_manager_service.dart';
 import '../models/lyrics_api_type.dart';
 import '../utils/native_channel.dart';
 
@@ -472,10 +472,9 @@ class PlayerService extends ChangeNotifier {
     Brightness brightness,
   ) async {
     try {
-      await ColorManagerService().extractColorSchemeFromCover(
-        coverArtId,
-        coverArtUrl,
-        brightness,
+      await EnhancedColorManagerService().updateColorFromCover(
+        coverArtId: coverArtId,
+        coverArtUrl: coverArtUrl,
       );
     } catch (e) {
       print('提取封面颜色失败: $e');

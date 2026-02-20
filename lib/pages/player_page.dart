@@ -7,7 +7,7 @@ import 'package:flutter_lyric/flutter_lyric.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
 import '../services/lyrics_api.dart';
-import '../services/color_manager_service.dart';
+import '../services/enhanced_color_manager_service.dart';
 import '../models/lyrics_api_type.dart';
 import '../utils/lrc_to_qrc_converter.dart';
 import '../utils/tonal_surface_helper.dart';
@@ -191,7 +191,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     );
 
     // 监听全局颜色变化
-    ColorManagerService().addListener(_onGlobalColorChanged);
+    EnhancedColorManagerService().addColorListener(_onGlobalColorChanged);
 
     // 监听歌词设置变化
     PlayerService.lyricsEnabledNotifier.addListener(_onLyricsSettingsChanged);
@@ -477,16 +477,18 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   }
 
   // 全局颜色变化监听
-  void _onGlobalColorChanged(ColorScheme colorScheme) {
+  void _onGlobalColorChanged(ColorSchemePair colorPair) {
     if (!mounted) return;
 
     // 检查当前亮度模式是否与变化的颜色方案匹配
     final currentBrightness = Theme.of(context).brightness;
-    if (colorScheme.brightness == currentBrightness) {
-      _targetCoverColorScheme = colorScheme;
-      _startColorAnimation();
-      print('✅ 全局颜色变化，更新播放页颜色');
-    }
+    final colorScheme = currentBrightness == Brightness.light
+        ? colorPair.light
+        : colorPair.dark;
+
+    _targetCoverColorScheme = colorScheme;
+    _startColorAnimation();
+    print('✅ 全局颜色变化，更新播放页颜色');
   }
 
   void _onLyricsSettingsChanged() {
@@ -515,7 +517,7 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
     _colorAnimationController.dispose();
 
     // 移除监听器
-    ColorManagerService().removeListener(_onGlobalColorChanged);
+    EnhancedColorManagerService().removeColorListener(_onGlobalColorChanged);
     PlayerService.lyricsEnabledNotifier.removeListener(
       _onLyricsSettingsChanged,
     );
@@ -805,9 +807,10 @@ class _PlayerPageState extends State<PlayerPage> with TickerProviderStateMixin {
   // 使用全局颜色方案
   void _useGlobalColorScheme() {
     final brightness = Theme.of(context).brightness;
-    final globalColorScheme = ColorManagerService().getCurrentColorScheme(
-      brightness,
-    );
+    final colorManager = EnhancedColorManagerService();
+    final globalColorScheme = brightness == Brightness.light
+        ? colorManager.lightScheme
+        : colorManager.darkScheme;
 
     if (globalColorScheme != null && mounted) {
       _targetCoverColorScheme = globalColorScheme;

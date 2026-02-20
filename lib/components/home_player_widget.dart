@@ -20,7 +20,7 @@ class HomePlayerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final containerSize = size.width * 0.7; // 70% of screen width
+    final containerSize = size.width * 0.6; // 60% of screen width for better fit in container
 
     return Center(
       child: SizedBox(
@@ -44,9 +44,9 @@ class HomePlayerWidget extends StatelessWidget {
                         BoxShadow(
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withAlpha(50),
-                          blurRadius: 20,
-                          offset: Offset(0, 10),
+                          ).colorScheme.onSurface.withAlpha(30),
+                          blurRadius: 15,
+                          offset: Offset(0, 8),
                         ),
                       ],
                     ),
@@ -95,8 +95,8 @@ class HomePlayerWidget extends StatelessWidget {
 
               // 左下角播放/暂停按钮
               Positioned(
-                bottom: -10,
-                left: -10,
+                bottom: -8,
+                left: -8,
                 child: Container(
                   width: containerSize * 0.3,
                   height: containerSize * 0.3,
@@ -107,9 +107,9 @@ class HomePlayerWidget extends StatelessWidget {
                       BoxShadow(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withAlpha(30),
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
+                        ).colorScheme.onSurface.withAlpha(20),
+                        blurRadius: 8,
+                        offset: Offset(0, 3),
                       ),
                     ],
                   ),
@@ -134,8 +134,8 @@ class HomePlayerWidget extends StatelessWidget {
 
               // 右上角下一曲按钮
               Positioned(
-                top: -10,
-                right: -10,
+                top: -8,
+                right: -8,
                 child: Container(
                   width: containerSize * 0.25,
                   height: containerSize * 0.25,
@@ -146,9 +146,9 @@ class HomePlayerWidget extends StatelessWidget {
                       BoxShadow(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withAlpha(30),
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
+                        ).colorScheme.onSurface.withAlpha(20),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
                       ),
                     ],
                   ),
