@@ -6,6 +6,7 @@ import 'subsonic_api.dart';
 import 'audio_handler.dart';
 import 'play_history_service.dart';
 import 'playback_state_service.dart';
+import 'color_extraction_service.dart';
 import '../utils/native_channel.dart';
 
 enum PlaybackMode {
@@ -112,6 +113,38 @@ class PlayerService extends ChangeNotifier {
   void updateColorScheme(ColorScheme? colorScheme) {
     _currentColorScheme = colorScheme;
     colorSchemeNotifier.value = colorScheme;
+  }
+
+  Future<void> extractColorFromAlbumArt(Brightness brightness) async {
+    if (_currentSong == null || _api == null) {
+      return;
+    }
+
+    final coverArt = _currentSong!['coverArt'];
+    if (coverArt == null || coverArt.isEmpty) {
+      return;
+    }
+
+    try {
+      final colorService = ColorExtractionService();
+      final imageUrl = _api!.getCoverArtUrl(coverArt);
+      
+      print('PlayerService: 开始提取颜色: $imageUrl');
+      
+      final colorScheme = await colorService.getColorSchemeFromImage(
+        imageUrl,
+        brightness,
+      );
+
+      if (colorScheme != null) {
+        print('PlayerService: 颜色提取成功，更新颜色方案');
+        updateColorScheme(colorScheme);
+      } else {
+        print('PlayerService: 颜色提取失败');
+      }
+    } catch (e) {
+      print('PlayerService: 提取颜色时出错: $e');
+    }
   }
 
   Future<void> initialize() async {

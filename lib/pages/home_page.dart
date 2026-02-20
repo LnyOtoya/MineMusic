@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import '../services/image_cache_service.dart';
+import '../services/color_extraction_service.dart';
 import '../components/home_player_widget.dart';
 import 'random_songs_page.dart';
 import 'newest_albums_page.dart';
@@ -57,6 +58,7 @@ class _HomePageState extends State<HomePage>
       _recentPlayedFuture = widget.playerService.getRecentSongs(count: 5);
       _currentSongId = widget.playerService.currentSong?['id'];
       widget.playerService.addListener(_onPlayerStateChanged);
+      PlayerService.colorSchemeNotifier.addListener(_onColorSchemeChanged);
       _preloadImages();
       _isInitialized = true;
     }
@@ -102,6 +104,7 @@ class _HomePageState extends State<HomePage>
   @override
   void dispose() {
     widget.playerService.removeListener(_onPlayerStateChanged);
+    PlayerService.colorSchemeNotifier.removeListener(_onColorSchemeChanged);
     super.dispose();
   }
 
@@ -114,10 +117,50 @@ class _HomePageState extends State<HomePage>
         setState(() {
           _recentPlayedFuture = widget.playerService.getRecentSongs(count: 5);
         });
+        // 立即触发颜色提取
+        _extractColorFromAlbumArt();
       }
     }
 
     // 播放状态改变时也要更新UI（用于更新播放/暂停按钮）
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _extractColorFromAlbumArt() async {
+    final currentSong = widget.playerService.currentSong;
+    if (currentSong == null) {
+      print('主页: 当前歌曲为空，跳过颜色提取');
+      return;
+    }
+
+    final coverArt = currentSong['coverArt'];
+    if (coverArt == null || coverArt.isEmpty) {
+      print('主页: 封面为空，跳过颜色提取');
+      return;
+    }
+
+    final brightness = Theme.of(context).brightness;
+    final imageUrl = widget.api.getCoverArtUrl(coverArt);
+    
+    print('主页: 开始提取颜色: $imageUrl');
+    
+    final colorService = ColorExtractionService();
+    final colorScheme = await colorService.getColorSchemeFromImage(
+      imageUrl,
+      brightness,
+    );
+
+    if (colorScheme != null) {
+      print('主页: 颜色提取成功，更新颜色方案');
+      widget.playerService.updateColorScheme(colorScheme);
+    } else {
+      print('主页: 颜色提取失败');
+    }
+  }
+
+  void _onColorSchemeChanged() {
     if (mounted) {
       setState(() {});
     }
@@ -583,7 +626,7 @@ class _HomePageState extends State<HomePage>
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
                       borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(20),
                         bottomRight: Radius.circular(20),
@@ -627,11 +670,16 @@ class _HomePageState extends State<HomePage>
     bool isFirst,
     bool isLast,
   ) {
+    final dynamicColorScheme = widget.playerService.currentColorScheme;
+    final effectiveColorScheme = isCurrent && dynamicColorScheme != null
+        ? dynamicColorScheme
+        : Theme.of(context).colorScheme;
+
     return Container(
       decoration: BoxDecoration(
         color: isCurrent 
-            ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
-            : Theme.of(context).colorScheme.surfaceContainerHighest,
+            ? effectiveColorScheme.primaryContainer.withOpacity(0.3)
+            : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -684,7 +732,7 @@ class _HomePageState extends State<HomePage>
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
             color: isCurrent 
-                ? Theme.of(context).colorScheme.primary 
+                ? effectiveColorScheme.primary 
                 : Theme.of(context).colorScheme.onSurface,
           ),
         ),
