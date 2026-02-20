@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import '../widgets/material_wave_slider.dart';
@@ -147,7 +148,13 @@ class _PlaybackPageState extends State<PlaybackPage> {
           child: Transform.scale(
             scale: 1.5,
             child: IconButton(
-              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 24),
+              icon: const Icon(
+                Symbols.keyboard_arrow_down,
+                fill: 0,
+                weight: 400,
+                grade: 0,
+                opticalSize: 24,
+              ),
               onPressed: () => Navigator.pop(context),
               style: IconButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
@@ -217,10 +224,13 @@ class _PlaybackPageState extends State<PlaybackPage> {
                             color: Theme.of(context).colorScheme.surfaceContainer,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Icon(
-                            Icons.music_note_rounded,
-                            size: 120,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          child: const Icon(
+                            Symbols.music_note,
+                            fill: 0,
+                            weight: 400,
+                            grade: 0,
+                            opticalSize: 120,
+                            color: Colors.white,
                           ),
                         ),
                         errorWidget: (context, url, error) => Container(
@@ -228,10 +238,13 @@ class _PlaybackPageState extends State<PlaybackPage> {
                             color: Theme.of(context).colorScheme.surfaceContainer,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Icon(
-                            Icons.music_note_rounded,
-                            size: 120,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          child: const Icon(
+                            Symbols.music_note,
+                            fill: 0,
+                            weight: 400,
+                            grade: 0,
+                            opticalSize: 120,
+                            color: Colors.white,
                           ),
                         ),
                       )
@@ -240,10 +253,13 @@ class _PlaybackPageState extends State<PlaybackPage> {
                           color: Theme.of(context).colorScheme.surfaceContainer,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Icon(
-                          Icons.music_note_rounded,
-                          size: 120,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        child: const Icon(
+                          Symbols.music_note,
+                          fill: 0,
+                          weight: 400,
+                          grade: 0,
+                          opticalSize: 120,
+                          color: Colors.white,
                         ),
                       ),
               ),
@@ -355,7 +371,13 @@ class _PlaybackPageState extends State<PlaybackPage> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: IconButton(
-                    icon: const Icon(Icons.skip_previous_rounded, size: 24),
+                    icon: const Icon(
+                      Symbols.skip_previous,
+                      fill: 0,
+                      weight: 400,
+                      grade: 0,
+                      opticalSize: 24,
+                    ),
                     onPressed: () => widget.playerService.previousSong(),
                     style: IconButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primaryContainer,
@@ -374,8 +396,11 @@ class _PlaybackPageState extends State<PlaybackPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: IconButton(
                     icon: Icon(
-                      isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                      size: 24,
+                      isPlaying ? Symbols.pause : Symbols.play_arrow,
+                      fill: 1,
+                      weight: 400,
+                      grade: 0,
+                      opticalSize: 24,
                       color: Colors.white,
                     ),
                     onPressed: () => widget.playerService.togglePlayPause(),
@@ -395,7 +420,13 @@ class _PlaybackPageState extends State<PlaybackPage> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: IconButton(
-                    icon: const Icon(Icons.skip_next_rounded, size: 24),
+                    icon: const Icon(
+                      Symbols.skip_next,
+                      fill: 0,
+                      weight: 400,
+                      grade: 0,
+                      opticalSize: 24,
+                    ),
                     onPressed: () => widget.playerService.nextSong(),
                     style: IconButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primaryContainer,
@@ -426,8 +457,11 @@ class _PlaybackPageState extends State<PlaybackPage> {
                     : '顺序播放',
                 child: IconButton(
                   icon: Icon(
-                        Icons.shuffle_rounded,
-                        size: 20,
+                        Symbols.shuffle,
+                        fill: widget.playerService.playbackMode == PlaybackMode.shuffle ? 1 : 0,
+                        weight: 400,
+                        grade: 0,
+                        opticalSize: 24,
                         color: widget.playerService.playbackMode == PlaybackMode.shuffle
                             ? Theme.of(context).colorScheme.onPrimaryContainer
                             : Theme.of(context).colorScheme.onPrimaryContainer,
@@ -453,9 +487,15 @@ class _PlaybackPageState extends State<PlaybackPage> {
                 child: IconButton(
                   icon: Icon(
                         widget.playerService.playbackMode == PlaybackMode.repeatOne
-                            ? Icons.repeat_one_rounded
-                            : Icons.repeat_rounded,
-                        size: 20,
+                            ? Symbols.repeat_one
+                            : Symbols.repeat,
+                        fill: (widget.playerService.playbackMode == PlaybackMode.repeatOne ||
+                                widget.playerService.playbackMode == PlaybackMode.repeatAll)
+                            ? 1
+                            : 0,
+                        weight: 400,
+                        grade: 0,
+                        opticalSize: 24,
                         color: (widget.playerService.playbackMode == PlaybackMode.repeatOne ||
                                 widget.playerService.playbackMode == PlaybackMode.repeatAll)
                             ? Theme.of(context).colorScheme.onPrimaryContainer
@@ -477,7 +517,13 @@ class _PlaybackPageState extends State<PlaybackPage> {
 
               // 播放列表 - 胶囊形
               IconButton(
-                icon: const Icon(Icons.playlist_play_rounded, size: 20),
+                icon: const Icon(
+                  Symbols.queue_music,
+                  fill: 0,
+                  weight: 400,
+                  grade: 0,
+                  opticalSize: 24,
+                ),
                 onPressed: () {},
                 style: IconButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primaryContainer,
