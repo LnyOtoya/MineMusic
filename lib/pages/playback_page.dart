@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import '../widgets/material_wave_slider.dart';
+import '../widgets/stateful_page_view_builder.dart';
 
 class PlaybackPage extends StatefulWidget {
   final SubsonicApi api;
@@ -43,12 +44,20 @@ class _PlaybackPageState extends State<PlaybackPage> {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
+  void _onPageChanged(int index) {
+    if (index != widget.playerService.currentIndex) {
+      widget.playerService.playSongAt(index);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentSong = widget.playerService.currentSong;
     final isPlaying = widget.playerService.isPlaying;
     final currentPosition = widget.playerService.currentPosition;
     final totalDuration = widget.playerService.totalDuration;
+    final currentIndex = widget.playerService.currentIndex;
+    final playlist = widget.playerService.currentPlaylist;
 
     final progress = totalDuration.inMilliseconds > 0
         ? currentPosition.inMilliseconds / totalDuration.inMilliseconds
@@ -80,17 +89,48 @@ class _PlaybackPageState extends State<PlaybackPage> {
 
             Expanded(
               flex: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(48.0),
-                child: currentSong != null && currentSong['coverArt'] != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: CachedNetworkImage(
-                          imageUrl: widget.api.getCoverArtUrl(
-                            currentSong['coverArt'],
-                          ),
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
+              child: StatefulPageViewBuilder(
+                index: currentIndex,
+                itemCount: playlist.length,
+                physics: const BouncingScrollPhysics(),
+                onPageChanged: _onPageChanged,
+                itemBuilder: (context, i) {
+                  final song = playlist[i];
+                  return Padding(
+                    padding: const EdgeInsets.all(48.0),
+                    child: song['coverArt'] != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: CachedNetworkImage(
+                              imageUrl: widget.api.getCoverArtUrl(
+                                song['coverArt'],
+                              ),
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceContainer,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Icon(
+                                  Icons.music_note_rounded,
+                                  size: 120,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceContainer,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Icon(
+                                  Icons.music_note_rounded,
+                                  size: 120,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Container(
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.surfaceContainer,
                               borderRadius: BorderRadius.circular(24),
@@ -101,30 +141,8 @@ class _PlaybackPageState extends State<PlaybackPage> {
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
-                          errorWidget: (context, url, error) => Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainer,
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: Icon(
-                              Icons.music_note_rounded,
-                              size: 120,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainer,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Icon(
-                          Icons.music_note_rounded,
-                          size: 120,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                  );
+                },
               ),
             ),
 
