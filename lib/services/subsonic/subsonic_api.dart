@@ -4,6 +4,7 @@ import '../subsonic/subsonic_music_library.dart';
 import '../subsonic/subsonic_playlist.dart';
 import '../subsonic/subsonic_artist_avatar.dart';
 import 'package:xml/xml.dart';
+import '../../models/lyrics_model.dart';
 
 // 主 Subsonic API 类，整合所有模块
 class SubsonicApi {
@@ -304,6 +305,67 @@ class SubsonicApi {
     } catch (e) {
       print('搜索所有歌曲失败: $e');
       return [];
+    }
+  }
+
+  Future<LyricsData?> getLyricsBySongId(String songId) async {
+    try {
+      final extraParams = {
+        'id': songId,
+      };
+
+      final response = await _base.sendGetRequest('getLyricsBySongId', extraParams: extraParams);
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(responseBody);
+
+        final lyricsListElement = document.findAllElements('lyricsList').firstOrNull;
+        if (lyricsListElement == null) {
+          print('未找到歌词数据');
+          return null;
+        }
+
+        final structuredLyricsElements = lyricsListElement.findAllElements('structuredLyrics');
+
+        if (structuredLyricsElements.isEmpty) {
+          print('未找到结构化歌词');
+          return null;
+        }
+
+        final firstLyricsElement = structuredLyricsElements.first;
+
+        final displayArtist = firstLyricsElement.getAttribute('displayArtist') ?? '';
+        final displayTitle = firstLyricsElement.getAttribute('displayTitle') ?? '';
+        final lang = firstLyricsElement.getAttribute('lang') ?? 'und';
+        final offset = int.tryParse(firstLyricsElement.getAttribute('offset') ?? '0') ?? 0;
+        final synced = firstLyricsElement.getAttribute('synced') == 'true';
+
+        final lineElements = firstLyricsElement.findAllElements('line');
+        final lines = lineElements.map((element) {
+          final startTime = int.tryParse(element.getAttribute('start') ?? '0') ?? 0;
+          final text = element.innerText;
+          return LyricLine(
+            startTime: startTime,
+            text: text,
+          );
+        }).toList();
+
+        return LyricsData(
+          displayArtist: displayArtist,
+          displayTitle: displayTitle,
+          lang: lang,
+          offset: offset,
+          synced: synced,
+          lines: lines,
+        );
+      } else {
+        print('获取歌词失败: HTTP ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('获取歌词失败: $e');
+      return null;
     }
   }
 }

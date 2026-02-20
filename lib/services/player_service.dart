@@ -66,6 +66,10 @@ class PlayerService extends ChangeNotifier {
   static final ValueNotifier<PlaybackMode> playbackModeNotifier =
       ValueNotifier(PlaybackMode.sequential);
 
+  // 播放进度通知器
+  static final ValueNotifier<Duration> positionNotifier =
+      ValueNotifier(Duration.zero);
+
   // 播放状态相关变量
   Map<String, dynamic>? _currentSong;
   bool _isPlaying = false;
@@ -195,6 +199,7 @@ class PlayerService extends ChangeNotifier {
     _audioHandler.playbackState.listen((state) {
       _isPlaying = state.playing;
       _currentPosition = state.position;
+      positionNotifier.value = state.position;
 
       // 保存播放进度
       if (_currentSong != null) {
