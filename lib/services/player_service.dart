@@ -552,7 +552,30 @@ class PlayerService extends ChangeNotifier {
   }
 
   Future<void> playSongAt(int index) async {
-    await _audioHandler.skipToIndex(index);
+    // 检查播放列表是否已加载
+    if (_audioHandler.currentSong == null && _currentPlaylist.isNotEmpty) {
+      print('播放列表未加载，先加载播放列表');
+      
+      // 重置忽略标志，允许歌曲信息更新
+      _ignoreInitialMediaItemEvents = false;
+      
+      await _audioHandler.loadSong(
+        _currentPlaylist[index],
+        playlist: _currentPlaylist,
+      );
+      
+      // 恢复播放进度
+      final savedPosition = await _playbackStateService.getPlaybackPosition();
+      if (savedPosition > Duration.zero) {
+        await _audioHandler.seek(savedPosition);
+      }
+      
+      // 开始播放
+      await _audioHandler.play();
+    } else {
+      // 播放列表已加载，直接跳转
+      await _audioHandler.skipToIndex(index);
+    }
   }
 
   Future<void> seekTo(Duration position) async {
