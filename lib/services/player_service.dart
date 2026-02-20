@@ -134,11 +134,16 @@ class PlayerService extends ChangeNotifier {
     // 恢复当前歌曲和播放列表
     final savedSong = await _playbackStateService.getCurrentSong();
     final savedPlaylist = await _playbackStateService.getPlaylist();
+    final savedSourceType = await _playbackStateService.getSourceType();
     print('已获取保存的歌曲: ${savedSong != null}');
     print(
       '已获取保存的播放列表: ${savedPlaylist != null}, 包含 ${savedPlaylist?.length ?? 0} 首歌曲',
     );
+    print('已获取保存的播放来源: $savedSourceType');
+    
     if (savedSong != null && _api != null) {
+      // 恢复播放来源
+      _sourceType = savedSourceType;
       // 加载歌曲但不自动播放
       await _loadSongWithoutPlaying(savedSong, playlist: savedPlaylist);
     }
@@ -291,6 +296,7 @@ class PlayerService extends ChangeNotifier {
     List<Map<String, dynamic>>? playlist,
   }) async {
     _sourceType = sourceType;
+    await _playbackStateService.saveSourceType(sourceType);
     
     // 检查当前是否已经在播放同一首歌
     if (_currentSong != null && _currentSong!['id'] == song['id']) {

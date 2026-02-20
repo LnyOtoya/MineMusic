@@ -7,6 +7,7 @@ class PlaybackStateService {
   static const String _lightColorSchemeKey = 'light_color_scheme';
   static const String _darkColorSchemeKey = 'dark_color_scheme';
   static const String _playlistKey = 'current_playlist';
+  static const String _sourceTypeKey = 'source_type';
 
   Future<void> saveCurrentSong(Map<String, dynamic>? song) async {
     final prefs = await SharedPreferences.getInstance();
@@ -42,6 +43,19 @@ class PlaybackStateService {
       await prefs.setString(_playlistKey, playlistJson);
       print('已保存播放列表，包含 ${playlist.length} 首歌曲');
     }
+  }
+
+  Future<void> saveSourceType(String sourceType) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_sourceTypeKey, sourceType);
+    print('已保存播放来源: $sourceType');
+  }
+
+  Future<String> getSourceType() async {
+    final prefs = await SharedPreferences.getInstance();
+    final sourceType = prefs.getString(_sourceTypeKey);
+    print('已获取播放来源: $sourceType');
+    return sourceType ?? 'song';
   }
 
   Future<List<Map<String, dynamic>>?> getPlaylist() async {
