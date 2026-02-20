@@ -8,6 +8,7 @@ class HomePlayerWidget extends StatelessWidget {
   final VoidCallback? onPlayPause;
   final VoidCallback? onNext;
   final VoidCallback? onTap;
+  final ColorScheme? colorScheme;
 
   const HomePlayerWidget({
     super.key,
@@ -16,12 +17,14 @@ class HomePlayerWidget extends StatelessWidget {
     this.onPlayPause,
     this.onNext,
     this.onTap,
+    this.colorScheme,
   });
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final containerSize = size.width * 0.6; // 60% of screen width for better fit in container
+    final effectiveColorScheme = colorScheme ?? Theme.of(context).colorScheme;
 
     return Center(
       child: SizedBox(
@@ -43,9 +46,7 @@ class HomePlayerWidget extends StatelessWidget {
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withAlpha(30),
+                          color: effectiveColorScheme.onSurface.withAlpha(30),
                           blurRadius: 15,
                           offset: Offset(0, 8),
                         ),
@@ -58,35 +59,33 @@ class HomePlayerWidget extends StatelessWidget {
                             placeholderFadeInDuration: Duration(milliseconds: 300),
                             fadeInDuration: Duration(milliseconds: 500),
                             placeholder: (context, url) => Container(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              color: effectiveColorScheme.surfaceContainerHighest,
                               child: Center(
                                 child: Icon(
                                   Icons.music_note_outlined,
                                   size: containerSize * 0.3,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: effectiveColorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
                             errorWidget: (context, url, error) => Container(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              color: effectiveColorScheme.surfaceContainerHighest,
                               child: Center(
                                 child: Icon(
                                   Icons.music_note_outlined,
                                   size: containerSize * 0.3,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  color: effectiveColorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ),
                           )
                         : Container(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            color: effectiveColorScheme.surfaceContainerHighest,
                             child: Center(
                               child: Icon(
                                 Icons.music_note_outlined,
                                 size: containerSize * 0.3,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                                color: effectiveColorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -103,12 +102,10 @@ class HomePlayerWidget extends StatelessWidget {
                   height: containerSize * 0.3,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    color: Theme.of(context).colorScheme.surface,
+                    color: effectiveColorScheme.primary,
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withAlpha(20),
+                        color: effectiveColorScheme.onSurface.withAlpha(20),
                         blurRadius: 8,
                         offset: Offset(0, 3),
                       ),
@@ -131,7 +128,7 @@ class HomePlayerWidget extends StatelessWidget {
                       grade: 0,
                       opticalSize: 24,
                       size: containerSize * 0.15,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: effectiveColorScheme.onPrimary,
                     ),
                   ),
                 ),
@@ -146,12 +143,10 @@ class HomePlayerWidget extends StatelessWidget {
                   height: containerSize * 0.25,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Theme.of(context).colorScheme.surface,
+                    color: effectiveColorScheme.primaryContainer,
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withAlpha(20),
+                        color: effectiveColorScheme.onSurface.withAlpha(20),
                         blurRadius: 6,
                         offset: Offset(0, 2),
                       ),
@@ -170,7 +165,7 @@ class HomePlayerWidget extends StatelessWidget {
                       grade: 0,
                       opticalSize: 24,
                       size: containerSize * 0.12,
-                      color: Theme.of(context).colorScheme.onSurface,
+                      color: effectiveColorScheme.onPrimaryContainer,
                     ),
                   ),
                 ),

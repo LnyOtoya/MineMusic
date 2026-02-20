@@ -730,7 +730,7 @@ class _HomePageState extends State<HomePage>
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
+            fontWeight: FontWeight.w600,
             color: isCurrent 
                 ? effectiveColorScheme.primary 
                 : Theme.of(context).colorScheme.onSurface,
