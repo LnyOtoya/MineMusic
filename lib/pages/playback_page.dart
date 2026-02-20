@@ -3,7 +3,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import '../widgets/material_wave_slider.dart';
-import '../widgets/stateful_page_view_builder.dart';
 
 class PlaybackPage extends StatefulWidget {
   final SubsonicApi api;
@@ -44,12 +43,6 @@ class _PlaybackPageState extends State<PlaybackPage> {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
-  void _onPageChanged(int index) {
-    if (index != widget.playerService.currentIndex) {
-      widget.playerService.playSongAt(index);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final currentSong = widget.playerService.currentSong;
@@ -64,76 +57,46 @@ class _PlaybackPageState extends State<PlaybackPage> {
         : 0.0;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text('播放'),
-        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 32),
           onPressed: () => Navigator.pop(context),
         ),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.surfaceContainerLow,
-              Theme.of(context).colorScheme.surface,
-            ],
+        title: const Text('Now Playing', style: TextStyle(fontSize: 16)),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert_rounded),
+            onPressed: () {},
           ),
-        ),
-        child: Column(
-          children: [
-            const Spacer(flex: 1),
+        ],
+      ),
+      body: Column(
+        children: [
+          const SizedBox(height: 16),
 
-            Expanded(
-              flex: 4,
-              child: StatefulPageViewBuilder(
-                index: currentIndex,
-                itemCount: playlist.length,
-                physics: const BouncingScrollPhysics(),
-                onPageChanged: _onPageChanged,
-                itemBuilder: (context, i) {
-                  final song = playlist[i];
-                  return Padding(
-                    padding: const EdgeInsets.all(48.0),
-                    child: song['coverArt'] != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(24),
-                            child: CachedNetworkImage(
-                              imageUrl: widget.api.getCoverArtUrl(
-                                song['coverArt'],
-                              ),
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceContainer,
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                child: Icon(
-                                  Icons.music_note_rounded,
-                                  size: 120,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceContainer,
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                child: Icon(
-                                  Icons.music_note_rounded,
-                                  size: 120,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          )
-                        : Container(
+          // 封面区域
+          Expanded(
+            flex: 4,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: currentSong != null && currentSong['coverArt'] != null
+                      ? CachedNetworkImage(
+                          imageUrl: widget.api.getCoverArtUrl(
+                            currentSong['coverArt'],
+                          ),
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.surfaceContainer,
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Icon(
                               Icons.music_note_rounded,
@@ -141,85 +104,214 @@ class _PlaybackPageState extends State<PlaybackPage> {
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
-                  );
-                },
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                children: [
-                  Text(
-                    currentSong?['title'] ?? '未在播放',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    currentSong?['artist'] ?? '',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _formatDuration(currentPosition),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          errorWidget: (context, url, error) => Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainer,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(
+                              Icons.music_note_rounded,
+                              size: 120,
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
-                      ),
-                      Text(
-                        _formatDuration(totalDuration),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  MaterialWaveSlider(
-                    height: 48.0,
-                    value: progress,
-                    min: 0.0,
-                    max: 1.0,
-                    paused: !isPlaying,
-                    onChanged: (value) {
-                      if (totalDuration.inMilliseconds > 0) {
-                        final newPosition = Duration(
-                          milliseconds: (value * totalDuration.inMilliseconds).round(),
-                        );
-                        widget.playerService.seekTo(newPosition);
-                      }
-                    },
-                  ),
-                ],
+                          ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainer,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            Icons.music_note_rounded,
+                            size: 120,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                ),
               ),
             ),
+          ),
 
-            const Spacer(flex: 2),
-          ],
-        ),
+          const SizedBox(height: 32),
+
+          // 时间显示和进度条
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _formatDuration(currentPosition),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    Text(
+                      _formatDuration(totalDuration),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // 保留现有的进度条
+                MaterialWaveSlider(
+                  height: 40.0,
+                  value: progress,
+                  min: 0.0,
+                  max: 1.0,
+                  paused: !isPlaying,
+                  onChanged: (value) {
+                    if (totalDuration.inMilliseconds > 0) {
+                      final newPosition = Duration(
+                        milliseconds: (value * totalDuration.inMilliseconds).round(),
+                      );
+                      widget.playerService.seekTo(newPosition);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 48),
+
+          // 播放控制按钮
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // 上一曲
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: IconButton(
+                      icon: const Icon(Icons.skip_previous_rounded, size: 24),
+                      onPressed: () => widget.playerService.previousSong(),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 播放/暂停
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: IconButton(
+                      icon: Icon(
+                        isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                        size: 24,
+                        color: Colors.white,
+                      ),
+                      onPressed: () => widget.playerService.togglePlayPause(),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 下一曲
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: IconButton(
+                      icon: const Icon(Icons.skip_next_rounded, size: 24),
+                      onPressed: () => widget.playerService.nextSong(),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 48),
+
+          // 底部控制
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // 随机播放
+                IconButton(
+                  icon: Icon(
+                    Icons.shuffle_rounded,
+                    size: 20,
+                    color: widget.playerService.playbackMode.toString().contains('shuffle')
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  onPressed: () => widget.playerService.togglePlaybackMode(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  ),
+                ),
+
+                // 循环播放
+                IconButton(
+                  icon: Icon(
+                    widget.playerService.playbackMode.toString().contains('repeatOne')
+                        ? Icons.repeat_one_rounded
+                        : Icons.repeat_rounded,
+                    size: 20,
+                    color: widget.playerService.playbackMode.toString().contains('repeatOne')
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  onPressed: () => widget.playerService.togglePlaybackMode(),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  ),
+                ),
+
+                // 播放列表
+                IconButton(
+                  icon: const Icon(Icons.playlist_play_rounded, size: 20),
+                  onPressed: () {},
+                  style: IconButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 48),
+        ],
       ),
     );
   }
