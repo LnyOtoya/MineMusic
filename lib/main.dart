@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/subsonic_api.dart';
 import 'services/player_service.dart';
@@ -207,20 +208,32 @@ class _MyAppState extends State<MyApp> {
       ),
     );
 
-    return MaterialApp(
-      title: '音乐播放器',
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: GoogleFonts.nunito(fontWeight: FontWeight.w600).fontFamily,
-        textTheme: textThemeLight,
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        fontFamily: GoogleFonts.nunito(fontWeight: FontWeight.w600).fontFamily,
-        textTheme: textThemeDark,
-      ),
-      themeMode: _themeMode,
-      home: InitializerPage(setThemeMode: setThemeMode),
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        return MaterialApp(
+          title: '音乐播放器',
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: lightDynamic ?? ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              brightness: Brightness.light,
+            ),
+            fontFamily: GoogleFonts.nunito(fontWeight: FontWeight.w600).fontFamily,
+            textTheme: textThemeLight,
+          ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            colorScheme: darkDynamic ?? ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              brightness: Brightness.dark,
+            ),
+            fontFamily: GoogleFonts.nunito(fontWeight: FontWeight.w600).fontFamily,
+            textTheme: textThemeDark,
+          ),
+          themeMode: _themeMode,
+          home: InitializerPage(setThemeMode: setThemeMode),
+        );
+      },
     );
   }
 }
