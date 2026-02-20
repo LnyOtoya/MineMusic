@@ -281,6 +281,8 @@ class PlayerService extends ChangeNotifier {
         _currentSong = mediaItem.extras?['song_data'];
         _totalDuration = mediaItem.duration ?? Duration.zero;
 
+        print('🎵 歌曲已切换: ${_currentSong?['title']} - ${_currentSong?['artist']}');
+
         // 保存当前歌曲
         _playbackStateService.saveCurrentSong(_currentSong);
 
@@ -324,6 +326,9 @@ class PlayerService extends ChangeNotifier {
   }) async {
     _sourceType = sourceType;
     await _playbackStateService.saveSourceType(sourceType);
+    
+    // 重置忽略标志，允许歌曲信息更新
+    _ignoreInitialMediaItemEvents = false;
     
     // 检查当前是否已经在播放同一首歌
     if (_currentSong != null && _currentSong!['id'] == song['id']) {
@@ -372,6 +377,9 @@ class PlayerService extends ChangeNotifier {
   }
 
   Future<void> resume() async {
+    // 重置忽略标志，允许歌曲信息更新
+    _ignoreInitialMediaItemEvents = false;
+    
     // 检查是否需要先加载音频（首次播放时）
     if (_currentSong != null && _audioHandler.currentSong == null) {
       print('首次播放，加载音频到播放器');
@@ -395,6 +403,9 @@ class PlayerService extends ChangeNotifier {
   }
 
   Future<void> nextSong() async {
+    // 重置忽略标志，允许歌曲信息更新
+    _ignoreInitialMediaItemEvents = false;
+    
     // 检查是否需要先加载音频（首次播放时）
     if (_currentSong != null && _audioHandler.currentSong == null && _currentPlaylist.isNotEmpty) {
       print('首次播放，加载音频到播放器');
@@ -423,6 +434,9 @@ class PlayerService extends ChangeNotifier {
   }
 
   Future<void> previousSong() async {
+    // 重置忽略标志，允许歌曲信息更新
+    _ignoreInitialMediaItemEvents = false;
+    
     await _audioHandler.skipToPrevious();
   }
 

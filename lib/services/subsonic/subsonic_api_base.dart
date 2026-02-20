@@ -16,6 +16,7 @@ class SubsonicApiBase {
   static List<Map<String, dynamic>>? cachedAlbums;
   static List<Map<String, dynamic>>? cachedMusicFolders;
   static List<Map<String, dynamic>>? cachedGenres;
+  static List<Map<String, dynamic>>? cachedAllSongs;
   static Map<String, List<Map<String, dynamic>>> cachedAlbumSongs = {};
   static Map<String, List<Map<String, dynamic>>> cachedArtistSongs = {};
   static Map<String, List<Map<String, dynamic>>> cachedPlaylistSongs = {};
@@ -30,6 +31,7 @@ class SubsonicApiBase {
     'albums': 0,
     'musicFolders': 0,
     'genres': 0,
+    'allSongs': 0,
   };
   
   // 缓存大小限制（字节）
@@ -60,6 +62,7 @@ class SubsonicApiBase {
       cachedAlbums = _loadCacheData(prefs, 'albums');
       cachedMusicFolders = _loadCacheData(prefs, 'musicFolders');
       cachedGenres = _loadCacheData(prefs, 'genres');
+      cachedAllSongs = _loadCacheData(prefs, 'allSongs');
       
       // 加载缓存时间戳
       _loadCacheTimestamps(prefs);
@@ -454,6 +457,23 @@ class SubsonicApiBase {
     }
   }
 
+  // 清理所有歌曲缓存
+  Future<void> clearAllSongsCache() async {
+    // 清理内存缓存
+    cachedAllSongs = null;
+    
+    // 清理持久化缓存
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('${_cacheKeyPrefix}allSongs_data');
+      await prefs.remove('${_cacheKeyPrefix}allSongs_timestamp');
+      _cacheTimestamps['allSongs'] = 0;
+      print('✅ 所有歌曲缓存已清理（内存和持久化）');
+    } catch (e) {
+      print('清理所有歌曲持久化缓存失败: $e');
+    }
+  }
+
   // 设置缓存数据（同时更新内存和持久化缓存）
   Future<void> setCacheData(String key, List<Map<String, dynamic>> data) async {
     // 更新内存缓存
@@ -472,6 +492,9 @@ class SubsonicApiBase {
         break;
       case 'genres':
         cachedGenres = data;
+        break;
+      case 'allSongs':
+        cachedAllSongs = data;
         break;
     }
     
@@ -497,6 +520,8 @@ class SubsonicApiBase {
         return cachedMusicFolders;
       case 'genres':
         return cachedGenres;
+      case 'allSongs':
+        return cachedAllSongs;
       default:
         return null;
     }

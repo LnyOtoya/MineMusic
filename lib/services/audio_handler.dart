@@ -229,10 +229,8 @@ class MyAudioHandler extends BaseAudioHandler {
         _isScrobbled = false;
         _playStartTime = DateTime.now();
 
-        // 只有当当前媒体项与目标媒体项不同时才发布
-        if (mediaItem.value?.id != currentMediaItem.id) {
-          mediaItem.add(currentMediaItem);
-        }
+        // 始终发布新的媒体项，确保UI更新
+        mediaItem.add(currentMediaItem);
 
         // 强制触发 Now Playing 通知
         print('📢 自动切歌，发送 Now Playing：${currentMediaItem.title}');

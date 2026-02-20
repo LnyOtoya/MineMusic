@@ -52,6 +52,7 @@ class SubsonicApi {
   void clearAlbumCache() => _base.clearAlbumCache();
   void clearMusicFolderCache() => _base.clearMusicFolderCache();
   void clearGenreCache() => _base.clearGenreCache();
+  void clearAllSongsCache() => _base.clearAllSongsCache();
   
   // 缓存大小管理
   Future<void> saveCacheSizeLimit(int limit) async {
@@ -265,6 +266,13 @@ class SubsonicApi {
   // 获取所有歌曲（通过搜索）
   Future<List<Map<String, dynamic>>> getAllSongsViaSearch() async {
     try {
+      // 检查缓存
+      final cachedSongs = _base.getCacheData('allSongs');
+      if (cachedSongs != null) {
+        print('✅ 使用缓存的所有歌曲数据: ${cachedSongs.length} 首歌曲');
+        return cachedSongs;
+      }
+
       final extraParams = {
         'query': '',
         'songCount': '500',
@@ -297,7 +305,10 @@ class SubsonicApi {
           });
         }
 
-        print('✅ 通过搜索获取到 ${songs.length} 首歌曲');
+        // 缓存结果
+        await _base.setCacheData('allSongs', songs);
+        
+        print('✅ 通过搜索获取到 ${songs.length} 首歌曲并缓存');
         return songs;
       } else {
         throw Exception('HTTP 错误: ${response.statusCode}');
