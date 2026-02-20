@@ -43,21 +43,39 @@ class _LyricsWidgetState extends State<LyricsWidget> {
       return;
     }
 
-    final lrcString = _convertToLrcFormat();
-    _lyricController.loadLyric(lrcString);
+    final (mainLyric, translationLyric) = _convertToLrcFormat();
+    _lyricController.loadLyric(
+      mainLyric,
+      translationLyric: translationLyric,
+    );
     _lyricController.setProgress(widget.currentPosition);
   }
 
-  String _convertToLrcFormat() {
-    final buffer = StringBuffer();
-    for (final line in widget.lyricsData!.lines) {
+  (String, String) _convertToLrcFormat() {
+    final mainLyricBuffer = StringBuffer();
+    final translationLyricBuffer = StringBuffer();
+    
+    for (int i = 0; i < widget.lyricsData!.lines.length; i++) {
+      final line = widget.lyricsData!.lines[i];
+      final nextLine = i < widget.lyricsData!.lines.length - 1 
+          ? widget.lyricsData!.lines[i + 1] 
+          : null;
+      
       final minutes = line.startTime ~/ 60000;
       final seconds = (line.startTime % 60000) ~/ 1000;
       final milliseconds = line.startTime % 1000;
       final timeTag = '[${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}.${milliseconds.toString().padLeft(3, '0')}]';
-      buffer.writeln('$timeTag${line.text}');
+      
+      if (nextLine != null && nextLine.startTime == line.startTime) {
+        mainLyricBuffer.writeln('$timeTag${line.text}');
+        translationLyricBuffer.writeln('$timeTag${nextLine.text}');
+        i++;
+      } else {
+        mainLyricBuffer.writeln('$timeTag${line.text}');
+      }
     }
-    return buffer.toString();
+    
+    return (mainLyricBuffer.toString(), translationLyricBuffer.toString());
   }
 
   @override
