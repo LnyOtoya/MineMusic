@@ -6,8 +6,6 @@ import 'subsonic_api.dart';
 import 'audio_handler.dart';
 import 'play_history_service.dart';
 import 'playback_state_service.dart';
-import 'enhanced_color_manager_service.dart';
-import '../models/lyrics_api_type.dart';
 import '../utils/native_channel.dart';
 
 enum PlaybackMode {
@@ -63,11 +61,6 @@ class PlayerService extends ChangeNotifier {
   final PlayHistoryService _historyService = PlayHistoryService();
   final PlaybackStateService _playbackStateService = PlaybackStateService();
 
-  // 歌词API类型
-  static final ValueNotifier<LyricsApiType> lyricsApiTypeNotifier =
-      ValueNotifier(LyricsApiType.disabled);
-  static final ValueNotifier<bool> lyricsEnabledNotifier = ValueNotifier(false);
-
   // 播放模式
   PlaybackMode _playbackMode = PlaybackMode.sequential;
   static final ValueNotifier<PlaybackMode> playbackModeNotifier =
@@ -109,23 +102,9 @@ class PlayerService extends ChangeNotifier {
     
     // 延迟加载非关键资源
     Future.microtask(() async {
-      await _loadLyricsSettings();
       await _loadPlaybackMode();
       await _loadPlaybackState();
     });
-  }
-
-  Future<void> _loadLyricsSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLyricsApiType = prefs.getString('lyricsApiType');
-    final savedLyricsEnabled = prefs.getBool('lyricsEnabled') ?? false;
-
-    if (savedLyricsApiType != null) {
-      lyricsApiTypeNotifier.value = LyricsApiTypeExtension.fromString(
-        savedLyricsApiType,
-      );
-    }
-    lyricsEnabledNotifier.value = savedLyricsEnabled;
   }
 
   Future<void> _loadPlaybackMode() async {
@@ -180,9 +159,6 @@ class PlayerService extends ChangeNotifier {
       _sourceType = 'song';
     }
 
-    // 从专辑封面提取颜色方案
-    _updateColorSchemeFromCurrentSong();
-
     // 立即通知监听器，显示正确的歌曲信息
     notifyListeners();
 
@@ -194,18 +170,6 @@ class PlayerService extends ChangeNotifier {
     if (savedPosition > Duration.zero) {
       await _audioHandler.seek(savedPosition);
     }
-  }
-
-  static Future<void> setLyricsApiType(LyricsApiType type) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('lyricsApiType', type.name);
-    lyricsApiTypeNotifier.value = type;
-  }
-
-  static Future<void> setLyricsEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('lyricsEnabled', enabled);
-    lyricsEnabledNotifier.value = enabled;
   }
 
   Future<void> _initAudioService() async {
@@ -277,11 +241,6 @@ class PlayerService extends ChangeNotifier {
 
         // 保存当前歌曲
         _playbackStateService.saveCurrentSong(_currentSong);
-
-        // 当歌曲切换时，从专辑封面提取颜色方案
-        if (_currentSong != null && _api != null) {
-          _updateColorSchemeFromCurrentSong();
-        }
 
         // 同步播放状态到原生（小部件显示）
         if (_currentSong != null) {
@@ -445,40 +404,6 @@ class PlayerService extends ChangeNotifier {
 
   Future<void> clearHistory() async {
     await _historyService.clearHistory();
-  }
-
-  // 从当前播放歌曲的专辑封面提取颜色方案
-  void _updateColorSchemeFromCurrentSong() {
-    if (_currentSong == null || _api == null) return;
-
-    final coverArt = _currentSong!['coverArt'];
-    if (coverArt == null) return;
-
-    // 获取封面艺术URL
-    final coverArtUrl = _api!.getCoverArtUrl(coverArt);
-
-    // 延迟提取颜色方案，避免阻塞启动
-    Future.delayed(Duration(milliseconds: 500), () {
-      // 提取浅色和深色模式的颜色方案
-      _extractColorScheme(coverArt, coverArtUrl, Brightness.light);
-      _extractColorScheme(coverArt, coverArtUrl, Brightness.dark);
-    });
-  }
-
-  // 提取颜色方案
-  Future<void> _extractColorScheme(
-    String coverArtId,
-    String coverArtUrl,
-    Brightness brightness,
-  ) async {
-    try {
-      await EnhancedColorManagerService().updateColorFromCover(
-        coverArtId: coverArtId,
-        coverArtUrl: coverArtUrl,
-      );
-    } catch (e) {
-      print('提取封面颜色失败: $e');
-    }
   }
 
   @override

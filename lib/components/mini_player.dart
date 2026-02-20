@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/player_service.dart';
 import '../services/subsonic_api.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../pages/player_page.dart';
 
 class MiniPlayer extends StatefulWidget {
   final PlayerService playerService;
@@ -368,13 +367,6 @@ class _MiniPlayerState extends State<MiniPlayer>
   }
 
   void _onPlayerTap() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            PlayerPage(playerService: widget.playerService, api: widget.api),
-      ),
-    );
   }
 
   void _showPlaylistBottomSheet() {

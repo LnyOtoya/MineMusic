@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
-import '../models/lyrics_api_type.dart';
 import 'login_page.dart';
-import 'custom_api_config_page.dart';
 import 'about_page.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -25,27 +23,11 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   ThemeMode _currentThemeMode = ThemeMode.system;
-  LyricsApiType _currentLyricsApiType = LyricsApiType.disabled;
-  bool _lyricsEnabled = false;
-  bool _isLyricsExpanded = false;
 
   @override
   void initState() {
     super.initState();
     _loadThemeMode();
-    _loadLyricsApiType();
-    _loadLyricsEnabled();
-
-    PlayerService.lyricsApiTypeNotifier.addListener(_onLyricsSettingsChanged);
-    PlayerService.lyricsEnabledNotifier.addListener(_onLyricsSettingsChanged);
-  }
-
-  void _onLyricsSettingsChanged() {
-    setState(() {
-      _currentLyricsApiType = PlayerService.lyricsApiTypeNotifier.value;
-      _lyricsEnabled = PlayerService.lyricsEnabledNotifier.value;
-      _isLyricsExpanded = _lyricsEnabled;
-    });
   }
 
   Future<void> _loadThemeMode() async {
@@ -67,49 +49,8 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _loadLyricsApiType() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLyricsApiType = prefs.getString('lyricsApiType');
-    if (savedLyricsApiType != null) {
-      setState(() {
-        _currentLyricsApiType = LyricsApiTypeExtension.fromString(
-          savedLyricsApiType,
-        );
-      });
-    }
-  }
-
-  Future<void> _loadLyricsEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLyricsEnabled = prefs.getBool('lyricsEnabled') ?? false;
-    setState(() {
-      _lyricsEnabled = savedLyricsEnabled;
-      _isLyricsExpanded = savedLyricsEnabled;
-    });
-  }
-
-  Future<void> _saveLyricsEnabled(bool enabled) async {
-    await PlayerService.setLyricsEnabled(enabled);
-    if (!enabled) {
-      await PlayerService.setLyricsApiType(LyricsApiType.disabled);
-    }
-  }
-
-  Future<void> _saveLyricsApiType(LyricsApiType type) async {
-    await PlayerService.setLyricsApiType(type);
-    if (type != LyricsApiType.disabled) {
-      await PlayerService.setLyricsEnabled(true);
-    }
-  }
-
   @override
   void dispose() {
-    PlayerService.lyricsApiTypeNotifier.removeListener(
-      _onLyricsSettingsChanged,
-    );
-    PlayerService.lyricsEnabledNotifier.removeListener(
-      _onLyricsSettingsChanged,
-    );
     super.dispose();
   }
 
@@ -151,52 +92,6 @@ class _SettingsPageState extends State<SettingsPage> {
               onTap: () {
                 _showThemeModeDialog();
               },
-            ),
-            ExpansionTile(
-              leading: const Icon(Icons.lyrics_rounded),
-              title: const Text('歌词设置'),
-              subtitle: Text(_lyricsEnabled ? '已启用 - ${_currentLyricsApiType.displayName}' : '已禁用'),
-              initiallyExpanded: _isLyricsExpanded,
-              onExpansionChanged: (expanded) {
-                setState(() {
-                  _isLyricsExpanded = expanded;
-                });
-              },
-              children: [
-                SwitchListTile(
-                  title: const Text('启用歌词'),
-                  value: _lyricsEnabled,
-                  onChanged: (value) async {
-                    await _saveLyricsEnabled(value);
-                    setState(() {
-                      _isLyricsExpanded = value;
-                    });
-                  },
-                ),
-                if (_lyricsEnabled) ...[
-                  const Divider(),
-                  ListTile(
-                    title: const Text('歌词API'),
-                    subtitle: Text(_currentLyricsApiType.displayName),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () {
-                      _showLyricsApiDialog();
-                    },
-                  ),
-                  ListTile(
-                    title: const Text('自定义API配置'),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const CustomApiConfigPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ],
             ),
           ]),
           const SizedBox(height: 16),
@@ -471,50 +366,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   setState(() {
                     _currentThemeMode = value;
                   });
-                  Navigator.pop(context);
-                }
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLyricsApiDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('选择歌词API'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<LyricsApiType>(
-              title: const Text('OpenSubsonic API'),
-              subtitle: const Text('使用服务器返回的带时间轴歌词'),
-              value: LyricsApiType.subsonic,
-              groupValue: _currentLyricsApiType,
-              onChanged: (value) {
-                if (value != null) {
-                  _saveLyricsApiType(value);
-                  Navigator.pop(context);
-                }
-              },
-            ),
-            RadioListTile<LyricsApiType>(
-              title: const Text('自定义API'),
-              subtitle: const Text('使用自建的歌词API'),
-              value: LyricsApiType.customApi,
-              groupValue: _currentLyricsApiType,
-              onChanged: (value) {
-                if (value != null) {
-                  _saveLyricsApiType(value);
                   Navigator.pop(context);
                 }
               },

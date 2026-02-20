@@ -6,8 +6,6 @@ import './player_service.dart';
 import './error_handler_service.dart';
 import './encryption_service.dart';
 import './secure_storage_service.dart';
-import './color_manager_service.dart';
-import './lyrics_api.dart';
 import './subsonic/subsonic_api_base.dart';
 
 class DependencyInjection {
@@ -21,8 +19,6 @@ class DependencyInjection {
   ErrorHandlerService? _errorHandlerService;
   EncryptionService? _encryptionService;
   SecureStorageService? _secureStorageService;
-  ColorManagerService? _colorManagerService;
-  LyricsApi? _lyricsApi;
 
   // 初始化依赖
   Future<void> initialize({
@@ -45,8 +41,6 @@ class DependencyInjection {
     _errorHandlerService = ErrorHandlerService();
     _encryptionService = EncryptionService();
     _secureStorageService = SecureStorageService();
-    _colorManagerService = ColorManagerService();
-    _lyricsApi = LyricsApi();
 
     // 初始化播放器服务
     _playerService = PlayerService(api: _subsonicApi);
@@ -90,22 +84,6 @@ class DependencyInjection {
       _secureStorageService = SecureStorageService();
     }
     return _secureStorageService!;
-  }
-
-  // 获取 ColorManagerService 实例
-  ColorManagerService get colorManagerService {
-    if (_colorManagerService == null) {
-      _colorManagerService = ColorManagerService();
-    }
-    return _colorManagerService!;
-  }
-
-  // 获取 LyricsApi 实例
-  LyricsApi get lyricsApi {
-    if (_lyricsApi == null) {
-      _lyricsApi = LyricsApi();
-    }
-    return _lyricsApi!;
   }
 
   // 更新 SubsonicApi 实例

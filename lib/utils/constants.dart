@@ -50,10 +50,3 @@ const String ROUTE_DETAIL = '/detail';
 const String ROUTE_ARTISTS = '/artists';
 const String ROUTE_PLAYLISTS = '/playlists';
 const String ROUTE_ABOUT = '/about';
-
-// 桌面路由相关常量
-const String DESKTOP_ROUTE_HOME = '/desktop/home';
-const String DESKTOP_ROUTE_LOGIN = '/desktop/login';
-const String DESKTOP_ROUTE_LIBRARY = '/desktop/library';
-const String DESKTOP_ROUTE_SEARCH = '/desktop/search';
-const String DESKTOP_ROUTE_PLAYLISTS = '/desktop/playlists';

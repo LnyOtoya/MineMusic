@@ -2,7 +2,6 @@ import 'dart:convert';
 import '../subsonic/subsonic_api_base.dart';
 import '../subsonic/subsonic_music_library.dart';
 import '../subsonic/subsonic_playlist.dart';
-import '../subsonic/subsonic_lyrics_genres.dart';
 import '../subsonic/subsonic_artist_avatar.dart';
 import 'package:xml/xml.dart';
 
@@ -16,7 +15,6 @@ class SubsonicApi {
   late final SubsonicApiBase _base;
   late final SubsonicMusicLibrary _musicLibrary;
   late final SubsonicPlaylist _playlist;
-  late final SubsonicLyricsGenres _lyricsGenres;
   late final SubsonicArtistAvatar _artistAvatar;
 
   SubsonicApi({
@@ -35,11 +33,6 @@ class SubsonicApi {
       password: password,
     );
     _playlist = SubsonicPlaylist(
-      baseUrl: baseUrl,
-      username: username,
-      password: password,
-    );
-    _lyricsGenres = SubsonicLyricsGenres(
       baseUrl: baseUrl,
       username: username,
       password: password,
@@ -124,14 +117,6 @@ class SubsonicApi {
       _playlist.addSongToPlaylist(playlistId, songId);
   Future<bool> removeSongFromPlaylist(String playlistId, String songId) => 
       _playlist.removeSongFromPlaylist(playlistId, songId);
-
-  // 歌词和流派相关方法
-  Future<List<Map<String, dynamic>>> getGenres() => _lyricsGenres.getGenres();
-  Future<Map<String, dynamic>?> getLyrics({required String artist, required String title}) => 
-      _lyricsGenres.getLyrics(artist: artist, title: title);
-  Future<Map<String, dynamic>?> getLyricsBySongId({required String songId}) => 
-      _lyricsGenres.getLyricsBySongId(songId: songId);
-  Future<bool> checkOpenSubsonicSupport() => _lyricsGenres.checkOpenSubsonicSupport();
 
   // 歌手头像相关方法
   Future<String?> getArtistAvatar(String artistName, {String? artistId, String? songTitle}) => 

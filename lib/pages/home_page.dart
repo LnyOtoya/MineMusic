@@ -10,7 +10,6 @@ import 'similar_songs_page.dart';
 import 'detail_page.dart';
 import 'settings_page.dart';
 import 'search_page.dart';
-import 'player_page.dart';
 import 'full_playlist_page.dart';
 
 //有状态组件statefulWidget,接受api实例和播放器服务
@@ -148,17 +147,6 @@ class _HomePageState extends State<HomePage>
             isPlaying: widget.playerService.isPlaying,
             onPlayPause: widget.playerService.togglePlayPause,
             onNext: widget.playerService.nextSong,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PlayerPage(
-                    playerService: widget.playerService,
-                    api: widget.api,
-                  ),
-                ),
-              );
-            },
           ),
         ),
 
@@ -568,16 +556,6 @@ class _HomePageState extends State<HomePage>
                     // 歌曲列表 - 始终显示3首
                     for (int i = 0; i < displayList.length && i < 3; i++)
                       Container(
-                        decoration: BoxDecoration(
-                          border: i < displayList.length - 1 && i < 2
-                              ? Border(
-                                  bottom: BorderSide(
-                                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                                    width: 1,
-                                  ),
-                                )
-                              : null,
-                        ),
                         child: _buildPlaylistSongItem(
                           displayList[i], 
                           i == 0, // isCurrent
@@ -611,12 +589,6 @@ class _HomePageState extends State<HomePage>
                       borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(20),
                         bottomRight: Radius.circular(20),
-                      ),
-                      border: Border(
-                        top: BorderSide(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                          width: 1,
-                        ),
                       ),
                     ),
                     child: Row(

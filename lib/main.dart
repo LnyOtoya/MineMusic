@@ -3,32 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/subsonic_api.dart';
 import 'services/player_service.dart';
-import 'services/enhanced_color_manager_service.dart';
-import 'services/custom_lyrics_api_service.dart';
 import 'components/mini_player.dart';
 import 'pages/home_page.dart';
 import 'pages/login_page.dart';
 import 'pages/songs_page.dart';
 import 'pages/playlists_page.dart';
-import 'desktop/main.dart' as desktop;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    runApp(const DesktopAppWrapper());
-  } else {
-    runApp(const MyApp());
-  }
-}
-
-class DesktopAppWrapper extends StatelessWidget {
-  const DesktopAppWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const desktop.DesktopApp();
-  }
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
@@ -45,13 +28,6 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _loadThemeMode();
-    _setupColorListeners();
-  }
-
-  void _setupColorListeners() {
-    EnhancedColorManagerService().addColorListener((colorPair) {
-      setState(() {});
-    });
   }
 
   Future<void> _loadThemeMode() async {
@@ -96,16 +72,13 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    final colorManager = EnhancedColorManagerService();
-
+    // 使用最基础的默认颜色，不使用任何取色逻辑
     return MaterialApp(
       title: '音乐播放器',
       theme: ThemeData(
-        colorScheme: colorManager.lightScheme,
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
-        colorScheme: colorManager.darkScheme,
         useMaterial3: true,
       ),
       themeMode: _themeMode,
@@ -134,8 +107,6 @@ class _InitializerPageState extends State<InitializerPage> {
   }
 
   Future<void> _initializeApp() async {
-    await CustomLyricsApiService.initializeDefaultApis();
-
     try {
       final prefs = await SharedPreferences.getInstance();
       final baseUrl = prefs.getString('baseUrl');
@@ -279,8 +250,8 @@ class _MusicHomePageState extends State<MusicHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 设置页面基础背景色为surface
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      // 设置页面基础背景色为background
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: Stack(
         children: [
           PageView(
