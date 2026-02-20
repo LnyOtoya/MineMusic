@@ -16,6 +16,8 @@ port/
 
 *.jks
 
+testexample/
+
 # IntelliJ related
 *.iml
 *.ipr
