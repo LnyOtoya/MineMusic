@@ -70,16 +70,6 @@ class _SongsPageState extends State<SongsPage> {
                   letterSpacing: -0.8,
                 ),
               ),
-              IconButton(
-                onPressed: () {
-                  // 未来可以添加搜索功能
-                },
-                icon: Icon(
-                  Icons.search_rounded,
-                  size: 28,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 8),
