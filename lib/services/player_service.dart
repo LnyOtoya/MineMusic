@@ -75,6 +75,10 @@ class PlayerService extends ChangeNotifier {
   static final ValueNotifier<Duration> positionNotifier =
       ValueNotifier(Duration.zero);
 
+  // 颜色方案通知器
+  static final ValueNotifier<ColorScheme?> colorSchemeNotifier =
+      ValueNotifier(null);
+
   // 播放状态相关变量
   Map<String, dynamic>? _currentSong;
   bool _isPlaying = false;
@@ -83,6 +87,7 @@ class PlayerService extends ChangeNotifier {
   int _currentIndex = -1;
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
+  ColorScheme? _currentColorScheme;
 
   // Getters
   Map<String, dynamic>? get currentSong => _currentSong;
@@ -94,6 +99,7 @@ class PlayerService extends ChangeNotifier {
   Duration get currentPosition => _currentPosition;
   Duration get totalDuration => _totalDuration;
   PlaybackMode get playbackMode => _playbackMode;
+  ColorScheme? get currentColorScheme => _currentColorScheme;
   PlayHistoryService get historyService => _historyService;
 
   PlayerService({SubsonicApi? api}) : _api = api;
@@ -101,6 +107,11 @@ class PlayerService extends ChangeNotifier {
   // 更新 API 实例
   void updateApi(SubsonicApi? api) {
     _api = api;
+  }
+
+  void updateColorScheme(ColorScheme? colorScheme) {
+    _currentColorScheme = colorScheme;
+    colorSchemeNotifier.value = colorScheme;
   }
 
   Future<void> initialize() async {

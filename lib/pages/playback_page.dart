@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
+import '../services/color_extraction_service.dart';
 import '../widgets/material_wave_slider.dart';
 import '../widgets/lyrics_widget.dart';
 import '../models/lyrics_model.dart';
@@ -26,18 +28,29 @@ class _PlaybackPageState extends State<PlaybackPage> {
   LyricsData? _lyricsData;
   bool _isLoadingLyrics = false;
   String? _currentSongId;
+  final ColorExtractionService _colorService = ColorExtractionService();
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
     widget.playerService.addListener(_onPlayerStateChanged);
+    PlayerService.colorSchemeNotifier.addListener(_onColorSchemeChanged);
     _loadLyrics();
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _extractColorFromAlbumArt();
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
     widget.playerService.removeListener(_onPlayerStateChanged);
+    PlayerService.colorSchemeNotifier.removeListener(_onColorSchemeChanged);
     _pageController.dispose();
     super.dispose();
   }
@@ -49,9 +62,49 @@ class _PlaybackPageState extends State<PlaybackPage> {
         final songId = currentSong['id'];
         if (_currentSongId != songId) {
           _loadLyrics();
+          _extractColorFromAlbumArt();
         }
+      } else if (currentSong != null) {
+        _extractColorFromAlbumArt();
       }
       setState(() {});
+    }
+  }
+
+  void _onColorSchemeChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _extractColorFromAlbumArt() async {
+    final currentSong = widget.playerService.currentSong;
+    if (currentSong == null) {
+      print('当前歌曲为空，跳过颜色提取');
+      return;
+    }
+
+    final coverArt = currentSong['coverArt'];
+    if (coverArt == null || coverArt.isEmpty) {
+      print('封面为空，跳过颜色提取');
+      return;
+    }
+
+    final brightness = Theme.of(context).brightness;
+    final imageUrl = widget.api.getCoverArtUrl(coverArt);
+    
+    print('开始提取颜色: $imageUrl');
+    
+    final colorScheme = await _colorService.getColorSchemeFromImage(
+      imageUrl,
+      brightness,
+    );
+
+    if (colorScheme != null) {
+      print('颜色提取成功，更新颜色方案');
+      widget.playerService.updateColorScheme(colorScheme);
+    } else {
+      print('颜色提取失败');
     }
   }
 
@@ -138,57 +191,76 @@ class _PlaybackPageState extends State<PlaybackPage> {
         ? currentPosition.inMilliseconds / totalDuration.inMilliseconds
         : 0.0;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 32),
-          child: Transform.scale(
-            scale: 1.5,
-            child: IconButton(
-              icon: const Icon(
-                Symbols.keyboard_arrow_down,
-                fill: 0,
-                weight: 400,
-                grade: 0,
-                opticalSize: 24,
+    final brightness = Theme.of(context).brightness;
+
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        final effectiveColorScheme = widget.playerService.currentColorScheme ?? 
+            (brightness == Brightness.light ? lightDynamic : darkDynamic) ??
+            ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              brightness: brightness,
+            );
+
+        return Theme(
+          data: ThemeData(
+            useMaterial3: true,
+            colorScheme: effectiveColorScheme,
+          ),
+          child: Scaffold(
+            backgroundColor: effectiveColorScheme.surface,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: Padding(
+                padding: const EdgeInsets.only(left: 32),
+                child: Transform.scale(
+                  scale: 1.5,
+                  child: IconButton(
+                    icon: const Icon(
+                      Symbols.keyboard_arrow_down,
+                      fill: 0,
+                      weight: 400,
+                      grade: 0,
+                      opticalSize: 24,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    style: IconButton.styleFrom(
+                      backgroundColor: effectiveColorScheme.primaryContainer,
+                      padding: EdgeInsets.zero,
+                      shape: const CircleBorder(),
+                    ),
+                  ),
+                ),
               ),
-              onPressed: () => Navigator.pop(context),
-              style: IconButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                padding: EdgeInsets.zero,
-                shape: const CircleBorder(),
+              title: Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Text(
+                  _getSourceInfo(),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: effectiveColorScheme.primary,
+                  ),
+                ),
               ),
+              centerTitle: false,
+            ),
+            body: PageView(
+              controller: _pageController,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              children: [
+                _buildPlaybackPage(effectiveColorScheme),
+                _buildLyricsPage(effectiveColorScheme),
+              ],
             ),
           ),
-        ),
-        title: Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Text(
-            _getSourceInfo(),
-            style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ),
-        centerTitle: false,
-      ),
-      body: PageView(
-        controller: _pageController,
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        children: [
-          _buildPlaybackPage(),
-          _buildLyricsPage(),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildPlaybackPage() {
+  Widget _buildPlaybackPage(ColorScheme colorScheme) {
     final currentSong = widget.playerService.currentSong;
     final isPlaying = widget.playerService.isPlaying;
     final currentPosition = widget.playerService.currentPosition;
@@ -221,7 +293,7 @@ class _PlaybackPageState extends State<PlaybackPage> {
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainer,
+                            color: colorScheme.surfaceContainer,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Icon(
@@ -235,7 +307,7 @@ class _PlaybackPageState extends State<PlaybackPage> {
                         ),
                         errorWidget: (context, url, error) => Container(
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainer,
+                            color: colorScheme.surfaceContainer,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Icon(
@@ -250,7 +322,7 @@ class _PlaybackPageState extends State<PlaybackPage> {
                       )
                     : Container(
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainer,
+                          color: colorScheme.surfaceContainer,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
@@ -307,13 +379,13 @@ class _PlaybackPageState extends State<PlaybackPage> {
                     Text(
                       _formatDuration(currentPosition),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                     ),
                     Text(
                       _formatDuration(totalDuration),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],
@@ -337,7 +409,7 @@ class _PlaybackPageState extends State<PlaybackPage> {
                   currentSong?['title'] ?? 'No song',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: colorScheme.primary,
                         fontSize: 28,
                       ),
                   maxLines: 1,
@@ -347,7 +419,7 @@ class _PlaybackPageState extends State<PlaybackPage> {
                 Text(
                   currentSong?['artist'] ?? 'Unknown artist',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: colorScheme.onSurfaceVariant,
                         fontSize: 20,
                       ),
                   maxLines: 1,
@@ -380,7 +452,7 @@ class _PlaybackPageState extends State<PlaybackPage> {
                     ),
                     onPressed: () => widget.playerService.previousSong(),
                     style: IconButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      backgroundColor: colorScheme.primaryContainer,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(40),
                       ),
@@ -405,7 +477,7 @@ class _PlaybackPageState extends State<PlaybackPage> {
                     ),
                     onPressed: () => widget.playerService.togglePlayPause(),
                     style: IconButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      backgroundColor: colorScheme.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(40),
                       ),
@@ -429,7 +501,7 @@ class _PlaybackPageState extends State<PlaybackPage> {
                     ),
                     onPressed: () => widget.playerService.nextSong(),
                     style: IconButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      backgroundColor: colorScheme.primaryContainer,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(40),
                       ),
@@ -463,14 +535,14 @@ class _PlaybackPageState extends State<PlaybackPage> {
                         grade: 0,
                         opticalSize: 24,
                         color: widget.playerService.playbackMode == PlaybackMode.shuffle
-                            ? Theme.of(context).colorScheme.onPrimaryContainer
-                            : Theme.of(context).colorScheme.onPrimaryContainer,
+                            ? colorScheme.onPrimaryContainer
+                            : colorScheme.onPrimaryContainer,
                       ),
                   onPressed: () => widget.playerService.toggleShuffle(),
                   style: IconButton.styleFrom(
                     backgroundColor: widget.playerService.playbackMode == PlaybackMode.shuffle
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.primaryContainer,
+                        ? colorScheme.primary
+                        : colorScheme.primaryContainer,
                     shape: const CircleBorder(),
                     padding: const EdgeInsets.all(16),
                   ),
@@ -498,15 +570,15 @@ class _PlaybackPageState extends State<PlaybackPage> {
                         opticalSize: 24,
                         color: (widget.playerService.playbackMode == PlaybackMode.repeatOne ||
                                 widget.playerService.playbackMode == PlaybackMode.repeatAll)
-                            ? Theme.of(context).colorScheme.onPrimaryContainer
-                            : Theme.of(context).colorScheme.onPrimaryContainer,
+                            ? colorScheme.onPrimaryContainer
+                            : colorScheme.onPrimaryContainer,
                       ),
                   onPressed: () => widget.playerService.toggleRepeat(),
                   style: IconButton.styleFrom(
                     backgroundColor: (widget.playerService.playbackMode == PlaybackMode.repeatOne ||
                             widget.playerService.playbackMode == PlaybackMode.repeatAll)
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.primaryContainer,
+                        ? colorScheme.primary
+                        : colorScheme.primaryContainer,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
@@ -526,7 +598,7 @@ class _PlaybackPageState extends State<PlaybackPage> {
                 ),
                 onPressed: () => _showPlaylistBottomSheet(),
                 style: IconButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  backgroundColor: colorScheme.primaryContainer,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
@@ -662,14 +734,20 @@ class _PlaybackPageState extends State<PlaybackPage> {
     );
   }
 
-  Widget _buildLyricsPage() {
+  Widget _buildLyricsPage(ColorScheme colorScheme) {
     return ValueListenableBuilder<Duration>(
       valueListenable: PlayerService.positionNotifier,
       builder: (context, position, child) {
-        return LyricsWidget(
-          lyricsData: _isLoadingLyrics ? null : _lyricsData,
-          currentPosition: position,
-          isPlaying: widget.playerService.isPlaying,
+        return Theme(
+          data: ThemeData(
+            useMaterial3: true,
+            colorScheme: colorScheme,
+          ),
+          child: LyricsWidget(
+            lyricsData: _isLoadingLyrics ? null : _lyricsData,
+            currentPosition: position,
+            isPlaying: widget.playerService.isPlaying,
+          ),
         );
       },
     );

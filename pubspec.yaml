@@ -48,6 +48,7 @@ dependencies:
   google_fonts: ^6.1.0
   material_symbols_icons: ^4.2906.0
   dynamic_color: ^1.8.1
+  palette_generator: ^0.3.3+7
   # flutter_local_notifications: ^15.1.1
   # audio_session: ^0.1.25
 
