@@ -270,31 +270,42 @@ class _InitializerPageState extends State<InitializerPage> {
         final savedRememberMe = credentials['rememberMe'] as bool;
 
         if (savedRememberMe) {
-          final decryptedPassword = await EncryptionService().decryptPassword(savedPassword);
-          final api = SubsonicApi(
-            baseUrl: savedBaseUrl,
-            username: savedUsername,
-            password: decryptedPassword,
-          );
+          try {
+            final decryptedPassword = await EncryptionService().decryptPassword(savedPassword);
+            final api = SubsonicApi(
+              baseUrl: savedBaseUrl,
+              username: savedUsername,
+              password: decryptedPassword,
+            );
 
-          final success = await api.ping();
-          if (success) {
-            setState(() {
-              _homePage = MusicHomePage(
-                api: api,
-                baseUrl: savedBaseUrl,
-                username: savedUsername,
-                password: decryptedPassword,
-                setThemeMode: widget.setThemeMode,
-              );
-              _isLoading = false;
-            });
-            return;
+            final success = await api.ping();
+            if (success) {
+              setState(() {
+                _homePage = MusicHomePage(
+                  api: api,
+                  baseUrl: savedBaseUrl,
+                  username: savedUsername,
+                  password: decryptedPassword,
+                  setThemeMode: widget.setThemeMode,
+                );
+                _isLoading = false;
+              });
+              return;
+            } else {
+              print('自动登录失败：服务器连接失败');
+            }
+          } catch (e) {
+            print('自动登录失败：解密密码或连接失败 - $e');
           }
         }
       }
     } catch (e) {
-      print('自动登录失败: $e');
+      print('自动登录失败：$e');
+      if (e.toString().contains('PlatformException')) {
+        print('平台异常：可能是安全存储访问失败');
+      } else if (e.toString().contains('SocketException')) {
+        print('网络异常：无法连接到服务器');
+      }
     }
 
     setState(() {
@@ -374,8 +385,18 @@ class _MusicHomePageState extends State<MusicHomePage> {
       PlaylistsPage(api: widget.api, playerService: playerService),
     ];
 
-    // 初始化页面控制器
     _pageController = PageController(initialPage: _selectedIndex);
+
+    _initializePlayerServiceInBackground();
+  }
+
+  Future<void> _initializePlayerServiceInBackground() async {
+    try {
+      await playerService.initialize();
+      print('PlayerService 后台初始化完成');
+    } catch (e) {
+      print('PlayerService 后台初始化失败: $e');
+    }
   }
 
   @override

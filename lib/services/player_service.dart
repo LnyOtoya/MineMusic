@@ -96,24 +96,34 @@ class PlayerService extends ChangeNotifier {
   PlaybackMode get playbackMode => _playbackMode;
   PlayHistoryService get historyService => _historyService;
 
-  PlayerService({SubsonicApi? api}) : _api = api {
-    _initialize();
-  }
+  PlayerService({SubsonicApi? api}) : _api = api;
 
   // 更新 API 实例
   void updateApi(SubsonicApi? api) {
     _api = api;
   }
 
-  Future<void> _initialize() async {
-    // 优先初始化音频服务
-    await _initAudioService();
-    
-    // 延迟加载非关键资源
-    Future.microtask(() async {
+  Future<void> initialize() async {
+    try {
+      if (_api == null) {
+        print('PlayerService 初始化警告：SubsonicApi 未设置');
+      }
+      
+      await _initAudioService();
+      
       await _loadPlaybackMode();
       await _loadPlaybackState();
-    });
+      
+      print('PlayerService 初始化完成');
+    } catch (e) {
+      print('PlayerService 初始化失败: $e');
+      if (e.toString().contains('AudioServiceException')) {
+        print('音频服务初始化失败，请检查音频权限');
+      } else if (e.toString().contains('PlatformException')) {
+        print('平台异常：可能是权限或配置问题');
+      }
+      rethrow;
+    }
   }
 
   Future<void> _loadPlaybackMode() async {
@@ -187,6 +197,11 @@ class PlayerService extends ChangeNotifier {
   }
 
   Future<void> _initAudioService() async {
+    if (_api == null) {
+      print('警告：SubsonicApi 未初始化，无法初始化音频服务');
+      return;
+    }
+
     _audioHandler = await AudioService.init(
       builder: () => MyAudioHandler(_api!),
       config: const AudioServiceConfig(

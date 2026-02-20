@@ -17,7 +17,10 @@ class MyAudioHandler extends BaseAudioHandler {
   bool _isLoading = false; // 是否正在加载歌曲，防止加载过程中触发错误的歌曲变化
 
   MyAudioHandler(this._api) {
-    // 设置监听器
+    _setupListeners();
+  }
+
+  void _setupListeners() {
     _player.playerStateStream.listen((state) {
       _updatePlaybackState(state);
       _handleScrobbleLogic(state);
