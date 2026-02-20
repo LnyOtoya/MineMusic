@@ -177,7 +177,42 @@ class _PlaybackPageState extends State<PlaybackPage> {
             ),
           ),
 
-          const SizedBox(height: 48),
+          const SizedBox(height: 32),
+
+          // 歌曲信息
+          Padding(
+            padding: const EdgeInsets.only(left: 32, right: 32),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    currentSong?['title'] ?? 'No song',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 22,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    currentSong?['artist'] ?? 'Unknown artist',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 16,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 32),
 
           // 播放控制按钮
           Padding(
@@ -254,26 +289,26 @@ class _PlaybackPageState extends State<PlaybackPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // 随机播放
+                // 随机播放 - 圆形
                 IconButton(
                   icon: Icon(
                     Icons.shuffle_rounded,
                     size: 20,
                     color: widget.playerService.playbackMode.toString().contains('shuffle')
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
+                        ? Theme.of(context).colorScheme.onPrimaryContainer
+                        : Theme.of(context).colorScheme.onPrimaryContainer,
                   ),
                   onPressed: () => widget.playerService.togglePlaybackMode(),
                   style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                    backgroundColor: widget.playerService.playbackMode.toString().contains('shuffle')
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.primaryContainer,
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(16),
                   ),
                 ),
 
-                // 循环播放
+                // 循环播放 - 胶囊形
                 IconButton(
                   icon: Icon(
                     widget.playerService.playbackMode.toString().contains('repeatOne')
@@ -281,29 +316,31 @@ class _PlaybackPageState extends State<PlaybackPage> {
                         : Icons.repeat_rounded,
                     size: 20,
                     color: widget.playerService.playbackMode.toString().contains('repeatOne')
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
+                        ? Theme.of(context).colorScheme.onPrimaryContainer
+                        : Theme.of(context).colorScheme.onPrimaryContainer,
                   ),
                   onPressed: () => widget.playerService.togglePlaybackMode(),
                   style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                    backgroundColor: widget.playerService.playbackMode.toString().contains('repeatOne')
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.primaryContainer,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
                 ),
 
-                // 播放列表
+                // 播放列表 - 胶囊形
                 IconButton(
                   icon: const Icon(Icons.playlist_play_rounded, size: 20),
                   onPressed: () {},
                   style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),
                 ),
               ],
