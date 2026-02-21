@@ -220,66 +220,25 @@ class _HomePageState extends State<HomePage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      greeting,
-                      style: AppFonts.getTextStyle(
-                        text: greeting,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: AppFonts.getTextStyle(
-                        text: subtitle,
-                        fontSize: 18,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Material(
-                color: Theme.of(context).colorScheme.secondaryContainer,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(32),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SettingsPage(
-                          api: widget.api,
-                          playerService: widget.playerService,
-                          setThemeMode: widget.setThemeMode ?? (mode) {},
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.person_rounded,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                      size: 36,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            greeting,
+            style: AppFonts.getTextStyle(
+              text: greeting,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: AppFonts.getTextStyle(
+              text: subtitle,
+              fontSize: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              letterSpacing: 0.2,
+            ),
           ),
           const SizedBox(height: 20),
           Container(

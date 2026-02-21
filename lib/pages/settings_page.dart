@@ -2,19 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
+import '../utils/test_config.dart';
 import 'login_page.dart';
 import 'about_page.dart';
+import 'lastfm_test_page.dart';
 
 class SettingsPage extends StatefulWidget {
-  final SubsonicApi api;
-  final PlayerService playerService;
-  final Function(ThemeMode) setThemeMode;
+  final SubsonicApi? api;
+  final PlayerService? playerService;
+  final Function(ThemeMode)? setThemeMode;
 
   const SettingsPage({
     super.key,
-    required this.api,
-    required this.playerService,
-    required this.setThemeMode,
+    this.api,
+    this.playerService,
+    this.setThemeMode,
   });
 
   @override
@@ -64,18 +66,37 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildSection('账户', [
+          const SizedBox(height: 16),
+          if (TestConfig.useTestConfig)
+            _buildSection('开发测试', [
+              ListTile(
+                leading: const Icon(Icons.science_rounded),
+                title: const Text('Last.fm API 测试'),
+                subtitle: const Text('测试API连接和数据获取'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LastFMTestPage(),
+                    ),
+                  );
+                },
+              ),
+            ]),
+          const SizedBox(height: 16),
+          if (widget.api != null) _buildSection('账户', [
             ListTile(
               leading: const Icon(Icons.person_rounded),
               title: const Text('用户名'),
-              subtitle: Text(widget.api.username),
+              subtitle: Text(widget.api!.username),
               trailing: const Icon(Icons.chevron_right_rounded),
             ),
             ListTile(
               leading: const Icon(Icons.cloud_rounded),
               title: const Text('服务器地址'),
               subtitle: Text(
-                widget.api.baseUrl,
+                widget.api!.baseUrl,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -187,7 +208,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   String _getCurrentCacheSizeLimitText() {
-    final limit = widget.api.getCacheSizeLimit();
+    if (widget.api == null) return '无限制';
+    final limit = widget.api!.getCacheSizeLimit();
     if (limit == 0) {
       return '无限制';
     } else {
@@ -197,20 +219,21 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showCacheSizeLimitDialog() {
+    if (widget.api == null) return;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('缓存大小限制'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: widget.api.getCacheSizeOptions().entries.map((entry) {
+          children: widget.api!.getCacheSizeOptions().entries.map((entry) {
             return RadioListTile<int>(
               title: Text(entry.key),
               value: entry.value,
-              groupValue: widget.api.getCacheSizeLimit(),
+              groupValue: widget.api!.getCacheSizeLimit(),
               onChanged: (value) async {
                 if (value != null) {
-                  await widget.api.saveCacheSizeLimit(value);
+                  await widget.api!.saveCacheSizeLimit(value);
                   Navigator.pop(context);
                   setState(() {});
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -263,7 +286,9 @@ class _SettingsPageState extends State<SettingsPage> {
               );
               
               // 清除缓存
-              await widget.api.clearAllCache();
+              if (widget.api != null) {
+                await widget.api!.clearAllCache();
+              }
               
               // 关闭加载对话框
               Navigator.pop(context);
@@ -333,8 +358,8 @@ class _SettingsPageState extends State<SettingsPage> {
               value: ThemeMode.system,
               groupValue: _currentThemeMode,
               onChanged: (value) {
-                if (value != null) {
-                  widget.setThemeMode(value);
+                if (value != null && widget.setThemeMode != null) {
+                  widget.setThemeMode!(value);
                   setState(() {
                     _currentThemeMode = value;
                   });
@@ -347,8 +372,8 @@ class _SettingsPageState extends State<SettingsPage> {
               value: ThemeMode.light,
               groupValue: _currentThemeMode,
               onChanged: (value) {
-                if (value != null) {
-                  widget.setThemeMode(value);
+                if (value != null && widget.setThemeMode != null) {
+                  widget.setThemeMode!(value);
                   setState(() {
                     _currentThemeMode = value;
                   });
@@ -361,8 +386,8 @@ class _SettingsPageState extends State<SettingsPage> {
               value: ThemeMode.dark,
               groupValue: _currentThemeMode,
               onChanged: (value) {
-                if (value != null) {
-                  widget.setThemeMode(value);
+                if (value != null && widget.setThemeMode != null) {
+                  widget.setThemeMode!(value);
                   setState(() {
                     _currentThemeMode = value;
                   });

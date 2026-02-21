@@ -13,6 +13,7 @@ import 'pages/home_page.dart';
 import 'pages/login_page.dart';
 import 'pages/songs_page.dart';
 import 'pages/playlists_page.dart';
+import 'pages/records_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -401,6 +402,11 @@ class _MusicHomePageState extends State<MusicHomePage> {
       ),
       SongsPage(api: widget.api, playerService: playerService),
       PlaylistsPage(api: widget.api, playerService: playerService),
+      RecordsPage(
+        api: widget.api,
+        playerService: playerService,
+        setThemeMode: widget.setThemeMode,
+      ),
     ];
 
     _pageController = PageController(initialPage: _selectedIndex);
@@ -454,12 +460,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
     setState(() {
       _selectedIndex = index;
     });
-    // 控制页面滚动到对应的索引，使用动画
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOutCubic,
-    );
+    _pageController.jumpToPage(index);
   }
 
   @override
@@ -471,6 +472,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
         children: [
           PageView(
             controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
             onPageChanged: (index) {
               setState(() {
                 _selectedIndex = index;
@@ -495,7 +497,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
           height: 64,
           selectedIndex: _selectedIndex,
           onDestinationSelected: _onItemTapped,
-          animationDuration: const Duration(milliseconds: 300),
+          animationDuration: Duration.zero,
           indicatorColor: Theme.of(context).colorScheme.primaryContainer,
           indicatorShape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -518,6 +520,11 @@ class _MusicHomePageState extends State<MusicHomePage> {
               icon: Symbols.queue_music,
               label: '歌单',
               index: 2,
+            ),
+            _buildNavigationDestination(
+              icon: Symbols.history,
+              label: '记录',
+              index: 3,
             ),
           ],
         ),

@@ -18,6 +18,8 @@ port/
 
 testexample/
 
+test_config.dart
+
 # IntelliJ related
 *.iml
 *.ipr
