@@ -62,11 +62,11 @@ jobs:
         
     # 8. 构建签名的 APK - 完整包（包含所有架构）
     - name: Build signed APK - Universal
-      run: flutter build apk --release --dart-define=LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }} --dart-define=LASTFM_SHARED_SECRET=${{ secrets.LASTFM_SHARED_SECRET }}
+      run: flutter build apk --release --dart-define=LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }} --dart-define=LASTFM_SHARED_SECRET=${{ secrets.LASTFM_SHARED_SECRET }} --dart-define=useTestConfig=false
 
     # 9. 构建签名的 APK - 分架构包
     - name: Build signed APK - Split per ABI
-      run: flutter build apk --release --split-per-abi --dart-define=LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }} --dart-define=LASTFM_SHARED_SECRET=${{ secrets.LASTFM_SHARED_SECRET }}
+      run: flutter build apk --release --split-per-abi --dart-define=LASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }} --dart-define=LASTFM_SHARED_SECRET=${{ secrets.LASTFM_SHARED_SECRET }} --dart-define=useTestConfig=false
 
     # 10. 重命名 APK 文件
     - name: Rename APK files
