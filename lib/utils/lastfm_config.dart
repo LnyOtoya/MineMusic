@@ -1,6 +1,8 @@
+import 'test_config.dart';
+
 class LastFMConfig {
-  static String get apiKey => String.fromEnvironment('LASTFM_API_KEY');
-  static String get sharedSecret => String.fromEnvironment('LASTFM_SHARED_SECRET');
+  static String get apiKey => TestConfig.lastFMApiKey;
+  static String get sharedSecret => TestConfig.lastFMSharedSecret;
 
   static bool get isConfigured => apiKey.isNotEmpty && sharedSecret.isNotEmpty;
 }
