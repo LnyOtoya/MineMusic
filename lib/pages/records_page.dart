@@ -276,7 +276,7 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
                 ),
               ),
               const SizedBox(width: 16),
-              _buildPeriodSelector(),
+              // _buildPeriodSelector(),
               const SizedBox(width: 16),
               Material(
                 color: Theme.of(context).colorScheme.secondaryContainer,
@@ -564,7 +564,7 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              _buildPeriodSelector(),
+              // _buildPeriodSelector(),
             ],
           ),
           const SizedBox(height: 16),
