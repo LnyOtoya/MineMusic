@@ -179,8 +179,27 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
         }
       }
       
+      // 获取艺术家列表以获取 coverArt
+      final allArtists = await widget.api?.getArtists() ?? [];
+      final artistCoverArtMap = <String, String?>{};
+      for (var artist in allArtists) {
+        final name = artist['name'] as String?;
+        final coverArt = artist['coverArt'] as String?;
+        if (name != null) {
+          artistCoverArtMap[name] = coverArt;
+        }
+      }
+      
       final sortedArtists = artistStats.values.toList()
         ..sort((a, b) => (b['playcount'] as int).compareTo(a['playcount'] as int));
+      
+      // 将 coverArt 添加到艺术家数据中
+      for (var artist in sortedArtists) {
+        final name = artist['name'] as String?;
+        if (name != null) {
+          artist['coverArt'] = artistCoverArtMap[name];
+        }
+      }
       
       setState(() {
         _topAlbums = topAlbums;
@@ -767,6 +786,12 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
   Widget _buildArtistRankItem(Map<String, dynamic> artist, int rank) {
     final name = artist['name'] as String? ?? '';
     final playCount = artist['playcount'] as int? ?? 0;
+    final coverArtId = artist['coverArt'] as String?;
+
+    String coverUrl = '';
+    if (widget.api != null && coverArtId != null) {
+      coverUrl = widget.api!.getCoverArtUrl(coverArtId);
+    }
 
     return GestureDetector(
       onTap: () async {
@@ -805,6 +830,36 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
               ),
             ),
             const SizedBox(width: 12),
+            // 艺术家头像
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Theme.of(context).colorScheme.primaryContainer,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: coverUrl.isNotEmpty
+                    ? Image.network(
+                        coverUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.person_rounded,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          );
+                        },
+                      )
+                    : Icon(
+                        Icons.person_rounded,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+              ),
+            ),
+            const SizedBox(width: 12),
             // 艺术家名字
             Expanded(
               child: Text(
@@ -833,6 +888,12 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
   Widget _buildTopArtistCard(Map<String, dynamic> artist, {required bool isLarge}) {
     final name = artist['name'] as String? ?? '';
     final playCount = artist['playcount'] as int? ?? 0;
+    final coverArtId = artist['coverArt'] as String?;
+
+    String coverUrl = '';
+    if (widget.api != null && coverArtId != null) {
+      coverUrl = widget.api!.getCoverArtUrl(coverArtId);
+    }
 
     return GestureDetector(
       onTap: () async {
@@ -877,10 +938,25 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
                         width: 2,
                       ),
                     ),
-                    child: Icon(
-                      Icons.person_rounded,
-                      size: 120,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: coverUrl.isNotEmpty
+                          ? Image.network(
+                              coverUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.person_rounded,
+                                  size: 120,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                );
+                              },
+                            )
+                          : Icon(
+                              Icons.person_rounded,
+                              size: 120,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                     ),
                   ),
                   // Top Artist 标签

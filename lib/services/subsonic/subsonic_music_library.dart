@@ -72,9 +72,10 @@ class SubsonicMusicLibrary extends SubsonicApiBase {
           final id = element.getAttribute('id');
           final name = element.getAttribute('name');
           final albumCount = element.getAttribute('albumCount');
+          final coverArt = element.getAttribute('coverArt');
 
           if (id != null && name != null) {
-            artists.add({'id': id, 'name': name, 'albumCount': albumCount});
+            artists.add({'id': id, 'name': name, 'albumCount': albumCount, 'coverArt': coverArt});
           }
         }
 
