@@ -4,6 +4,7 @@ import '../services/player_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/error_handler_service.dart';
 import '../utils/app_fonts.dart';
+import '../widgets/animated_list_item.dart';
 
 // 歌曲页面
 class SongsPage extends StatefulWidget {
@@ -191,9 +192,7 @@ class _SongsPageState extends State<SongsPage> {
           itemCount: songs.length,
           itemBuilder: (context, index) {
             final song = songs[index];
-            return RepaintBoundary(
-              child: _buildSongItem(song, index),
-            );
+            return _buildSongItem(song, index);
           },
         );
       },
@@ -207,64 +206,67 @@ class _SongsPageState extends State<SongsPage> {
     final album = song['album'] ?? '未知专辑';
     final subtitle = '$artist • $album';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _playSong(song),
-          onLongPress: () => _showSongMenu(song),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    return AnimatedListItem(
+      index: index,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _playSong(song),
+            onLongPress: () => _showSongMenu(song),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      ),
+                      child: coverArtUrl != null
+                          ? CachedNetworkImage(
+                              imageUrl: coverArtUrl,
+                              fit: BoxFit.cover,
+                              width: 48,
+                              height: 48,
+                              placeholder: (context, url) => _buildMusicNoteIcon(context),
+                              errorWidget: (context, url, error) => _buildMusicNoteIcon(context),
+                            )
+                          : _buildMusicNoteIcon(context),
                     ),
-                    child: coverArtUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: coverArtUrl,
-                            fit: BoxFit.cover,
-                            width: 48,
-                            height: 48,
-                            placeholder: (context, url) => _buildMusicNoteIcon(context),
-                            errorWidget: (context, url, error) => _buildMusicNoteIcon(context),
-                          )
-                        : _buildMusicNoteIcon(context),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

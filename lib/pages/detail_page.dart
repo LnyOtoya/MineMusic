@@ -3,6 +3,7 @@ import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/error_handler_service.dart';
+import '../widgets/animated_list_item.dart';
 
 enum DetailType { album, artist, playlist }
 
@@ -617,81 +618,84 @@ class _DetailPageState extends State<DetailPage> {
                       const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final song = songs[index];
-                    return Card(
-                      elevation: 0,
-                      color: Theme.of(context).colorScheme.surfaceContainerLow,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: InkWell(
-                        onTap: () => _playSong(song, songs),
-                        onLongPress: () => _showSongMenu(song),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 32,
-                                child: Text(
-                                  '${index + 1}',
-                                  style: Theme.of(context).textTheme.titleMedium
+                    return AnimatedListItem(
+                      index: index,
+                      child: Card(
+                        elevation: 0,
+                        color: Theme.of(context).colorScheme.surfaceContainerLow,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: InkWell(
+                          onTap: () => _playSong(song, songs),
+                          onLongPress: () => _showSongMenu(song),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 32,
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: Theme.of(context).textTheme.titleMedium
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        song['title'] ?? '未知标题',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        widget.type == DetailType.artist
+                                            ? '${song['album'] ?? '未知专辑'}'
+                                            : '${song['artist'] ?? '未知艺术家'}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                            ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Text(
+                                  _formatDuration(
+                                    int.tryParse(song['duration'] ?? '0') ?? 0,
+                                  ),
+                                  style: Theme.of(context).textTheme.bodyMedium
                                       ?.copyWith(
                                         color: Theme.of(
                                           context,
                                         ).colorScheme.onSurfaceVariant,
                                       ),
-                                  textAlign: TextAlign.center,
                                 ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      song['title'] ?? '未知标题',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      widget.type == DetailType.artist
-                                          ? '${song['album'] ?? '未知专辑'}'
-                                          : '${song['artist'] ?? '未知艺术家'}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
-                                          ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Text(
-                                _formatDuration(
-                                  int.tryParse(song['duration'] ?? '0') ?? 0,
-                                ),
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                    ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),

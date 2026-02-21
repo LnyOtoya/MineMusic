@@ -291,15 +291,46 @@ class _PlaybackPageState extends State<PlaybackPage> {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: AspectRatio(
               aspectRatio: 1,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: currentSong != null && currentSong['coverArt'] != null
-                    ? CachedNetworkImage(
-                        imageUrl: widget.api.getCoverArtUrl(
-                          currentSong['coverArt'],
-                        ),
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
+              child: Hero(
+                tag: 'home_album_cover',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: currentSong != null && currentSong['coverArt'] != null
+                      ? CachedNetworkImage(
+                          imageUrl: widget.api.getCoverArtUrl(
+                            currentSong['coverArt'],
+                          ),
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainer,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(
+                              Symbols.music_note,
+                              fill: 0,
+                              weight: 400,
+                              grade: 0,
+                              opticalSize: 120,
+                              color: Colors.white,
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainer,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(
+                              Symbols.music_note,
+                              fill: 0,
+                              weight: 400,
+                              grade: 0,
+                              opticalSize: 120,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      : Container(
                           decoration: BoxDecoration(
                             color: colorScheme.surfaceContainer,
                             borderRadius: BorderRadius.circular(16),
@@ -313,35 +344,7 @@ class _PlaybackPageState extends State<PlaybackPage> {
                             color: Colors.white,
                           ),
                         ),
-                        errorWidget: (context, url, error) => Container(
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainer,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Icon(
-                            Symbols.music_note,
-                            fill: 0,
-                            weight: 400,
-                            grade: 0,
-                            opticalSize: 120,
-                            color: Colors.white,
-                          ),
-                        ),
-                      )
-                    : Container(
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainer,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Symbols.music_note,
-                          fill: 0,
-                          weight: 400,
-                          grade: 0,
-                          opticalSize: 120,
-                          color: Colors.white,
-                        ),
-                      ),
+                ),
               ),
             ),
           ),
@@ -450,24 +453,29 @@ class _PlaybackPageState extends State<PlaybackPage> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: IconButton(
-                    icon: const Icon(
-                      Symbols.skip_previous,
-                      fill: 0,
-                      weight: 400,
-                      grade: 0,
-                      opticalSize: 24,
-                    ),
-                    onPressed: () {
-                      _triggerHapticFeedback();
-                      widget.playerService.previousSong();
-                    },
-                    style: IconButton.styleFrom(
-                      backgroundColor: colorScheme.primaryContainer,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(40),
+                  child: AnimatedScale(
+                    scale: 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    child: IconButton(
+                      icon: const Icon(
+                        Symbols.skip_previous,
+                        fill: 0,
+                        weight: 400,
+                        grade: 0,
+                        opticalSize: 24,
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      onPressed: () {
+                        _triggerHapticFeedback();
+                        widget.playerService.previousSong();
+                      },
+                      style: IconButton.styleFrom(
+                        backgroundColor: colorScheme.primaryContainer,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                      ),
                     ),
                   ),
                 ),
@@ -477,25 +485,30 @@ class _PlaybackPageState extends State<PlaybackPage> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: IconButton(
-                    icon: Icon(
-                      isPlaying ? Symbols.pause : Symbols.play_arrow,
-                      fill: 1,
-                      weight: 400,
-                      grade: 0,
-                      opticalSize: 24,
-                      color: Colors.white,
-                    ),
-                    onPressed: () {
-                      _triggerHapticFeedback();
-                      widget.playerService.togglePlayPause();
-                    },
-                    style: IconButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(40),
+                  child: AnimatedScale(
+                    scale: isPlaying ? 1.05 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    child: IconButton(
+                      icon: Icon(
+                        isPlaying ? Symbols.pause : Symbols.play_arrow,
+                        fill: 1,
+                        weight: 400,
+                        grade: 0,
+                        opticalSize: 24,
+                        color: Colors.white,
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      onPressed: () {
+                        _triggerHapticFeedback();
+                        widget.playerService.togglePlayPause();
+                      },
+                      style: IconButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                      ),
                     ),
                   ),
                 ),
@@ -505,24 +518,29 @@ class _PlaybackPageState extends State<PlaybackPage> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: IconButton(
-                    icon: const Icon(
-                      Symbols.skip_next,
-                      fill: 0,
-                      weight: 400,
-                      grade: 0,
-                      opticalSize: 24,
-                    ),
-                    onPressed: () {
-                      _triggerHapticFeedback();
-                      widget.playerService.nextSong();
-                    },
-                    style: IconButton.styleFrom(
-                      backgroundColor: colorScheme.primaryContainer,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(40),
+                  child: AnimatedScale(
+                    scale: 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    child: IconButton(
+                      icon: const Icon(
+                        Symbols.skip_next,
+                        fill: 0,
+                        weight: 400,
+                        grade: 0,
+                        opticalSize: 24,
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      onPressed: () {
+                        _triggerHapticFeedback();
+                        widget.playerService.nextSong();
+                      },
+                      style: IconButton.styleFrom(
+                        backgroundColor: colorScheme.primaryContainer,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                      ),
                     ),
                   ),
                 ),

@@ -399,6 +399,10 @@ class _MiniPlayerState extends State<MiniPlayer>
       barrierColor: Colors.black54,
       isDismissible: true,
       enableDrag: true,
+      transitionAnimationController: AnimationController(
+        duration: const Duration(milliseconds: 400),
+        vsync: Navigator.of(context),
+      ),
       builder: (context) => Stack(
         children: [
           GestureDetector(
@@ -415,10 +419,19 @@ class _MiniPlayerState extends State<MiniPlayer>
             maxChildSize: 0.9,
             snap: true,
             snapSizes: const [0.4, 0.6, 0.9],
-            builder: (context, scrollController) => Container(
+            builder: (context, scrollController) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
               ),
               child: Column(
                 children: [

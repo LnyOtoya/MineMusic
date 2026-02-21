@@ -222,6 +222,15 @@ class _MyAppState extends State<MyApp> {
             ),
             fontFamily: GoogleFonts.nunito(fontWeight: FontWeight.w600).fontFamily,
             textTheme: textThemeLight,
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: ZoomPageTransitionsBuilder(),
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+                TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+              },
+            ),
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
@@ -231,6 +240,15 @@ class _MyAppState extends State<MyApp> {
             ),
             fontFamily: GoogleFonts.nunito(fontWeight: FontWeight.w600).fontFamily,
             textTheme: textThemeDark,
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: ZoomPageTransitionsBuilder(),
+                TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+                TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+                TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+              },
+            ),
           ),
           themeMode: _themeMode,
           home: InitializerPage(setThemeMode: setThemeMode),
@@ -436,8 +454,12 @@ class _MusicHomePageState extends State<MusicHomePage> {
     setState(() {
       _selectedIndex = index;
     });
-    // 控制页面滚动到对应的索引
-    _pageController.jumpToPage(index);
+    // 控制页面滚动到对应的索引，使用动画
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   @override
@@ -473,6 +495,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
           height: 64,
           selectedIndex: _selectedIndex,
           onDestinationSelected: _onItemTapped,
+          animationDuration: const Duration(milliseconds: 300),
           indicatorColor: Theme.of(context).colorScheme.primaryContainer,
           indicatorShape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
