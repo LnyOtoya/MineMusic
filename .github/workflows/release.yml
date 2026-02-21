@@ -60,13 +60,23 @@ jobs:
         storeFile=keystore.jks
         EOF
         
-    # 8. 构建签名的 APK - 完整包（包含所有架构）
-    - name: Build signed APK - Universal
-      run: flutter build apk --release -DLASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }} -DLASTFM_SHARED_SECRET=${{ secrets.LASTFM_SHARED_SECRET }}
+    # 8. 创建 dart define 文件
+    - name: Create dart define file
+      run: |
+        cat << EOF > defines.json
+        {
+          "LASTFM_API_KEY": "${{ secrets.LASTFM_API_KEY }}",
+          "LASTFM_SHARED_SECRET": "${{ secrets.LASTFM_SHARED_SECRET }}"
+        }
+        EOF
 
-    # 9. 构建签名的 APK - 分架构包
+    # 9. 构建签名的 APK - 完整包（包含所有架构）
+    - name: Build signed APK - Universal
+      run: flutter build apk --release --dart-define-from-file=defines.json
+
+    # 10. 构建签名的 APK - 分架构包
     - name: Build signed APK - Split per ABI
-      run: flutter build apk --release --split-per-abi -DLASTFM_API_KEY=${{ secrets.LASTFM_API_KEY }} -DLASTFM_SHARED_SECRET=${{ secrets.LASTFM_SHARED_SECRET }}
+      run: flutter build apk --release --split-per-abi --dart-define-from-file=defines.json
 
     # 10. 重命名 APK 文件
     - name: Rename APK files
