@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
+import '../services/lastfm_api.dart';
 import 'login_page.dart';
 import 'about_page.dart';
 
@@ -23,11 +25,26 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   ThemeMode _currentThemeMode = ThemeMode.system;
+  final LastFMApi _lastFMApi = LastFMApi();
+  bool _isLastFMAuthenticated = false;
+  String? _lastFMUsername;
 
   @override
   void initState() {
     super.initState();
     _loadThemeMode();
+    _checkLastFMStatus();
+  }
+
+  Future<void> _checkLastFMStatus() async {
+    final authenticated = await _lastFMApi.isAuthenticated();
+    final username = await _lastFMApi.getUsername();
+    if (mounted) {
+      setState(() {
+        _isLastFMAuthenticated = authenticated;
+        _lastFMUsername = username;
+      });
+    }
   }
 
   Future<void> _loadThemeMode() async {
@@ -93,6 +110,26 @@ class _SettingsPageState extends State<SettingsPage> {
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () {
                 _showThemeModeDialog();
+              },
+            ),
+          ]),
+          const SizedBox(height: 16),
+          if (_isLastFMAuthenticated) _buildSection('Last.fm', [
+            ListTile(
+              leading: const Icon(Icons.person_rounded),
+              title: const Text('用户名'),
+              subtitle: Text(_lastFMUsername ?? ''),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {
+                _openLastFMProfile();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout_rounded),
+              title: const Text('退出登录'),
+              subtitle: const Text('退出 Last.fm 账号'),
+              onTap: () {
+                _confirmLastFMLogout();
               },
             ),
           ]),
@@ -229,6 +266,53 @@ class _SettingsPageState extends State<SettingsPage> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openLastFMProfile() async {
+    if (_lastFMUsername == null) return;
+    final url = 'https://www.last.fm/user/$_lastFMUsername';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('无法打开 Last.fm 用户主页')),
+        );
+      }
+    }
+  }
+
+  void _confirmLastFMLogout() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('退出 Last.fm 登录'),
+        content: const Text('确定要退出 Last.fm 账号吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await _lastFMApi.logout();
+              if (mounted) {
+                Navigator.pop(context);
+                setState(() {
+                  _isLastFMAuthenticated = false;
+                  _lastFMUsername = null;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('已退出 Last.fm 账号')),
+                );
+              }
+            },
+            child: const Text('确定'),
           ),
         ],
       ),

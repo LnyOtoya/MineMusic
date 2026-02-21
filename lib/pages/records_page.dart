@@ -422,11 +422,7 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
                     width: 56,
                     height: 56,
                     alignment: Alignment.center,
-                    child: Icon(
-                      Icons.person_rounded,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                      size: 32,
-                    ),
+                    child: _buildUserAvatar(),
                   ),
                 ),
               ),
@@ -434,6 +430,51 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildUserAvatar() {
+    if (!_isAuthenticated || _userInfo == null) {
+      return Icon(
+        Icons.person_rounded,
+        color: Theme.of(context).colorScheme.onSecondaryContainer,
+        size: 32,
+      );
+    }
+
+    final images = _userInfo?['images'] as List<dynamic>? ?? [];
+    final avatarUrl = images.isNotEmpty ? images.last : null;
+
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          avatarUrl,
+          width: 56,
+          height: 56,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(
+              Icons.person_rounded,
+              color: Theme.of(context).colorScheme.onSecondaryContainer,
+              size: 32,
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Icon(
+              Icons.person_rounded,
+              color: Theme.of(context).colorScheme.onSecondaryContainer.withOpacity(0.5),
+              size: 32,
+            );
+          },
+        ),
+      );
+    }
+
+    return Icon(
+      Icons.person_rounded,
+      color: Theme.of(context).colorScheme.onSecondaryContainer,
+      size: 32,
     );
   }
 
