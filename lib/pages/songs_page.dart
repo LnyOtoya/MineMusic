@@ -189,6 +189,7 @@ class _SongsPageState extends State<SongsPage> {
 
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+          cacheExtent: 500,
           itemCount: songs.length,
           itemBuilder: (context, index) {
             final song = songs[index];

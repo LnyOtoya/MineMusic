@@ -11,8 +11,8 @@ class AnimatedListItem extends StatefulWidget {
     super.key,
     required this.child,
     required this.index,
-    this.delay = const Duration(milliseconds: 50),
-    this.duration = const Duration(milliseconds: 400),
+    this.delay = const Duration(milliseconds: 20),
+    this.duration = const Duration(milliseconds: 300),
     this.curve = Curves.easeOutCubic,
   });
 
@@ -21,10 +21,14 @@ class AnimatedListItem extends StatefulWidget {
 }
 
 class _AnimatedListItemState extends State<AnimatedListItem>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
+  bool _hasAnimated = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -51,7 +55,10 @@ class _AnimatedListItemState extends State<AnimatedListItem>
     ));
 
     Future.delayed(widget.delay * widget.index, () {
-      if (mounted) _controller.forward();
+      if (mounted && !_hasAnimated) {
+        _hasAnimated = true;
+        _controller.forward();
+      }
     });
   }
 
@@ -63,6 +70,7 @@ class _AnimatedListItemState extends State<AnimatedListItem>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
