@@ -358,42 +358,6 @@ class SubsonicMusicLibrary extends SubsonicApiBase {
     }
   }
 
-  // 添加按时间排序的专辑获取方法
-  Future<List<Map<String, dynamic>>> getRecentAlbums({int size = 20}) async {
-    try {
-      final extraParams = {
-        'type': 'newest',
-        'size': size.toString(),
-      };
-
-      final response = await sendGetRequest('getAlbumList2', extraParams: extraParams);
-
-      if (response.statusCode == 200) {
-        final responseBody = utf8.decode(response.bodyBytes);
-        final document = XmlDocument.parse(responseBody);
-        final albumElements = document.findAllElements('album');
-
-        List<Map<String, dynamic>> albums = [];
-        for (var element in albumElements) {
-          albums.add({
-            'id': element.getAttribute('id'),
-            'name': element.getAttribute('name'),
-            'artist': element.getAttribute('artist'),
-            'songCount': element.getAttribute('songCount'),
-            'coverArt': element.getAttribute('coverArt'),
-            'year': element.getAttribute('year'),
-          });
-        }
-        return albums;
-      } else {
-        throw Exception('HTTP 错误: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('获取最近专辑失败: $e');
-      return [];
-    }
-  }
-
   // 获取随机专辑
   Future<List<Map<String, dynamic>>> getRandomAlbums({int size = 20}) async {
     try {
@@ -427,6 +391,59 @@ class SubsonicMusicLibrary extends SubsonicApiBase {
       }
     } catch (e) {
       print('获取随机专辑失败: $e');
+      return [];
+    }
+  }
+
+  // 获取最近播放专辑
+  Future<List<Map<String, dynamic>>> getRecentAlbums({int size = 20}) async {
+    try {
+      final extraParams = {
+        'type': 'recent',
+        'size': size.toString(),
+      };
+
+      final response = await sendGetRequest('getAlbumList2', extraParams: extraParams);
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(responseBody);
+        final albumElements = document.findAllElements('album');
+
+        List<Map<String, dynamic>> albums = [];
+        for (var element in albumElements) {
+          final played = element.getAttribute('played');
+          DateTime? playedTime;
+          if (played != null && played.isNotEmpty) {
+            try {
+              playedTime = DateTime.parse(played);
+            } catch (e) {
+              print('解析播放时间失败: $e');
+            }
+          }
+
+          albums.add({
+            'id': element.getAttribute('id'),
+            'name': element.getAttribute('name'),
+            'title': element.getAttribute('title'),
+            'artist': element.getAttribute('artist'),
+            'artistId': element.getAttribute('artistId'),
+            'album': element.getAttribute('album'),
+            'coverArt': element.getAttribute('coverArt'),
+            'duration': element.getAttribute('duration'),
+            'year': element.getAttribute('year'),
+            'songCount': element.getAttribute('songCount'),
+            'played': playedTime,
+            'playCount': element.getAttribute('playCount'),
+          });
+        }
+        print('✅ 获取到 ${albums.length} 个最近播放专辑');
+        return albums;
+      } else {
+        throw Exception('HTTP 错误: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('获取最近播放专辑失败: $e');
       return [];
     }
   }

@@ -4,6 +4,7 @@ import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import '../utils/app_fonts.dart';
 import 'settings_page.dart';
+import 'detail_page.dart' as dp;
 
 enum TimePeriod {
   week('7day', '周'),
@@ -109,7 +110,8 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
   }
 
   Future<List<Map<String, dynamic>>> _getRecentTracks() async {
-    return [];
+    if (widget.api == null) return [];
+    return await widget.api!.getRecentAlbums(size: 50);
   }
 
   Future<void> _refreshRecentTracks() async {
@@ -496,12 +498,11 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
   }
 
   Widget _buildTrackItem(Map<String, dynamic> track, int index) {
-    final images = track['images'] as List<dynamic>? ?? [];
-    final imageUrl = images.isNotEmpty ? images.last : null;
-    final isNowPlaying = track['isNowPlaying'] as bool? ?? false;
-    final playedAt = track['playedAt'] as DateTime?;
+    final coverArtId = track['coverArt'] as String?;
+    final playedAt = track['played'] as DateTime?;
+    final playCount = track['playCount'] as String?;
 
-    String timeText = '正在播放';
+    String timeText = '刚刚播放';
     if (playedAt != null) {
       final now = DateTime.now();
       final difference = now.difference(playedAt);
@@ -515,6 +516,11 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
       } else {
         timeText = '${playedAt.month}月${playedAt.day}日 ${playedAt.hour.toString().padLeft(2, '0')}:${playedAt.minute.toString().padLeft(2, '0')}';
       }
+    }
+
+    String coverUrl = '';
+    if (widget.api != null && coverArtId != null) {
+      coverUrl = widget.api!.getCoverArtUrl(coverArtId);
     }
 
     return Container(
@@ -533,29 +539,29 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: imageUrl != null && imageUrl.isNotEmpty
+            child: coverUrl.isNotEmpty
                 ? Image.network(
-                    imageUrl,
+                    coverUrl,
                     width: 56,
                     height: 56,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Icon(
-                        Icons.music_note_rounded,
+                        Icons.album_rounded,
                         size: 28,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       );
                     },
                   )
                 : Icon(
-                    Icons.music_note_rounded,
+                    Icons.album_rounded,
                     size: 28,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
           ),
         ),
         title: Text(
-          track['name'] ?? '',
+          track['name'] ?? track['title'] ?? '',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.onSurface,
@@ -571,21 +577,53 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              timeText,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
-              ),
+            Row(
+              children: [
+                Text(
+                  timeText,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                  ),
+                ),
+                if (playCount != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '$playCount 次',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
-        trailing: isNowPlaying
-            ? Icon(
-                Icons.equalizer_rounded,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              )
-            : null,
+        onTap: () async {
+          if (track['id'] != null && widget.api != null && widget.playerService != null) {
+            final songs = await widget.api!.getSongsByAlbum(track['id']);
+            if (songs.isNotEmpty && mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => dp.DetailPage(
+                    api: widget.api!,
+                    playerService: widget.playerService!,
+                    item: track,
+                    type: dp.DetailType.album,
+                  ),
+                ),
+              );
+            }
+          }
+        },
       ),
     );
   }
