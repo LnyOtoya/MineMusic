@@ -50,7 +50,7 @@ class AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '版本 1.2.0',
+              '版本 1.2.1',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),

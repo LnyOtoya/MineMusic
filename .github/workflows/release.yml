@@ -60,32 +60,23 @@ jobs:
         storeFile=keystore.jks
         EOF
         
-    # 8. 创建 dart define 文件
-    - name: Create dart define file
-      run: |
-        cat << EOF > defines.json
-        {
-          "LASTFM_API_KEY": "${{ secrets.LASTFM_API_KEY }}",
-          "LASTFM_SHARED_SECRET": "${{ secrets.LASTFM_SHARED_SECRET }}"
-        }
-        EOF
 
-    # 9. 构建签名的 APK - 完整包（包含所有架构）
+    # 8. 构建签名的 APK - 完整包（包含所有架构）
     - name: Build signed APK - Universal
-      run: flutter build apk --release --dart-define-from-file=defines.json
+      run: flutter build apk --release
 
-    # 10. 构建签名的 APK - 分架构包
+    # 9. 构建签名的 APK - 分架构包
     - name: Build signed APK - Split per ABI
-      run: flutter build apk --release --split-per-abi --dart-define-from-file=defines.json
+      run: flutter build apk --release --split-per-abi
 
-    # 10. 重命名 APK 文件
+    # 11. 重命名 APK 文件
     - name: Rename APK files
       run: |
         mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/MineMusic-universal.apk
         mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk build/app/outputs/flutter-apk/MineMusic-armeabi-v7a.apk
         mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/MineMusic-arm64-v8a.apk
 
-    # 11. 创建 GitHub Release
+    # 12. 创建 GitHub Release
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
@@ -96,7 +87,9 @@ jobs:
           🎵 **MineMusic 音乐播放器** ${{ github.ref_name }}
 
           ### ⏫️ 版本说明
-          1. 新增了记录功能(需连接至last.fm使用)
+          1. 删除了last.fm记录功能改用Subconic/OpenSubsonic Api来实现
+          2.重新设计了记录页面
+          3.优化了歌曲页滑动太快的问题
           
           ### 📱 应用信息
           - **包名**: com.example.minemusic
