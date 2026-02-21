@@ -62,14 +62,35 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(70),
-                    child: Container(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
-                      child: Icon(
-                        Icons.person,
-                        size: 64,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                    child: widget.artist['coverArt'] != null
+                        ? CachedNetworkImage(
+                            imageUrl: widget.api.getCoverArtUrl(widget.artist['coverArt']),
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              color: Theme.of(context).colorScheme.surfaceVariant,
+                              child: Icon(
+                                Icons.person,
+                                size: 64,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: Theme.of(context).colorScheme.surfaceVariant,
+                              child: Icon(
+                                Icons.person,
+                                size: 64,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          )
+                        : Container(
+                            color: Theme.of(context).colorScheme.surfaceVariant,
+                            child: Icon(
+                              Icons.person,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 20),

@@ -5,6 +5,7 @@ import '../services/player_service.dart';
 import '../utils/app_fonts.dart';
 import 'settings_page.dart';
 import 'detail_page.dart' as dp;
+import 'artist_detail_page.dart';
 
 enum TimePeriod {
   week('7day', '周'),
@@ -796,20 +797,16 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
     return GestureDetector(
       onTap: () async {
         if (artist['id'] != null && widget.api != null && widget.playerService != null) {
-          final albums = await widget.api!.getAlbumsByArtist(artist['id']);
-          if (albums.isNotEmpty && mounted) {
-            Navigator.push(
-              context, 
-              MaterialPageRoute(
-                builder: (context) => dp.DetailPage(
-                  api: widget.api!,
-                  playerService: widget.playerService!,
-                  item: artist,
-                  type: dp.DetailType.artist,
-                ),
+          Navigator.push(
+            context, 
+            MaterialPageRoute(
+              builder: (context) => ArtistDetailPage(
+                api: widget.api!,
+                playerService: widget.playerService!,
+                artist: artist,
               ),
-            );
-          }
+            ),
+          );
         }
       },
       child: Container(
@@ -898,20 +895,16 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
     return GestureDetector(
       onTap: () async {
         if (artist['id'] != null && widget.api != null && widget.playerService != null) {
-          final albums = await widget.api!.getAlbumsByArtist(artist['id']);
-          if (albums.isNotEmpty && mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => dp.DetailPage(
-                  api: widget.api!,
-                  playerService: widget.playerService!,
-                  item: artist,
-                  type: dp.DetailType.artist,
-                ),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ArtistDetailPage(
+                api: widget.api!,
+                playerService: widget.playerService!,
+                artist: artist,
               ),
-            );
-          }
+            ),
+          );
         }
       },
       child: Container(
