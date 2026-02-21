@@ -101,8 +101,8 @@ class SubsonicApi {
   Future<List<Map<String, dynamic>>> getAlbumsByArtist(String artistId) => 
       _musicLibrary.getAlbumsByArtist(artistId);
   Future<List<Map<String, dynamic>>> getAllSongs() => _musicLibrary.getAllSongs();
-  Future<List<Map<String, dynamic>>> getRecentAlbums({int size = 20}) => 
-      _musicLibrary.getRecentAlbums(size: size);
+  Future<List<Map<String, dynamic>>> getRecentAlbums({int size = 20, int offset = 0}) => 
+      _musicLibrary.getRecentAlbums(size: size, offset: offset);
   Future<List<Map<String, dynamic>>> getRandomAlbums({int size = 20}) => 
       _musicLibrary.getRandomAlbums(size: size);
 

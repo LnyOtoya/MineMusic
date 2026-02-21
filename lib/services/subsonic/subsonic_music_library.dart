@@ -396,11 +396,12 @@ class SubsonicMusicLibrary extends SubsonicApiBase {
   }
 
   // 获取最近播放专辑
-  Future<List<Map<String, dynamic>>> getRecentAlbums({int size = 20}) async {
+  Future<List<Map<String, dynamic>>> getRecentAlbums({int size = 20, int offset = 0}) async {
     try {
       final extraParams = {
         'type': 'recent',
         'size': size.toString(),
+        'offset': offset.toString(),
       };
 
       final response = await sendGetRequest('getAlbumList2', extraParams: extraParams);
@@ -437,6 +438,16 @@ class SubsonicMusicLibrary extends SubsonicApiBase {
             'playCount': element.getAttribute('playCount'),
           });
         }
+
+        albums.sort((a, b) {
+          final aPlayed = a['played'] as DateTime?;
+          final bPlayed = b['played'] as DateTime?;
+          if (aPlayed == null && bPlayed == null) return 0;
+          if (aPlayed == null) return 1;
+          if (bPlayed == null) return -1;
+          return bPlayed.compareTo(aPlayed);
+        });
+
         print('✅ 获取到 ${albums.length} 个最近播放专辑');
         return albums;
       } else {

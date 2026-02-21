@@ -42,10 +42,15 @@ class RecordsPage extends StatefulWidget {
 
 class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
+  late ScrollController _scrollController;
 
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
   Map<String, dynamic>? _userInfo;
   List<Map<String, dynamic>> _recentTracks = [];
+  int _currentPage = 0;
+  final int _pageSize = 20;
 
   TimePeriod _selectedPeriod = TimePeriod.week;
   Map<String, dynamic>? _statsTopTrack;
@@ -63,13 +68,16 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _scrollController = ScrollController();
     _tabController.addListener(_onTabChanged);
+    _scrollController.addListener(_onScroll);
     _loadData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -81,9 +89,19 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
     }
   }
 
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!_isLoadingMore && _hasMore) {
+        _loadMore();
+      }
+    }
+  }
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
+      _currentPage = 0;
+      _hasMore = true;
     });
 
     try {
@@ -94,7 +112,9 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
 
       setState(() {
         _userInfo = results[0] as Map<String, dynamic>?;
-        _recentTracks = results[1] as List<Map<String, dynamic>>;
+        final recentTracks = results[1] as List<Map<String, dynamic>>;
+        _recentTracks = recentTracks;
+        _hasMore = recentTracks.length >= _pageSize;
       });
     } catch (e) {
       print('加载数据失败: $e');
@@ -111,7 +131,34 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
 
   Future<List<Map<String, dynamic>>> _getRecentTracks() async {
     if (widget.api == null) return [];
-    return await widget.api!.getRecentAlbums(size: 50);
+    return await widget.api!.getRecentAlbums(size: _pageSize, offset: _currentPage * _pageSize);
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore || widget.api == null) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      final newTracks = await widget.api!.getRecentAlbums(
+        size: _pageSize,
+        offset: (_currentPage + 1) * _pageSize,
+      );
+
+      setState(() {
+        _recentTracks.addAll(newTracks);
+        _currentPage++;
+        _hasMore = newTracks.length >= _pageSize;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      print('加载更多失败: $e');
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
   }
 
   Future<void> _refreshRecentTracks() async {
@@ -452,7 +499,7 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
   }
 
   Widget _buildRecentTracksTab() {
-    if (_recentTracks.isEmpty) {
+    if (_recentTracks.isEmpty && !_isLoading) {
       return Center(
         child: Container(
           margin: const EdgeInsets.all(20),
@@ -487,9 +534,20 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
     return ExpressiveRefreshIndicator(
       onRefresh: _refreshRecentTracks,
       child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-        itemCount: _recentTracks.length,
+        itemCount: _recentTracks.length + (_hasMore ? 1 : 0),
         itemBuilder: (context, index) {
+          if (index == _recentTracks.length) {
+            return _isLoadingMore
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                : const SizedBox.shrink();
+          }
           final track = _recentTracks[index];
           return _buildTrackItem(track, index);
         },
