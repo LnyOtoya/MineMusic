@@ -395,6 +395,46 @@ class SubsonicMusicLibrary extends SubsonicApiBase {
     }
   }
 
+  // 获取最常播放专辑
+  Future<List<Map<String, dynamic>>> getFrequentAlbums({int size = 20}) async {
+    try {
+      final extraParams = {
+        'type': 'frequent',
+        'size': size.toString(),
+      };
+
+      final response = await sendGetRequest('getAlbumList2', extraParams: extraParams);
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(responseBody);
+        final albumElements = document.findAllElements('album');
+
+        List<Map<String, dynamic>> albums = [];
+        for (var element in albumElements) {
+          final playCount = element.getAttribute('playCount');
+          albums.add({
+            'id': element.getAttribute('id'),
+            'name': element.getAttribute('name'),
+            'artist': element.getAttribute('artist'),
+            'artistId': element.getAttribute('artistId'),
+            'songCount': element.getAttribute('songCount'),
+            'coverArt': element.getAttribute('coverArt'),
+            'year': element.getAttribute('year'),
+            'playCount': playCount,
+          });
+        }
+        print('✅ 获取到 ${albums.length} 个最常播放专辑');
+        return albums;
+      } else {
+        throw Exception('HTTP 错误: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('获取最常播放专辑失败: $e');
+      return [];
+    }
+  }
+
   // 获取最近播放专辑
   Future<List<Map<String, dynamic>>> getRecentAlbums({int size = 20, int offset = 0}) async {
     try {

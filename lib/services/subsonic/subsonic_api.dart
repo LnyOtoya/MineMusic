@@ -105,6 +105,8 @@ class SubsonicApi {
       _musicLibrary.getRecentAlbums(size: size, offset: offset);
   Future<List<Map<String, dynamic>>> getRandomAlbums({int size = 20}) => 
       _musicLibrary.getRandomAlbums(size: size);
+  Future<List<Map<String, dynamic>>> getFrequentAlbums({int size = 20}) => 
+      _musicLibrary.getFrequentAlbums(size: size);
 
   // 播放列表相关方法
   Future<List<Map<String, dynamic>>> getPlaylists() => _playlist.getPlaylists();
