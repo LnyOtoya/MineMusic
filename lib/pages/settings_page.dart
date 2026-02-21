@@ -138,7 +138,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ListTile(
               leading: const Icon(Icons.info_outline_rounded),
               title: const Text('关于'),
-              subtitle: const Text('MineMusic v1.1.9'),
+              subtitle: const Text('MineMusic v1.2.0'),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () {
                 Navigator.push(
