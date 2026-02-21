@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:expressive_refresh/expressive_refresh.dart';
-import '../services/lastfm_api.dart';
-import 'lastfm_auth_page.dart';
-import 'settings_page.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import '../utils/app_fonts.dart';
+import 'settings_page.dart';
 
 enum TimePeriod {
   week('7day', '周'),
@@ -42,10 +40,8 @@ class RecordsPage extends StatefulWidget {
 }
 
 class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
-  final LastFMApi _api = LastFMApi();
   late TabController _tabController;
 
-  bool _isAuthenticated = false;
   bool _isLoading = true;
   Map<String, dynamic>? _userInfo;
   List<Map<String, dynamic>> _recentTracks = [];
@@ -67,7 +63,7 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
-    _checkAuthStatus();
+    _loadData();
   }
 
   @override
@@ -79,22 +75,9 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
   void _onTabChanged() {
     if (_tabController.indexIsChanging) return;
     
-    if (_tabController.index == 1 && _isAuthenticated) {
+    if (_tabController.index == 1) {
       _loadStatsData();
     }
-  }
-
-  Future<void> _checkAuthStatus() async {
-    final authenticated = await _api.isAuthenticated();
-    
-    if (authenticated) {
-      await _loadData();
-    }
-    
-    setState(() {
-      _isAuthenticated = authenticated;
-      _isLoading = false;
-    });
   }
 
   Future<void> _loadData() async {
@@ -104,13 +87,13 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
 
     try {
       final results = await Future.wait([
-        _api.getUserInfo(),
-        _api.getRecentTracks(limit: 50),
+        _getUserInfo(),
+        _getRecentTracks(),
       ]);
 
       setState(() {
-        _userInfo = results[0];
-        _recentTracks = results[1]['tracks'] ?? [];
+        _userInfo = results[0] as Map<String, dynamic>?;
+        _recentTracks = results[1] as List<Map<String, dynamic>>;
       });
     } catch (e) {
       print('加载数据失败: $e');
@@ -121,16 +104,24 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
     }
   }
 
+  Future<Map<String, dynamic>> _getUserInfo() async {
+    return {};
+  }
+
+  Future<List<Map<String, dynamic>>> _getRecentTracks() async {
+    return [];
+  }
+
   Future<void> _refreshRecentTracks() async {
     try {
       final results = await Future.wait([
-        _api.getUserInfo(),
-        _api.getRecentTracks(limit: 50),
+        _getUserInfo(),
+        _getRecentTracks(),
       ]);
 
       setState(() {
-        _userInfo = results[0];
-        _recentTracks = results[1]['tracks'] ?? [];
+        _userInfo = results[0] as Map<String, dynamic>?;
+        _recentTracks = results[1] as List<Map<String, dynamic>>;
       });
     } catch (e) {
       print('刷新最近播放失败: $e');
@@ -138,8 +129,6 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
   }
 
   Future<void> _loadStatsData() async {
-    if (!_isAuthenticated) return;
-
     try {
       print('Loading stats data for period: ${_selectedPeriod.value}');
       
@@ -162,9 +151,7 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
       
       print('Time range: $startDate to $now');
       
-      final recentTracksResult = await _api.getRecentTracks(limit: 200);
-      final recentTracks = (recentTracksResult['tracks'] as List<dynamic>? ?? [])
-          .cast<Map<String, dynamic>>();
+      final recentTracks = await _getRecentTracks();
       
       final filteredTracks = recentTracks.where((track) {
         final playedAt = track['playedAt'] as DateTime?;
@@ -286,26 +273,6 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
     }
   }
 
-  Future<void> _handleAuthSuccess() async {
-    await _checkAuthStatus();
-  }
-
-  Future<void> _handleLogout() async {
-    await _api.logout();
-    setState(() {
-      _isAuthenticated = false;
-      _userInfo = null;
-      _recentTracks = [];
-      _statsTopTrack = null;
-      _statsTopArtist = null;
-      _statsTopAlbum = null;
-      _totalPlayTime = '0h 0m';
-      _totalPlays = 0;
-      _activeHours = List.filled(24, 0);
-      _statsTopTracks = [];
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -315,49 +282,6 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
         body: SafeArea(
           child: Center(
             child: CircularProgressIndicator(),
-          ),
-        ),
-      );
-    }
-
-    if (!_isAuthenticated) {
-      return Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.audiotrack_rounded,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '未连接 Last.fm',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => LastFMAuthPage(
-                          onAuthSuccess: () {
-                            _handleAuthSuccess();
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.login),
-                  label: const Text('连接 Last.fm'),
-                ),
-              ],
-            ),
           ),
         ),
       );
@@ -434,43 +358,6 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
   }
 
   Widget _buildUserAvatar() {
-    if (!_isAuthenticated || _userInfo == null) {
-      return Icon(
-        Icons.person_rounded,
-        color: Theme.of(context).colorScheme.onSecondaryContainer,
-        size: 32,
-      );
-    }
-
-    final images = _userInfo?['images'] as List<dynamic>? ?? [];
-    final avatarUrl = images.isNotEmpty ? images.last : null;
-
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      return ClipOval(
-        child: Image.network(
-          avatarUrl,
-          width: 56,
-          height: 56,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Icon(
-              Icons.person_rounded,
-              color: Theme.of(context).colorScheme.onSecondaryContainer,
-              size: 32,
-            );
-          },
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Icon(
-              Icons.person_rounded,
-              color: Theme.of(context).colorScheme.onSecondaryContainer.withOpacity(0.5),
-              size: 32,
-            );
-          },
-        ),
-      );
-    }
-
     return Icon(
       Icons.person_rounded,
       color: Theme.of(context).colorScheme.onSecondaryContainer,
@@ -674,600 +561,411 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
             color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        subtitle: Text(
-          track['artist'] ?? '',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              track['artist'] ?? '',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              timeText,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+            ),
+          ],
         ),
         trailing: isNowPlaying
-            ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '正在播放',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize: 12,
-                  ),
-                ),
+            ? Icon(
+                Icons.equalizer_rounded,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
               )
-            : Text(
-                timeText,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 12,
-                ),
-              ),
+            : null,
       ),
     );
   }
 
   Widget _buildStatsTab() {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return ExpressiveRefreshIndicator(
-      onRefresh: _loadStatsData,
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.shadow.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '最佳艺术家',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_statsTopArtist == null)
-                    Center(
-                      child: Text(
-                        '暂无数据',
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    )
-                  else
-                    Row(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: colorScheme.primary.withOpacity(0.1),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: _buildArtistImage(_statsTopArtist!),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _statsTopArtist!['name'] ?? '',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurface,
-                                ),
-                              ),
-                              Text(
-                                '${_statsTopArtist!['playcount'] ?? '0'} 次播放',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStatsOverview(),
+          const SizedBox(height: 24),
+          _buildActiveHoursChart(),
+          const SizedBox(height: 24),
+          _buildHotTracksList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsOverview() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '播放统计',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
           ),
-          
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.shadow.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  '总播放时长',
+                  _totalPlayTime,
+                  Icons.access_time_rounded,
+                  Theme.of(context).colorScheme.primary,
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '最佳专辑',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_statsTopAlbum == null)
-                    Center(
-                      child: Text(
-                        '暂无数据',
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    )
-                  else
-                    Row(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: colorScheme.primary.withOpacity(0.1),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: _buildAlbumImage(_statsTopAlbum!),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _statsTopAlbum!['name'] ?? '',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurface,
-                                ),
-                              ),
-                              Text(
-                                _statsTopAlbum!['artist'] ?? '',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  '总播放次数',
+                  '$_totalPlays 次',
+                  Icons.music_note_rounded,
+                  Theme.of(context).colorScheme.secondary,
+                ),
               ),
-            ),
+            ],
           ),
-          
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.shadow.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTopItemCard(
+                  '最热门歌曲',
+                  _statsTopTrack?['name'] ?? '无',
+                  '',
+                  Icons.audiotrack_rounded,
+                  Theme.of(context).colorScheme.primary,
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '最佳单曲',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_statsTopTrack == null)
-                    Center(
-                      child: Text(
-                        '暂无数据',
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    )
-                  else
-                    Row(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: colorScheme.primary.withOpacity(0.1),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: _buildTrackImage(_statsTopTrack!),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _statsTopTrack!['name'] ?? '',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurface,
-                                ),
-                              ),
-                              Text(
-                                _statsTopTrack!['artist'] ?? '',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTopItemCard(
+                  '最热门艺术家',
+                  _statsTopArtist?['name'] ?? '无',
+                  '',
+                  Icons.person_rounded,
+                  Theme.of(context).colorScheme.secondary,
+                ),
               ),
-            ),
+            ],
           ),
-          
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.shadow.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '数据概览',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              '播放总时长',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _totalPlayTime,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              '记录次数',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '$_totalPlays',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '活跃时间',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 40,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(24, (hour) {
-                        final intensity = (_activeHours[hour] / 10.0).clamp(0.0, 1.0);
-                        final periodColor = _getPeriodColor(colorScheme);
-                        return Container(
-                          width: 2,
-                          height: 40 * intensity,
-                          margin: const EdgeInsets.symmetric(horizontal: 1),
-                          decoration: BoxDecoration(
-                            color: periodColor.withOpacity(intensity),
-                            borderRadius: BorderRadius.circular(1),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.shadow.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      _getHotTracksTitle(),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  ..._statsTopTracks.take(5).toList().asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final track = entry.value;
-                    final playCount = track['playcount'] ?? '0';
-                    
-                    return ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${index + 1}',
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      title: Text(
-                        track['name'] ?? '',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      subtitle: Text(
-                        track['artist'] ?? '',
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                          fontSize: 12,
-                        ),
-                      ),
-                      trailing: Chip(
-                        label: Text(
-                          '$playCount 次',
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        backgroundColor: colorScheme.primary.withOpacity(0.1),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    );
-                  }).toList(),
-                ],
-              ),
-            ),
-          ),
-          
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 32),
+          const SizedBox(height: 12),
+          _buildTopItemCard(
+            '最热门专辑',
+            _statsTopAlbum?['name'] ?? '无',
+            '',
+            Icons.album_rounded,
+            Theme.of(context).colorScheme.tertiary,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildArtistImage(Map<String, dynamic> artist) {
-    final images = artist['images'] as List<dynamic>? ?? [];
-    final imageUrl = images.isNotEmpty ? images.last : null;
-    
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      return Image.network(
-        imageUrl,
-        width: 80,
-        height: 80,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return const Icon(
-            Icons.person,
-            size: 40,
-            color: Colors.grey,
-          );
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                  : null,
-              strokeWidth: 2,
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
-          );
-        },
-      );
-    }
-    
-    return const Icon(
-      Icons.person,
-      size: 40,
-      color: Colors.grey,
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildAlbumImage(Map<String, dynamic> album) {
-    final images = album['images'] as List<dynamic>? ?? [];
-    final imageUrl = images.isNotEmpty ? images.last : null;
-    
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      return Image.network(
-        imageUrl,
-        width: 80,
-        height: 80,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return const Icon(
-            Icons.album,
-            size: 40,
-            color: Colors.grey,
-          );
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                  : null,
-              strokeWidth: 2,
+  Widget _buildTopItemCard(String title, String value, String playcount, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
             ),
-          );
-        },
-      );
-    }
-    
-    return const Icon(
-      Icons.album,
-      size: 40,
-      color: Colors.grey,
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildTrackImage(Map<String, dynamic> track) {
+  Widget _buildActiveHoursChart() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final maxCount = _activeHours.reduce((a, b) => a > b ? a : b);
+    final barHeight = maxCount > 0 ? 200.0 / maxCount : 0.0;
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '24小时活跃度',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _getHotTracksTitle(),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: _getPeriodColor(colorScheme),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 200,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(24, (index) {
+                final count = _activeHours[index];
+                final height = count * barHeight;
+                final isSelected = index == DateTime.now().hour;
+                
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Container(
+                          height: height,
+                          decoration: BoxDecoration(
+                            color: isSelected 
+                                ? _getPeriodColor(colorScheme)
+                                : colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${index}时',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHotTracksList() {
+    if (_statsTopTracks.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.music_note_rounded,
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '暂无播放记录',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            _getHotTracksTitle(),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: _getPeriodColor(Theme.of(context).colorScheme),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...List.generate(_statsTopTracks.length, (index) {
+          final track = _statsTopTracks[index];
+          return _buildHotTrackItem(track, index);
+        }),
+      ],
+    );
+  }
+
+  Widget _buildHotTrackItem(Map<String, dynamic> track, int index) {
     final images = track['images'] as List<dynamic>? ?? [];
     final imageUrl = images.isNotEmpty ? images.last : null;
-    
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      return Image.network(
-        imageUrl,
-        width: 80,
-        height: 80,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return const Icon(
-            Icons.music_note,
-            size: 40,
-            color: Colors.grey,
-          );
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                  : null,
-              strokeWidth: 2,
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8, left: 20, right: 20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: Theme.of(context).colorScheme.primaryContainer,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: imageUrl != null && imageUrl.isNotEmpty
+                ? Image.network(
+                    imageUrl,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.music_note_rounded,
+                        size: 28,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      );
+                    },
+                  )
+                : Icon(
+                    Icons.music_note_rounded,
+                    size: 28,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+          ),
+        ),
+        title: Text(
+          track['name'] ?? '',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        subtitle: Row(
+          children: [
+            Text(
+              track['artist'] ?? '',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-          );
-        },
-      );
-    }
-    
-    return const Icon(
-      Icons.music_note,
-      size: 40,
-      color: Colors.grey,
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: _getPeriodColor(Theme.of(context).colorScheme).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${track['playcount']} 次',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: _getPeriodColor(Theme.of(context).colorScheme),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
