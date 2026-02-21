@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
-import '../utils/test_config.dart';
 import 'login_page.dart';
 import 'about_page.dart';
-import 'lastfm_test_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final SubsonicApi? api;
@@ -67,23 +65,6 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.all(16),
         children: [
           const SizedBox(height: 16),
-          if (TestConfig.useTestConfig)
-            _buildSection('开发测试', [
-              ListTile(
-                leading: const Icon(Icons.science_rounded),
-                title: const Text('Last.fm API 测试'),
-                subtitle: const Text('测试API连接和数据获取'),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LastFMTestPage(),
-                    ),
-                  );
-                },
-              ),
-            ]),
           const SizedBox(height: 16),
           if (widget.api != null) _buildSection('账户', [
             ListTile(
