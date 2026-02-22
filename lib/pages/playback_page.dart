@@ -9,6 +9,8 @@ import '../services/color_extraction_service.dart';
 import '../widgets/material_wave_slider.dart';
 import '../widgets/lyrics_widget.dart';
 import '../models/lyrics_model.dart';
+import 'artist_detail_page.dart';
+import 'detail_page.dart';
 
 class PlaybackPage extends StatefulWidget {
   final SubsonicApi api;
@@ -416,25 +418,90 @@ class _PlaybackPageState extends State<PlaybackPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  currentSong?['title'] ?? 'No song',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.primary,
-                        fontSize: 28,
-                      ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                GestureDetector(
+                  onTap: () {
+                    if (currentSong != null && currentSong['albumId'] != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DetailPage(
+                            api: widget.api,
+                            playerService: widget.playerService,
+                            item: {
+                              'id': currentSong['albumId'],
+                              'name': currentSong['album'],
+                              'artist': currentSong['artist'],
+                              'artistId': currentSong['artistId'],
+                              'coverArt': currentSong['coverArt'],
+                            },
+                            type: DetailType.album,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: Text(
+                    currentSong?['title'] ?? 'No song',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.primary,
+                          fontSize: 28,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  currentSong?['artist'] ?? 'Unknown artist',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 20,
-                      ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                GestureDetector(
+                  onTap: () async {
+                    if (currentSong != null && currentSong['artistId'] != null) {
+                      String? artistCoverArt;
+                      
+                      // 尝试从歌曲数据中获取歌手头像
+                      if (currentSong['artistCoverArt'] != null) {
+                        artistCoverArt = currentSong['artistCoverArt'];
+                      } else {
+                        // 如果没有，从所有艺术家列表中查找
+                        try {
+                          final allArtists = await widget.api.getArtists();
+                          for (var artist in allArtists) {
+                            if (artist['id'] == currentSong['artistId']) {
+                              artistCoverArt = artist['coverArt'];
+                              break;
+                            }
+                          }
+                        } catch (e) {
+                          print('获取歌手头像失败: $e');
+                        }
+                      }
+                      
+                      if (mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ArtistDetailPage(
+                              api: widget.api,
+                              playerService: widget.playerService,
+                              artist: {
+                                'id': currentSong['artistId'],
+                                'name': currentSong['artist'],
+                                'coverArt': artistCoverArt,
+                              },
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: Text(
+                    currentSong?['artist'] ?? 'Unknown artist',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 20,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
