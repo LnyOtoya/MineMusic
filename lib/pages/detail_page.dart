@@ -36,6 +36,8 @@ class DetailPage extends StatefulWidget {
 class _DetailPageState extends State<DetailPage> {
   late Future<List<Map<String, dynamic>>> _songsFuture;
   final ColorExtractionService _colorService = ColorExtractionService();
+  String? _artistAvatarUrl;
+  Map<String, String?>? _artistCoverArtMap;
 
   @override
   void initState() {
@@ -47,6 +49,7 @@ class _DetailPageState extends State<DetailPage> {
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) {
           _extractColorFromCoverArt();
+          _loadArtistCoverArt();
         }
       });
     });
@@ -102,6 +105,49 @@ class _DetailPageState extends State<DetailPage> {
       widget.playerService.updateColorScheme(colorScheme);
     } else {
       print('颜色提取失败');
+    }
+  }
+
+  Future<void> _loadArtistCoverArt() async {
+    if (widget.type != DetailType.album) return;
+    
+    final artistName = widget.item['artist'];
+    print('🎵 专辑详情页 - 歌手名: $artistName');
+    
+    if (artistName == null || artistName.isEmpty) {
+      print('❌ 歌手名为空，跳过加载头像');
+      return;
+    }
+    
+    try {
+      final allArtists = await widget.api.getArtists();
+      print('📋 获取到 ${allArtists.length} 个艺术家');
+      
+      for (var artist in allArtists) {
+        final name = artist['name'] as String?;
+        final coverArt = artist['coverArt'] as String?;
+        
+        if (name != null && coverArt != null) {
+          if (_artistCoverArtMap == null) {
+            _artistCoverArtMap = {};
+          }
+          _artistCoverArtMap![name] = coverArt;
+        }
+      }
+      
+      final artistCoverArt = _artistCoverArtMap?[artistName];
+      print('🖼️ 找到的歌手封面: $artistCoverArt');
+      
+      if (artistCoverArt != null) {
+        setState(() {
+          _artistAvatarUrl = widget.api.getCoverArtUrl(artistCoverArt);
+        });
+        print('✅ 歌手头像加载成功: $_artistAvatarUrl');
+      } else {
+        print('⚠️ 未找到歌手封面');
+      }
+    } catch (e) {
+      print('❌ 加载歌手封面失败: $e');
     }
   }
 
@@ -420,21 +466,32 @@ class _DetailPageState extends State<DetailPage> {
                                       ),
                                       const SizedBox(height: 8),
                                       InkWell(
-                                        onTap: () {
-                                          if (widget.type == DetailType.album && widget.item['artistId'] != null) {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => ArtistDetailPage(
-                                                  api: widget.api,
-                                                  playerService: widget.playerService,
-                                                  artist: {
-                                                    'id': widget.item['artistId'],
-                                                    'name': subtitle,
-                                                  },
-                                                ),
-                                              ),
-                                            );
+                                        onTap: () async {
+                                          if (widget.type == DetailType.album) {
+                                            final artistName = widget.item['artist'];
+                                            if (artistName != null && _artistCoverArtMap != null) {
+                                              final coverArt = _artistCoverArtMap![artistName];
+                                              if (coverArt != null) {
+                                                final allArtists = await widget.api.getArtists();
+                                                final artist = allArtists.cast<Map<String, dynamic>>().firstWhere(
+                                                  (a) => a['name'] == artistName,
+                                                  orElse: () => <String, dynamic>{},
+                                                );
+                                                
+                                                if (artist.isNotEmpty) {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => ArtistDetailPage(
+                                                        api: widget.api,
+                                                        playerService: widget.playerService,
+                                                        artist: artist,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            }
                                           }
                                         },
                                         borderRadius: BorderRadius.circular(20),
@@ -450,11 +507,34 @@ class _DetailPageState extends State<DetailPage> {
                                                   decoration: BoxDecoration(
                                                     color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                                   ),
-                                                  child: Icon(
-                                                    Icons.person,
-                                                    size: 12,
-                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                                  ),
+                                                  child: _artistAvatarUrl != null
+                                                      ? CachedNetworkImage(
+                                                          imageUrl: _artistAvatarUrl!,
+                                                          fit: BoxFit.cover,
+                                                          width: 20,
+                                                          height: 20,
+                                                          placeholder: (context, url) {
+                                                            print('🔄 头像加载中...');
+                                                            return Icon(
+                                                              Icons.person,
+                                                              size: 12,
+                                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                            );
+                                                          },
+                                                          errorWidget: (context, url, error) {
+                                                            print('❌ 头像加载失败: $error');
+                                                            return Icon(
+                                                              Icons.person,
+                                                              size: 12,
+                                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                            );
+                                                          },
+                                                        )
+                                                      : Icon(
+                                                          Icons.person,
+                                                          size: 12,
+                                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                        ),
                                                 ),
                                               ),
                                               const SizedBox(width: 6),
