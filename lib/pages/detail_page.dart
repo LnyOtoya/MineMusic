@@ -7,6 +7,7 @@ import '../services/color_extraction_service.dart';
 import '../widgets/animated_list_item.dart';
 import '../utils/app_fonts.dart';
 import 'package:mini_music_visualizer/mini_music_visualizer.dart';
+import 'artist_detail_page.dart';
 
 enum DetailType { album, artist, playlist }
 
@@ -418,17 +419,60 @@ class _DetailPageState extends State<DetailPage> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 8),
-                                      Text(
-                                        subtitle,
-                                        style: AppFonts.getTextStyle(
-                                          text: subtitle,
-                                          fontSize: 16,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
+                                      InkWell(
+                                        onTap: () {
+                                          if (widget.type == DetailType.album && widget.item['artistId'] != null) {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => ArtistDetailPage(
+                                                  api: widget.api,
+                                                  playerService: widget.playerService,
+                                                  artist: {
+                                                    'id': widget.item['artistId'],
+                                                    'name': subtitle,
+                                                  },
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              ClipOval(
+                                                child: Container(
+                                                  width: 20,
+                                                  height: 20,
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.person,
+                                                    size: 12,
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                subtitle,
+                                                style: AppFonts.getTextStyle(
+                                                  text: subtitle,
+                                                  fontSize: 16,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
