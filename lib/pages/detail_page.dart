@@ -157,6 +157,23 @@ class _DetailPageState extends State<DetailPage> {
     return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
+  String _formatTotalDuration(List<Map<String, dynamic>> songs) {
+    int totalSeconds = 0;
+    for (var song in songs) {
+      final duration = int.tryParse(song['duration'] ?? '0') ?? 0;
+      totalSeconds += duration;
+    }
+    
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    
+    if (hours > 0) {
+      return '${hours}小时${minutes}分钟';
+    } else {
+      return '${minutes}分钟';
+    }
+  }
+
   void _playSong(
     Map<String, dynamic> song,
     List<Map<String, dynamic>> playlist,
@@ -556,13 +573,31 @@ class _DetailPageState extends State<DetailPage> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        '${songs.length} 首歌曲',
+                                        '${songs.length} 首歌曲 · ${_formatTotalDuration(songs)}',
                                         style: AppFonts.getTextStyle(
-                                          text: '${songs.length} 首歌曲',
+                                          text: '${songs.length} 首歌曲 · ${_formatTotalDuration(songs)}',
                                           fontSize: 14,
                                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
                                       ),
+                                      const SizedBox(height: 8),
+                                      if (widget.type == DetailType.album)
+                                        Chip(
+                                          label: Text(
+                                            widget.item['year'] != null ? '${widget.item['year']}' : '未知',
+                                            style: AppFonts.getTextStyle(
+                                              text: widget.item['year'] != null ? '${widget.item['year']}' : '未知',
+                                              fontSize: 14,
+                                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                            ),
+                                          ),
+                                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                          side: BorderSide.none,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(16),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                        ),
                                     ],
                                   ),
                                 ),
