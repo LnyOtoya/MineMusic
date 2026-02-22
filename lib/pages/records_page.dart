@@ -66,6 +66,7 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
     _tabController.addListener(_onTabChanged);
     _scrollController.addListener(_onScroll);
     _loadData();
+    _loadStatsData();
   }
 
   @override
@@ -77,10 +78,6 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
 
   void _onTabChanged() {
     if (_tabController.indexIsChanging) return;
-    
-    if (_tabController.index == 1) {
-      _loadStatsData();
-    }
   }
 
   void _onScroll() {
