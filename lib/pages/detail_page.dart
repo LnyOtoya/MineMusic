@@ -395,9 +395,9 @@ class _DetailPageState extends State<DetailPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '专辑',
+                              widget.type == DetailType.album ? '专辑' : widget.type == DetailType.artist ? '艺术家' : '歌单',
                               style: AppFonts.getTextStyle(
-                                text: '专辑',
+                                text: widget.type == DetailType.album ? '专辑' : widget.type == DetailType.artist ? '艺术家' : '歌单',
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: -0.8,
