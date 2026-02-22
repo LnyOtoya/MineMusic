@@ -327,43 +327,57 @@ class _DetailPageState extends State<DetailPage> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                        child: Row(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(12),
+                            Text(
+                              '专辑',
+                              style: AppFonts.getTextStyle(
+                                text: '专辑',
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.8,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: widget.type == DetailType.album
-                                    ? widget.item['coverArt'] != null
-                                          ? CachedNetworkImage(
-                                              imageUrl: widget.api.getCoverArtUrl(
-                                                widget.item['coverArt'],
-                                              ),
-                                              fit: BoxFit.cover,
-                                              placeholder: (context, url) => Icon(
-                                                Icons.album,
-                                                size: 60,
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurfaceVariant,
-                                              ),
-                                              errorWidget: (context, url, error) =>
-                                                  Icon(
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 120,
+                                  height: 120,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: widget.type == DetailType.album
+                                        ? widget.item['coverArt'] != null
+                                              ? CachedNetworkImage(
+                                                  imageUrl: widget.api.getCoverArtUrl(
+                                                    widget.item['coverArt'],
+                                                  ),
+                                                  fit: BoxFit.cover,
+                                                  placeholder: (context, url) => Icon(
                                                     Icons.album,
                                                     size: 60,
                                                     color: Theme.of(
                                                       context,
                                                     ).colorScheme.onSurfaceVariant,
                                                   ),
-                                            )
+                                                  errorWidget: (context, url, error) =>
+                                                      Icon(
+                                                        Icons.album,
+                                                        size: 60,
+                                                        color: Theme.of(
+                                                          context,
+                                                        ).colorScheme.onSurfaceVariant,
+                                                      ),
+                                                )
                                           : Icon(
                                               Icons.album,
                                               size: 60,
@@ -386,56 +400,49 @@ class _DetailPageState extends State<DetailPage> {
                                           context,
                                         ).colorScheme.onSurfaceVariant,
                                       ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '专辑',
-                                    style: AppFonts.getTextStyle(
-                                      text: '专辑',
-                                      fontSize: 14,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    title,
-                                    style: AppFonts.getTextStyle(
-                                      text: title,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        title,
+                                        style: AppFonts.getTextStyle(
+                                          text: title,
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        subtitle,
+                                        style: AppFonts.getTextStyle(
+                                          text: subtitle,
+                                          fontSize: 16,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '${songs.length} 首歌曲',
+                                        style: AppFonts.getTextStyle(
+                                          text: '${songs.length} 首歌曲',
+                                          fontSize: 14,
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    subtitle,
-                                    style: AppFonts.getTextStyle(
-                                      text: subtitle,
-                                      fontSize: 16,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '${songs.length} 首歌曲',
-                                    style: AppFonts.getTextStyle(
-                                      text: '${songs.length} 首歌曲',
-                                      fontSize: 14,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
