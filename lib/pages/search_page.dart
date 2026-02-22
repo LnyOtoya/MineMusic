@@ -109,6 +109,30 @@ class _SearchPageState extends State<SearchPage> {
     );
 
     if (mounted) {
+      // 为艺术家添加 coverArt
+      final artists = results['artists'] ?? [];
+      if (artists.isNotEmpty) {
+        // 获取所有艺术家的 coverArt
+        final allArtists = await widget.api.getArtists();
+        final artistCoverArtMap = <String, String?>{};
+        
+        for (var artist in allArtists) {
+          final name = artist['name'] as String?;
+          final coverArt = artist['coverArt'] as String?;
+          if (name != null) {
+            artistCoverArtMap[name] = coverArt;
+          }
+        }
+        
+        // 将 coverArt 添加到搜索结果中的艺术家
+        for (var artist in artists) {
+          final name = artist['name'] as String?;
+          if (name != null && artistCoverArtMap.containsKey(name)) {
+            artist['coverArt'] = artistCoverArtMap[name];
+          }
+        }
+      }
+      
       setState(() {
         _searchResults = results;
         _isSearching = false;

@@ -177,6 +177,7 @@ class SubsonicApi {
             'id': element.getAttribute('id'),
             'name': element.getAttribute('name'),
             'albumCount': element.getAttribute('albumCount'),
+            'coverArt': element.getAttribute('coverArt'),
           };
         }).toList();
 
