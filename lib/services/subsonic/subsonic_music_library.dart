@@ -485,4 +485,46 @@ class SubsonicMusicLibrary extends SubsonicApiBase {
       return [];
     }
   }
+
+  // 获取艺术家信息
+  Future<Map<String, dynamic>?> getArtistInfo(String id) async {
+    try {
+      final extraParams = {
+        'id': id,
+        'count': '20',
+        'includeNotPresent': 'false',
+      };
+
+      final response = await sendGetRequest('getArtistInfo', extraParams: extraParams);
+
+      if (response.statusCode == 200) {
+        final responseBody = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(responseBody);
+        final artistInfoElement = document.findAllElements('artistInfo').firstOrNull;
+
+        if (artistInfoElement != null) {
+          final biographyElement = artistInfoElement.findElements('biography').firstOrNull;
+          final similarArtistsElement = artistInfoElement.findElements('similarArtist');
+          
+          final similarArtists = similarArtistsElement.map((element) {
+            return {
+              'id': element.getAttribute('id'),
+              'name': element.getAttribute('name'),
+            };
+          }).toList();
+
+          return {
+            'biography': biographyElement?.innerText ?? '',
+            'similarArtists': similarArtists,
+          };
+        }
+        return null;
+      } else {
+        throw Exception('HTTP 错误: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('获取艺术家信息失败: $e');
+      return null;
+    }
+  }
 }

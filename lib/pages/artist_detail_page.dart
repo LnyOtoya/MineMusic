@@ -24,12 +24,14 @@ class ArtistDetailPage extends StatefulWidget {
 class _ArtistDetailPageState extends State<ArtistDetailPage> {
   late Future<List<Map<String, dynamic>>> _albumsFuture;
   late Future<List<Map<String, dynamic>>> _songsFuture;
+  late Future<Map<String, dynamic>?> _artistInfoFuture;
 
   @override
   void initState() {
     super.initState();
     _albumsFuture = widget.api.getAlbumsByArtist(widget.artist['id']);
     _songsFuture = widget.api.getSongsByArtist(widget.artist['id']);
+    _artistInfoFuture = widget.api.getArtistInfo(widget.artist['id']);
   }
 
   void _playSong(
@@ -40,6 +42,17 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
       song,
       sourceType: 'artist',
       playlist: playlist,
+    );
+  }
+
+  void _showArtistInfoDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _ArtistInfoDialog(
+        api: widget.api,
+        artistId: widget.artist['id'],
+        artistName: widget.artist['name'] ?? '未知艺术家',
+      ),
     );
   }
 
@@ -119,27 +132,103 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    widget.artist['name'] ?? '未知艺术家',
-                                    style: AppFonts.getTextStyle(
-                                      text: widget.artist['name'] ?? '未知艺术家',
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.onSurface,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          widget.artist['name'] ?? '未知艺术家',
+                                          style: AppFonts.getTextStyle(
+                                            text: widget.artist['name'] ?? '未知艺术家',
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context).colorScheme.onSurface,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () => _showArtistInfoDialog(context),
+                                          borderRadius: BorderRadius.circular(20),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              '资料',
+                                              style: AppFonts.getTextStyle(
+                                                text: '资料',
+                                                fontSize: 14,
+                                                color: Theme.of(context).colorScheme.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(
-                                    '暂无艺术家介绍信息',
-                                    style: AppFonts.getTextStyle(
-                                      text: '暂无艺术家介绍信息',
-                                      fontSize: 14,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                  FutureBuilder<Map<String, dynamic>?>(
+                                    future: _artistInfoFuture,
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState == ConnectionState.waiting) {
+                                        return Text(
+                                          '加载中...',
+                                          style: AppFonts.getTextStyle(
+                                            text: '加载中...',
+                                            fontSize: 14,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        );
+                                      }
+                                      
+                                      if (snapshot.hasError) {
+                                        return Text(
+                                          '暂无艺术家介绍信息',
+                                          style: AppFonts.getTextStyle(
+                                            text: '暂无艺术家介绍信息',
+                                            fontSize: 14,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        );
+                                      }
+                                      
+                                      final artistInfo = snapshot.data;
+                                      final biography = artistInfo?['biography'] as String?;
+                                      
+                                      if (biography == null || biography.isEmpty) {
+                                        return Text(
+                                          '暂无艺术家介绍信息',
+                                          style: AppFonts.getTextStyle(
+                                            text: '暂无艺术家介绍信息',
+                                            fontSize: 14,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        );
+                                      }
+                                      
+                                      return Text(
+                                        biography,
+                                        style: AppFonts.getTextStyle(
+                                          text: biography,
+                                          fontSize: 14,
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      );
+                                    },
                                   ),
                                 ],
                               ),
@@ -675,6 +764,263 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
           api: widget.api,
           playerService: widget.playerService,
           album: album,
+        ),
+      ),
+    );
+  }
+}
+
+class _ArtistInfoDialog extends StatefulWidget {
+  final SubsonicApi api;
+  final String artistId;
+  final String artistName;
+
+  const _ArtistInfoDialog({
+    required this.api,
+    required this.artistId,
+    required this.artistName,
+  });
+
+  @override
+  State<_ArtistInfoDialog> createState() => _ArtistInfoDialogState();
+}
+
+class _ArtistInfoDialogState extends State<_ArtistInfoDialog> {
+  late Future<Map<String, dynamic>?> _artistInfoFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _artistInfoFuture = widget.api.getArtistInfo(widget.artistId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '艺术家资料',
+                            style: AppFonts.getTextStyle(
+                              text: '艺术家资料',
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            widget.artistName,
+                            style: AppFonts.getTextStyle(
+                              text: widget.artistName,
+                              fontSize: 16,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.close,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: FutureBuilder<Map<String, dynamic>?>(
+                  future: _artistInfoFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                '加载失败',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    final artistInfo = snapshot.data;
+                    final biography = artistInfo?['biography'] as String?;
+                    final similarArtists = artistInfo?['similarArtists'] as List<dynamic>?;
+
+                    if (biography == null || biography.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 64,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                '暂无艺术家介绍信息',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '简介',
+                            style: AppFonts.getTextStyle(
+                              text: '简介',
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            biography,
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.6,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          if (similarArtists != null && similarArtists.isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            Text(
+                              '相似艺术家',
+                              style: AppFonts.getTextStyle(
+                                text: '相似艺术家',
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: similarArtists.take(10).map((artist) {
+                                return Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ArtistDetailPage(
+                                            api: widget.api,
+                                            playerService: PlayerService(),
+                                            artist: artist,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceContainerHigh,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        artist['name'] ?? '未知艺术家',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Text('关闭'),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
