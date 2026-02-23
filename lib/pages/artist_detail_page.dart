@@ -208,7 +208,24 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                       }
 
                       final songs = snapshot.data ?? [];
-                      final displaySongs = songs.take(3).toList();
+                      
+                      // 按专辑分组，确保显示的歌曲来自不同专辑
+                      final Map<String, List<Map<String, dynamic>>> songsByAlbum = {};
+                      for (var song in songs) {
+                        final album = song['album'] as String?;
+                        if (album != null) {
+                          if (!songsByAlbum.containsKey(album)) {
+                            songsByAlbum[album] = [];
+                          }
+                          songsByAlbum[album]!.add(song);
+                        }
+                      }
+                      
+                      // 从每个专辑中取第一首歌，最多取3首
+                      final displaySongs = songsByAlbum.values
+                          .take(3)
+                          .expand((albumSongs) => albumSongs.take(1))
+                          .toList();
 
                       return Column(
                         children: [
