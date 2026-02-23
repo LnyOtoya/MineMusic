@@ -482,95 +482,111 @@ class _DetailPageState extends State<DetailPage> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 8),
-                                      InkWell(
-                                        onTap: () async {
-                                          if (widget.type == DetailType.album) {
-                                            final artistName = widget.item['artist'];
-                                            if (artistName != null && _artistCoverArtMap != null) {
-                                              final coverArt = _artistCoverArtMap![artistName];
-                                              if (coverArt != null) {
-                                                final allArtists = await widget.api.getArtists();
-                                                final artist = allArtists.cast<Map<String, dynamic>>().firstWhere(
-                                                  (a) => a['name'] == artistName,
-                                                  orElse: () => <String, dynamic>{},
-                                                );
-                                                
-                                                if (artist.isNotEmpty) {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) => ArtistDetailPage(
-                                                        api: widget.api,
-                                                        playerService: widget.playerService,
-                                                        artist: artist,
-                                                      ),
-                                                    ),
+                                      if (widget.type == DetailType.playlist)
+                                        Text(
+                                          widget.item['comment'] != null && widget.item['comment'].toString().isNotEmpty 
+                                              ? widget.item['comment'].toString() 
+                                              : '暂无描述',
+                                          style: AppFonts.getTextStyle(
+                                            text: widget.item['comment'] != null && widget.item['comment'].toString().isNotEmpty 
+                                                ? widget.item['comment'].toString() 
+                                                : '暂无描述',
+                                            fontSize: 16,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        )
+                                      else
+                                        InkWell(
+                                          onTap: () async {
+                                            if (widget.type == DetailType.album) {
+                                              final artistName = widget.item['artist'];
+                                              if (artistName != null && _artistCoverArtMap != null) {
+                                                final coverArt = _artistCoverArtMap![artistName];
+                                                if (coverArt != null) {
+                                                  final allArtists = await widget.api.getArtists();
+                                                  final artist = allArtists.cast<Map<String, dynamic>>().firstWhere(
+                                                    (a) => a['name'] == artistName,
+                                                    orElse: () => <String, dynamic>{},
                                                   );
+                                                  
+                                                  if (artist.isNotEmpty) {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (context) => ArtistDetailPage(
+                                                          api: widget.api,
+                                                          playerService: widget.playerService,
+                                                          artist: artist,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
                                                 }
                                               }
                                             }
-                                          }
-                                        },
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              ClipOval(
-                                                child: Container(
-                                                  width: 20,
-                                                  height: 20,
-                                                  decoration: BoxDecoration(
-                                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                          },
+                                          borderRadius: BorderRadius.circular(20),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                ClipOval(
+                                                  child: Container(
+                                                    width: 20,
+                                                    height: 20,
+                                                    decoration: BoxDecoration(
+                                                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                                    ),
+                                                    child: _artistAvatarUrl != null
+                                                        ? CachedNetworkImage(
+                                                            imageUrl: _artistAvatarUrl!,
+                                                            fit: BoxFit.cover,
+                                                            width: 20,
+                                                            height: 20,
+                                                            placeholder: (context, url) {
+                                                              print('🔄 头像加载中...');
+                                                              return Icon(
+                                                                Icons.person,
+                                                                size: 12,
+                                                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                              );
+                                                            },
+                                                            errorWidget: (context, url, error) {
+                                                              print('❌ 头像加载失败: $error');
+                                                              return Icon(
+                                                                Icons.person,
+                                                                size: 12,
+                                                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                              );
+                                                            },
+                                                          )
+                                                        : Icon(
+                                                            Icons.person,
+                                                            size: 12,
+                                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                          ),
                                                   ),
-                                                  child: _artistAvatarUrl != null
-                                                      ? CachedNetworkImage(
-                                                          imageUrl: _artistAvatarUrl!,
-                                                          fit: BoxFit.cover,
-                                                          width: 20,
-                                                          height: 20,
-                                                          placeholder: (context, url) {
-                                                            print('🔄 头像加载中...');
-                                                            return Icon(
-                                                              Icons.person,
-                                                              size: 12,
-                                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                                            );
-                                                          },
-                                                          errorWidget: (context, url, error) {
-                                                            print('❌ 头像加载失败: $error');
-                                                            return Icon(
-                                                              Icons.person,
-                                                              size: 12,
-                                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                                            );
-                                                          },
-                                                        )
-                                                      : Icon(
-                                                          Icons.person,
-                                                          size: 12,
-                                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                                        ),
                                                 ),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                subtitle,
-                                                style: AppFonts.getTextStyle(
-                                                  text: subtitle,
-                                                  fontSize: 16,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  subtitle,
+                                                  style: AppFonts.getTextStyle(
+                                                    text: subtitle,
+                                                    fontSize: 16,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                      ),
                                       const SizedBox(height: 8),
                                       Text(
                                         '${songs.length} 首歌曲 · ${_formatTotalDuration(songs)}',
