@@ -34,6 +34,19 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
     _albumsFuture = widget.api.getAlbumsByArtist(widget.artist['id']);
     _songsFuture = widget.api.getSongsByArtist(widget.artist['id']);
     _artistInfoFuture = widget.api.getArtistInfo(widget.artist['id']);
+    widget.playerService.addListener(_onPlayerStateChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.playerService.removeListener(_onPlayerStateChanged);
+    super.dispose();
+  }
+
+  void _onPlayerStateChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _playSong(
@@ -67,6 +80,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
             const SizedBox(height: 64),
             Expanded(
               child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
@@ -243,7 +257,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                   const Divider(height: 1),
                   const SizedBox(height: 16),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       children: [
                         Text(
@@ -320,9 +334,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
 
                       return Column(
                         children: [
-                          ...displaySongs.asMap().entries.map((entry) {
-                            final index = entry.key + 1;
-                            final song = entry.value;
+                          ...displaySongs.map((song) {
                             final coverArtUrl = song['coverArt'] != null 
                                 ? widget.api.getCoverArtUrl(song['coverArt']) 
                                 : null;
@@ -331,7 +343,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                                 currentSong['id'] == song['id'];
                             final isPlaying = isCurrentSong && widget.playerService.isPlaying;
                             
-                            return _buildSongItem(index, song, coverArtUrl, isCurrentSong, isPlaying, songs);
+                            return _buildSongItem(song, coverArtUrl, isCurrentSong, isPlaying, songs);
                           }).toList(),
                           if (songs.length > 3)
                             Padding(
@@ -507,7 +519,6 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
   }
 
   Widget _buildSongItem(
-    int index,
     Map<String, dynamic> song,
     String? coverArtUrl,
     bool isCurrentSong,
@@ -534,23 +545,9 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                     )
                   : null,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                SizedBox(
-                  width: 32,
-                  child: Text(
-                    '$index',
-                    style: AppFonts.getTextStyle(
-                      text: '$index',
-                      fontSize: 16,
-                      color: isCurrentSong
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontWeight: isCurrentSong ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ),
                 const SizedBox(width: 12),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
@@ -1106,7 +1103,6 @@ class _AllSongsPage extends StatelessWidget {
                 ],
               ),
             ),
-            const Divider(height: 1),
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
@@ -1304,7 +1300,6 @@ class _AllAlbumsPage extends StatelessWidget {
                 ],
               ),
             ),
-            const Divider(height: 1),
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
