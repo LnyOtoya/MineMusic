@@ -457,6 +457,25 @@ class _DetailPageState extends State<DetailPage> {
                                           context,
                                         ).colorScheme.onSurfaceVariant,
                                       )
+                                    : widget.type == DetailType.playlist && songs.isNotEmpty && songs[0]['coverArt'] != null
+                                        ? CachedNetworkImage(
+                                            imageUrl: widget.api.getCoverArtUrl(songs[0]['coverArt']),
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) => Icon(
+                                              Icons.playlist_play,
+                                              size: 60,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                            ),
+                                            errorWidget: (context, url, error) => Icon(
+                                              Icons.playlist_play,
+                                              size: 60,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                            ),
+                                          )
                                     : Icon(
                                         Icons.playlist_play,
                                         size: 60,
