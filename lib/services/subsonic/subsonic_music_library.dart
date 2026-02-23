@@ -130,6 +130,7 @@ class SubsonicMusicLibrary extends SubsonicApiBase {
             'artist': element.getAttribute('artist'),
             'songCount': element.getAttribute('songCount'),
             'coverArt': element.getAttribute('coverArt'),
+            'year': element.getAttribute('year'),
           });
         }
 

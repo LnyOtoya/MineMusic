@@ -191,6 +191,7 @@ class SubsonicApi {
             'artistId': element.getAttribute('artistId'),
             'songCount': element.getAttribute('songCount'),
             'coverArt': element.getAttribute('coverArt'),
+            'year': element.getAttribute('year'),
           };
         }).toList();
 
