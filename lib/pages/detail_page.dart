@@ -555,7 +555,6 @@ class _DetailPageState extends State<DetailPage> {
                                           child: Padding(
                                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                             child: Row(
-                                              mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 ClipOval(
                                                   child: Container(
@@ -595,17 +594,19 @@ class _DetailPageState extends State<DetailPage> {
                                                   ),
                                                 ),
                                                 const SizedBox(width: 6),
-                                                Text(
-                                                  subtitle,
-                                                  style: AppFonts.getTextStyle(
-                                                    text: subtitle,
-                                                    fontSize: 16,
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .onSurfaceVariant,
+                                                Expanded(
+                                                  child: Text(
+                                                    subtitle,
+                                                    style: AppFonts.getTextStyle(
+                                                      text: subtitle,
+                                                      fontSize: 16,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                               ],
                                             ),
