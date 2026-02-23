@@ -164,12 +164,14 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
       for (var album in topAlbums) {
         final artist = album['artist'] as String?;
         final artistId = album['artistId'] as String?;
+        final albumCoverArt = album['coverArt'] as String?;
         if (artist != null) {
           if (!artistStats.containsKey(artist)) {
             artistStats[artist] = {
               'name': artist,
               'id': artistId,
               'playcount': 0,
+              'albumCoverArt': albumCoverArt,
             };
           }
           final playCount = int.tryParse(album['playCount'] as String? ?? '0') ?? 0;
@@ -191,11 +193,12 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
       final sortedArtists = artistStats.values.toList()
         ..sort((a, b) => (b['playcount'] as int).compareTo(a['playcount'] as int));
       
-      // 将 coverArt 添加到艺术家数据中
+      // 将 coverArt 添加到艺术家数据中，如果没有则使用专辑封面
       for (var artist in sortedArtists) {
         final name = artist['name'] as String?;
         if (name != null) {
-          artist['coverArt'] = artistCoverArtMap[name];
+          final artistCoverArt = artistCoverArtMap[name];
+          artist['coverArt'] = artistCoverArt ?? artist['albumCoverArt'];
         }
       }
       
