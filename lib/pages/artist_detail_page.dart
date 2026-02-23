@@ -559,25 +559,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
-        children: [
-          for (int i = 0; i < displayAlbums.length; i += 2)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildAlbumCard(displayAlbums[i]),
-                  ),
-                  if (i + 1 < displayAlbums.length) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildAlbumCard(displayAlbums[i + 1]),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-        ],
+        children: displayAlbums.map((album) => _buildAlbumCard(album)).toList(),
       ),
     );
   }
@@ -593,16 +575,14 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
             color: Theme.of(context).colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(12),
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  bottomLeft: Radius.circular(12),
-                ),
+                borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  width: 80,
-                  height: 80,
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
@@ -610,8 +590,8 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                       ? CachedNetworkImage(
                           imageUrl: widget.api.getCoverArtUrl(album['coverArt']),
                           fit: BoxFit.cover,
-                          width: 80,
-                          height: 80,
+                          width: 60,
+                          height: 60,
                           placeholder: (context, url) => Icon(
                             Icons.album,
                             size: 32,
@@ -630,36 +610,40 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                         ),
                 ),
               ),
+              const SizedBox(width: 12),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        album['name'] ?? '未知专辑',
-                        style: AppFonts.getTextStyle(
-                          text: album['name'] ?? '未知专辑',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      album['name'] ?? '未知专辑',
+                      style: AppFonts.getTextStyle(
+                        text: album['name'] ?? '未知专辑',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${album['songCount'] ?? 0} 首歌曲',
-                        style: AppFonts.getTextStyle(
-                          text: '${album['songCount'] ?? 0} 首歌曲',
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${album['songCount'] ?? 0} 首歌曲',
+                      style: AppFonts.getTextStyle(
+                        text: '${album['songCount'] ?? 0} 首歌曲',
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -739,146 +723,170 @@ class _AllSongsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${artist['name']} - 全部歌曲'),
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-        itemCount: songs.length,
-        itemBuilder: (context, index) {
-          final song = songs[index];
-          final coverArtUrl = song['coverArt'] != null 
-              ? api.getCoverArtUrl(song['coverArt']) 
-              : null;
-          final currentSong = playerService.currentSong;
-          final isCurrentSong = currentSong != null && 
-              currentSong['id'] == song['id'];
-          
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _playSong(song, songs),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isCurrentSong 
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    border: isCurrentSong
-                        ? Border.all(
-                            color: Theme.of(context).colorScheme.primary,
-                            width: 2,
-                          )
-                        : null,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 64),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+              child: Row(
+                children: [
+                  Text(
+                    '全部歌曲',
+                    style: AppFonts.getTextStyle(
+                      text: '全部歌曲',
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.8,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 32,
-                        child: Text(
-                          '${index + 1}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: isCurrentSong
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.onSurfaceVariant,
-                            fontWeight: isCurrentSong ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          ),
-                          child: coverArtUrl != null
-                              ? CachedNetworkImage(
-                                  imageUrl: coverArtUrl,
-                                  fit: BoxFit.cover,
-                                  width: 48,
-                                  height: 48,
-                                  placeholder: (context, url) => Icon(
-                                    Icons.music_note_rounded,
-                                    size: 24,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant
-                                        .withOpacity(0.4),
-                                  ),
-                                  errorWidget: (context, url, error) => Icon(
-                                    Icons.music_note_rounded,
-                                    size: 24,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant
-                                        .withOpacity(0.4),
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.music_note_rounded,
-                                  size: 24,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant
-                                      .withOpacity(0.4),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              song['title'] ?? '未知歌曲',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: isCurrentSong
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).colorScheme.onSurface,
-                                fontWeight: isCurrentSong ? FontWeight.bold : FontWeight.normal,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              song['album'] ?? '未知专辑',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: isCurrentSong
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        _formatDuration(song['duration']),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
-          );
-        },
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                itemCount: songs.length,
+                itemBuilder: (context, index) {
+                  final song = songs[index];
+                  final coverArtUrl = song['coverArt'] != null 
+                      ? api.getCoverArtUrl(song['coverArt']) 
+                      : null;
+                  final currentSong = playerService.currentSong;
+                  final isCurrentSong = currentSong != null && 
+                      currentSong['id'] == song['id'];
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _playSong(song, songs),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isCurrentSong 
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: isCurrentSong
+                                ? Border.all(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    width: 2,
+                                  )
+                                : null,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 32,
+                                child: Text(
+                                  '${index + 1}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: isCurrentSong
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                                    fontWeight: isCurrentSong ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  ),
+                                  child: coverArtUrl != null
+                                      ? CachedNetworkImage(
+                                          imageUrl: coverArtUrl,
+                                          fit: BoxFit.cover,
+                                          width: 48,
+                                          height: 48,
+                                          placeholder: (context, url) => Icon(
+                                            Icons.music_note_rounded,
+                                            size: 24,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant
+                                                .withOpacity(0.4),
+                                          ),
+                                          errorWidget: (context, url, error) => Icon(
+                                            Icons.music_note_rounded,
+                                            size: 24,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant
+                                                .withOpacity(0.4),
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.music_note_rounded,
+                                          size: 24,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant
+                                              .withOpacity(0.4),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      song['title'] ?? '未知歌曲',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: isCurrentSong
+                                            ? Theme.of(context).colorScheme.primary
+                                            : Theme.of(context).colorScheme.onSurface,
+                                        fontWeight: isCurrentSong ? FontWeight.bold : FontWeight.normal,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      song['album'] ?? '未知专辑',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: isCurrentSong
+                                            ? Theme.of(context).colorScheme.primary
+                                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                _formatDuration(song['duration']),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -913,101 +921,125 @@ class _AllAlbumsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${artist['name']} - 全部专辑'),
-      ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.2,
-        ),
-        itemCount: albums.length,
-        itemBuilder: (context, index) {
-          final album = albums[index];
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _openAlbumDetail(context, album),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(12),
-                        bottomLeft: Radius.circular(12),
-                      ),
-                      child: Container(
-                        width: 80,
-                        height: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        ),
-                        child: album['coverArt'] != null
-                            ? CachedNetworkImage(
-                                imageUrl: api.getCoverArtUrl(album['coverArt']),
-                                fit: BoxFit.cover,
-                                width: 80,
-                                placeholder: (context, url) => Icon(
-                                  Icons.album,
-                                  size: 32,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                                errorWidget: (context, url, error) => Icon(
-                                  Icons.album,
-                                  size: 32,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              )
-                            : Icon(
-                                Icons.album,
-                                size: 32,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 64),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+              child: Row(
+                children: [
+                  Text(
+                    '全部专辑',
+                    style: AppFonts.getTextStyle(
+                      text: '全部专辑',
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.8,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              album['name'] ?? '未知专辑',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${album['songCount'] ?? 0} 首歌曲',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          );
-        },
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                itemCount: albums.length,
+                itemBuilder: (context, index) {
+                  final album = albums[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _openAlbumDetail(context, album),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  ),
+                                  child: album['coverArt'] != null
+                                      ? CachedNetworkImage(
+                                          imageUrl: api.getCoverArtUrl(album['coverArt']),
+                                          fit: BoxFit.cover,
+                                          width: 60,
+                                          height: 60,
+                                          placeholder: (context, url) => Icon(
+                                            Icons.album,
+                                            size: 32,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                          errorWidget: (context, url, error) => Icon(
+                                            Icons.album,
+                                            size: 32,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.album,
+                                          size: 32,
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      album['name'] ?? '未知专辑',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${album['songCount'] ?? 0} 首歌曲',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 20,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
