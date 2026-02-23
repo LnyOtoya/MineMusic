@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import '../utils/app_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_html/flutter_html.dart';
 import 'detail_page.dart' as dp;
 
 class ArtistDetailPage extends StatefulWidget {
@@ -184,7 +186,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                                             fontSize: 14,
                                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                                           ),
-                                          maxLines: 2,
+                                          maxLines: 4,
                                           overflow: TextOverflow.ellipsis,
                                         );
                                       }
@@ -197,7 +199,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                                             fontSize: 14,
                                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                                           ),
-                                          maxLines: 2,
+                                          maxLines: 4,
                                           overflow: TextOverflow.ellipsis,
                                         );
                                       }
@@ -213,7 +215,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                                             fontSize: 14,
                                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                                           ),
-                                          maxLines: 2,
+                                          maxLines: 4,
                                           overflow: TextOverflow.ellipsis,
                                         );
                                       }
@@ -225,7 +227,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                                           fontSize: 14,
                                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                                         ),
-                                        maxLines: 2,
+                                        maxLines: 4,
                                         overflow: TextOverflow.ellipsis,
                                       );
                                     },
@@ -932,13 +934,27 @@ class _ArtistInfoDialogState extends State<_ArtistInfoDialog> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Text(
-                            biography,
-                            style: TextStyle(
-                              fontSize: 14,
-                              height: 1.6,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                          Html(
+                            data: biography,
+                            style: {
+                              'body': Style(
+                                fontSize: FontSize(14),
+                                lineHeight: const LineHeight(1.6),
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              'a': Style(
+                                color: Theme.of(context).colorScheme.primary,
+                                textDecoration: TextDecoration.none,
+                              ),
+                            },
+                            onLinkTap: (url, _, __) async {
+                              if (url != null) {
+                                final uri = Uri.tryParse(url);
+                                if (uri != null && uri.hasScheme) {
+                                  await launchUrl(uri);
+                                }
+                              }
+                            },
                           ),
                           if (similarArtists != null && similarArtists.isNotEmpty) ...[
                             const SizedBox(height: 24),
