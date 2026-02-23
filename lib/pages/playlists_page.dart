@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:expressive_refresh/expressive_refresh.dart';
 import '../services/subsonic_api.dart';
 import '../services/player_service.dart';
 import 'detail_page.dart';
@@ -223,21 +224,35 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
           return nameA.compareTo(nameB);
         });
 
-        return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.8,
-          ),
-          itemCount: playlists.length,
-          itemBuilder: (context, index) {
-            final playlist = playlists[index];
-            return RepaintBoundary(
-              child: _buildPlaylistCard(playlist),
-            );
+        return ExpressiveRefreshIndicator(
+          onRefresh: () async {
+            _cachedPlaylists = null;
+            final startTime = DateTime.now();
+            await _loadPlaylistsWithCover();
+            final elapsedTime = DateTime.now().difference(startTime);
+            if (elapsedTime.inMilliseconds < 800) {
+              await Future.delayed(Duration(milliseconds: 800 - elapsedTime.inMilliseconds));
+            }
+            setState(() {
+              _playlistsFuture = _loadPlaylistsWithCover();
+            });
           },
+          child: GridView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.8,
+            ),
+            itemCount: playlists.length,
+            itemBuilder: (context, index) {
+              final playlist = playlists[index];
+              return RepaintBoundary(
+                child: _buildPlaylistCard(playlist),
+              );
+            },
+          ),
         );
       },
     );

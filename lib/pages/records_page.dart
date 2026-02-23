@@ -145,7 +145,12 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
 
   Future<void> _refreshRecentTracks() async {
     try {
+      final startTime = DateTime.now();
       final recentTracks = await _getRecentTracks();
+      final elapsedTime = DateTime.now().difference(startTime);
+      if (elapsedTime.inMilliseconds < 800) {
+        await Future.delayed(Duration(milliseconds: 800 - elapsedTime.inMilliseconds));
+      }
 
       setState(() {
         _recentTracks = recentTracks;
@@ -210,6 +215,71 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
       print('Stats data loaded successfully');
     } catch (e) {
       print('Error loading stats data: $e');
+    }
+  }
+
+  Future<void> _refreshStatsData() async {
+    try {
+      final startTime = DateTime.now();
+      
+      final topAlbums = await widget.api?.getFrequentAlbums(size: 5) ?? [];
+      
+      final artistStats = <String, Map<String, dynamic>>{};
+      
+      for (var album in topAlbums) {
+        final artist = album['artist'] as String?;
+        final artistId = album['artistId'] as String?;
+        final albumCoverArt = album['coverArt'] as String?;
+        if (artist != null) {
+          if (!artistStats.containsKey(artist)) {
+            artistStats[artist] = {
+              'name': artist,
+              'id': artistId,
+              'playcount': 0,
+              'albumCoverArt': albumCoverArt,
+            };
+          }
+          final playCount = int.tryParse(album['playCount'] as String? ?? '0') ?? 0;
+          artistStats[artist]!['playcount'] = (artistStats[artist]!['playcount'] as int) + playCount;
+        }
+      }
+      
+      // 获取艺术家列表以获取 coverArt
+      final allArtists = await widget.api?.getArtists() ?? [];
+      final artistCoverArtMap = <String, String?>{};
+      for (var artist in allArtists) {
+        final name = artist['name'] as String?;
+        final coverArt = artist['coverArt'] as String?;
+        if (name != null) {
+          artistCoverArtMap[name] = coverArt;
+        }
+      }
+      
+      final sortedArtists = artistStats.values.toList()
+        ..sort((a, b) => (b['playcount'] as int).compareTo(a['playcount'] as int));
+      
+      // 将 coverArt 添加到艺术家数据中，如果没有则使用专辑封面
+      for (var artist in sortedArtists) {
+        final name = artist['name'] as String?;
+        if (name != null) {
+          final artistCoverArt = artistCoverArtMap[name];
+          artist['coverArt'] = artistCoverArt ?? artist['albumCoverArt'];
+        }
+      }
+      
+      final elapsedTime = DateTime.now().difference(startTime);
+      if (elapsedTime.inMilliseconds < 800) {
+        await Future.delayed(Duration(milliseconds: 800 - elapsedTime.inMilliseconds));
+      }
+      
+      setState(() {
+        _topAlbums = topAlbums;
+        _topArtists = sortedArtists;
+      });
+      
+      print('Stats data refreshed successfully');
+    } catch (e) {
+      print('Error refreshing stats data: $e');
     }
   }
 
@@ -521,13 +591,16 @@ class _RecordsPageState extends State<RecordsPage> with SingleTickerProviderStat
   }
 
   Widget _buildStatsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStatsOverview(),
-        ],
+    return ExpressiveRefreshIndicator(
+      onRefresh: _refreshStatsData,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStatsOverview(),
+          ],
+        ),
       ),
     );
   }
