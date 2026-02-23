@@ -253,38 +253,23 @@ class SubsonicMusicLibrary extends SubsonicApiBase {
     }
 
     try {
-      final extraParams = {
-        'id': artistId,
-      };
+      // 先获取艺术家的专辑
+      final albums = await getAlbumsByArtist(artistId);
+      List<Map<String, dynamic>> allSongs = [];
 
-      final response = await sendGetRequest('getArtist', extraParams: extraParams);
-
-      if (response.statusCode == 200) {
-        final responseBody = utf8.decode(response.bodyBytes);
-        final document = XmlDocument.parse(responseBody);
-        final songElements = document.findAllElements('song');
-
-        List<Map<String, dynamic>> songs = [];
-        for (var element in songElements) {
-          songs.add({
-            'id': element.getAttribute('id'),
-            'title': element.getAttribute('title'),
-            'artist': element.getAttribute('artist'),
-            'artistId': element.getAttribute('artistId'),
-            'album': element.getAttribute('album'),
-            'albumId': element.getAttribute('albumId'),
-            'duration': element.getAttribute('duration'),
-            'coverArt': element.getAttribute('coverArt'),
-          });
+      // 从每个专辑中获取歌曲
+      for (var album in albums) {
+        final albumId = album['id'] as String?;
+        if (albumId != null) {
+          final songs = await getSongsByAlbum(albumId);
+          allSongs.addAll(songs);
         }
-
-        // 缓存数据
-        SubsonicApiBase.cachedArtistSongs[artistId] = songs;
-        print('✅ 解析到 ${songs.length} 首艺术家歌曲并缓存: $artistId');
-        return songs;
-      } else {
-        throw Exception('获取艺人歌曲失败: ${response.statusCode}');
       }
+
+      // 缓存数据
+      SubsonicApiBase.cachedArtistSongs[artistId] = allSongs;
+      print('✅ 解析到 ${allSongs.length} 首艺术家歌曲并缓存: $artistId');
+      return allSongs;
     } catch (e) {
       print('获取艺人歌曲失败: $e');
       return [];
