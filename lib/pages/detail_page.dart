@@ -83,6 +83,11 @@ class _DetailPageState extends State<DetailPage> {
   }
 
   Future<void> _extractColorFromCoverArt() async {
+    if (widget.type != DetailType.album) {
+      print('非专辑详情页，跳过颜色提取');
+      return;
+    }
+    
     final coverArt = widget.item['coverArt'];
     
     if (coverArt == null || coverArt.isEmpty) {
